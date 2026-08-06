@@ -1,0 +1,169 @@
+{
+  "entities": {
+    "SiteConfig": {
+      "title": "Site Configuration",
+      "description": "Global custom settings, texts, and styles for real-time visual adjustments.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "heroTitle1": { "type": "string" },
+        "heroTitle2": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "backgroundColor": { "type": "string" },
+        "bannerMessage": { "type": "string" },
+        "headerLogo": { "type": "string" },
+        "footerText": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "instagramUrl": { "type": "string" },
+        "artistCredits": { "type": "string" },
+        "experienceVideo": { "type": "string" },
+        "heroVideo": { "type": "string" },
+        "showGlow": { "type": "boolean" },
+        "glowIntensity": { "type": "string" },
+        "experienceTitle": { "type": "string" },
+        "experienceSubtitle": { "type": "string" },
+        "distributionTitle": { "type": "string" },
+        "distributionSubtitle": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "heroPoster": { "type": "string" },
+        "experiencePoster": { "type": "string" },
+        "heroButton1Text": { "type": "string" },
+        "heroButton2Text": { "type": "string" }
+      },
+      "required": ["heroTitle1", "accentColor"]
+    },
+    "Product": {
+      "title": "Configurable Product",
+      "description": "UMBRA caps and merchandise details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "priceMXN": { "type": "number" },
+        "priceUSD": { "type": "number" },
+        "originalPriceMXN": { "type": "number" },
+        "images": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "description": { "type": "string" },
+        "outOfStock": { "type": "boolean" },
+        "category": { "type": "string" },
+        "badge": { "type": "string" },
+        "details": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["id", "name", "priceMXN", "priceUSD", "images", "category"]
+    },
+    "Order": {
+      "title": "Purchase Order",
+      "description": "Order records created when log-in Google users purchase caps.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "totalMXN": { "type": "number" },
+        "totalUSD": { "type": "number" },
+        "statusND": { "type": "string" },
+        "shippingStatus": { "type": "string" },
+        "shippingAddress": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "trackingNumber": { "type": "string" }
+      },
+      "required": ["id", "userEmail", "items", "createdAt"]
+    },
+    "Review": {
+      "title": "Product Review",
+      "description": "Reviews left by purchasers or configured by the administrator.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "rating": { "type": "number" },
+        "date": { "type": "string" },
+        "capName": { "type": "string" },
+        "title": { "type": "string" },
+        "reviewText": { "type": "string" },
+        "verified": { "type": "boolean" }
+      },
+      "required": ["id", "name", "rating", "reviewText"]
+    },
+    "Message": {
+      "title": "Customer Message",
+      "description": "Interactive inbox submissions for live chat help or distributor requests.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "email", "message"]
+    },
+    "AuthenticCode": {
+      "title": "Verification Code",
+      "description": "Unique identifiers verified via the high-end UMBRA security system.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "owner": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" },
+        "item": { "type": "string" }
+      },
+      "required": ["code", "owner", "status"]
+    },
+    "Admin": {
+      "title": "Platform Administrator",
+      "description": "Users authorized with root access to edit texts/colors/settings in real-time.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/site_configs/{configId}": {
+      "schema": "SiteConfig",
+      "description": "Stores real-time styles and text overrides."
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "UMBRA caps lists selectable by shoppers."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Validated purchases with delivery status."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer comments or generated admin reviews."
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Contact panel entries and wholesale queries."
+    },
+    "/authentic_codes/{codeId}": {
+      "schema": "AuthenticCode",
+      "description": "Validable product verification tags."
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Configured administrative users."
+    }
+  }
+}

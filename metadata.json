@@ -1,0 +1,6 @@
+{
+  "name": "TETRA HATS",
+  "description": "Tienda oficial TETRA HATS. Distribuidor de gorras de lujo, verificador de autenticidad integrado, catálogo interactivo con galerías múltiples y carrito dinámico.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
