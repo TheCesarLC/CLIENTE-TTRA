@@ -1,6 +1,8 @@
+import { isGoogleDriveUrl, extractGoogleDriveId } from "./mediaUtils";
+
 /**
  * Image Optimizer Utility for TETRA HATS & Umbra CDN
- * Converts heavy raw PNG images (5MB - 10MB) into ultra-fast, compressed CDN thumbnails (~20KB - 60KB)
+ * Converts heavy raw PNG images and Google Drive links into ultra-fast CDN thumbnails
  */
 
 export function getOptimizedImageUrl(
@@ -11,6 +13,14 @@ export function getOptimizedImageUrl(
 
   const trimmed = url.trim();
   if (!trimmed) return "";
+
+  // Check if it's a Google Drive link
+  if (isGoogleDriveUrl(trimmed)) {
+    const fileId = extractGoogleDriveId(trimmed);
+    if (fileId) {
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${targetWidth}`;
+    }
+  }
 
   // Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
   if (

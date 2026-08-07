@@ -16,6 +16,7 @@ import Footer from "./components/Footer";
 import AdminPanel from "./components/AdminPanel";
 import StarryBackground from "./components/StarryBackground";
 import { ReceiptModal } from "./components/ReceiptModal";
+import OptimizedVideoPlayer from "./components/OptimizedVideoPlayer";
 
 // Visual Inline Dialogs
 import VisualEditDialog from "./components/VisualEditDialog";
@@ -407,8 +408,7 @@ export default function App() {
           !siteConfigToUse.heroVideo.includes("umbra.page") &&
           !siteConfigToUse.heroVideo.includes("8678b1b9") &&
           !siteConfigToUse.heroVideo.includes("41ebdb") ? (
-            <video
-              key={siteConfigToUse.heroVideo}
+            <OptimizedVideoPlayer
               src={siteConfigToUse.heroVideo}
               playsInline
               autoPlay
@@ -561,8 +561,7 @@ export default function App() {
             !siteConfigToUse.experienceVideo.includes("umbra.page") &&
             !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
             !siteConfigToUse.experienceVideo.includes("41ebdb") ? (
-              <video
-                key={siteConfigToUse.experienceVideo}
+              <OptimizedVideoPlayer
                 src={siteConfigToUse.experienceVideo}
                 playsInline
                 autoPlay

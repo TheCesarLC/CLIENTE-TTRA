@@ -172,7 +172,7 @@ const defaultSiteConfig: SiteConfig = {
   whatsappNumber: "+521123456789",
   instagramUrl: "https://instagram.com/",
   artistCredits: "",
-  experienceVideo: "",
+  experienceVideo: "https://drive.google.com/file/d/1ZEao13N6UNq8c9GMSlYqN0SNC7HFUFMI/view?usp=sharing",
   experiencePoster: "",
   heroVideo: "",
   showGlow: true,

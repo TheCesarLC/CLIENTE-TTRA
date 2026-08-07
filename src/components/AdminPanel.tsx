@@ -572,22 +572,28 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Video del Hero (.mp4 URL)</label>
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
+                  <span>Video del Hero (.mp4 URL o enlace de Google Drive)</span>
+                </label>
                 <input
                   type="text"
-                  value={siteConfig.heroVideo}
+                  value={siteConfig.heroVideo || ""}
+                  placeholder="https://drive.google.com/file/d/... o https://.../video.mp4"
                   onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Video de la Experiencia (.mp4 URL)</label>
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
+                  <span>Video de la Experiencia (.mp4 URL o enlace de Google Drive)</span>
+                </label>
                 <input
                   type="text"
-                  value={siteConfig.experienceVideo}
+                  value={siteConfig.experienceVideo || ""}
+                  placeholder="https://drive.google.com/file/d/... o https://.../video.mp4"
                   onChange={(e) => updateSiteConfig({ experienceVideo: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
               </div>
 
