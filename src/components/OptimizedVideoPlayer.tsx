@@ -124,13 +124,15 @@ export default function OptimizedVideoPlayer({
         }}
       >
         {isThisActive ? (
-          <iframe
-            src={`${driveConfig.embedUrl}?autoplay=1`}
-            className="w-full h-full border-0 pointer-events-auto scale-[1.02]"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-            title="Google Drive Video Player"
-          />
+          <div className="relative w-full h-full overflow-hidden">
+            <iframe
+              src={`${driveConfig.embedUrl}?autoplay=1`}
+              className="w-full h-[120%] -mt-[8%] border-0 pointer-events-auto scale-[1.05]"
+              allow="autoplay; encrypted-media"
+              allowFullScreen={false}
+              title="Google Drive Video Player"
+            />
+          </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-950 relative overflow-hidden">
             {effectivePoster && (
@@ -167,11 +169,15 @@ export default function OptimizedVideoPlayer({
         ref={videoRef}
         key={driveConfig.isDrive ? driveConfig.fileId || src : src}
         playsInline={playsInline}
+        // @ts-ignore iOS Safari non-standard attribute
+        webkit-playsinline="true"
+        disablePictureInPicture
+        controlsList="nodownload nofullscreen noremoteplayback"
         preload="metadata"
         referrerPolicy="no-referrer"
         loop={loop}
         muted={isMuted}
-        controls={controls}
+        controls={false}
         className={className}
         poster={effectivePoster}
         onTimeUpdate={handleTimeUpdate}
