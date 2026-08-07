@@ -528,85 +528,150 @@ export default function App() {
         </div>
       </section>
 
-      {/* Mid Video Player with custom aesthetic looping wrapper */}
-      <section className="py-16 border-t border-neutral-900/60 relative z-10">
-        <div className="max-w-4xl mx-auto px-4 text-center space-y-6">
-          <h2 className="text-xl md:text-3xl font-black uppercase tracking-widest text-white leading-none relative flex justify-center items-center gap-2 max-w-lg mx-auto">
-            <span>{siteConfigToUse.experienceTitle || "DETALLES EXCLUSIVOS AL DETALLE"}</span>
-            {renderEditButton("Título de Experiencia", "experienceTitle", "text")}
-          </h2>
+      {/* Mid Video Player Section with two vertical videos side-by-side */}
+      <section className="py-16 border-t border-neutral-900/60 relative z-10 bg-neutral-950/40">
+        <div className="max-w-5xl mx-auto px-4 text-center space-y-8">
+          <div className="space-y-2">
+            <h2 className="text-xl md:text-3xl font-black uppercase tracking-widest text-white leading-none relative flex justify-center items-center gap-2 max-w-lg mx-auto">
+              <span>{siteConfigToUse.experienceTitle || "DETALLES EXCLUSIVOS AL DETALLE"}</span>
+              {renderEditButton("Título de Experiencia", "experienceTitle", "text")}
+            </h2>
+            <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-widest leading-relaxed max-w-md mx-auto relative flex justify-center items-center gap-1.5 flex-wrap">
+              <span>{siteConfigToUse.experienceSubtitle || "Colección Limitada. No son simples gorras, son piezas de exclusividad."}</span>
+              {renderEditButton("Subtítulo de Experiencia", "experienceSubtitle", "textarea")}
+            </p>
+          </div>
 
-          {/* Floating controls for Experience Video */}
+          {/* Floating controls for Experience Videos in Visual Edit mode */}
           {isAdmin && visualEditMode && (
-            <div className="flex justify-center gap-2 pt-1 max-w-sm mx-auto scale-90 sm:scale-100">
+            <div className="flex flex-wrap justify-center gap-2 pt-1 max-w-md mx-auto">
               <button
-                onClick={() => handleOpenVisualEdit("experienceVideo", "Video de Experiencia", "video")}
+                onClick={() => handleOpenVisualEdit("experienceVideo", "Video 1 (Izquierda)", "video")}
                 className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[9px] font-black rounded flex items-center gap-1 cursor-pointer shadow-md"
               >
                 <Pencil size={9} />
-                <span>VIDEO EXPERIENCIA</span>
+                <span>VIDEO 1 (IZQ)</span>
+              </button>
+              <button
+                onClick={() => handleOpenVisualEdit("experienceVideo2", "Video 2 (Derecha)", "video")}
+                className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[9px] font-black rounded flex items-center gap-1 cursor-pointer shadow-md"
+              >
+                <Pencil size={9} />
+                <span>VIDEO 2 (DER)</span>
               </button>
               <button
                 onClick={() => handleOpenVisualEdit("experiencePoster", "Miniatura de Experiencia", "image")}
-                className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-450 text-black text-[9px] font-black rounded flex items-center gap-1 cursor-pointer shadow-md"
+                className="px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-[9px] font-black rounded flex items-center gap-1 cursor-pointer shadow-md"
               >
                 <Pencil size={9} />
-                <span>POSTER EXPERIENCIA</span>
+                <span>POSTER</span>
               </button>
             </div>
           )}
 
-          <div className="relative rounded-xl border border-neutral-800 overflow-hidden bg-neutral-950 aspect-video shadow-[0_0_60px_rgba(255,255,255,0.02)]">
-            {siteConfigToUse.experienceVideo &&
-            !siteConfigToUse.experienceVideo.includes("umbra.page") &&
-            !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
-            !siteConfigToUse.experienceVideo.includes("41ebdb") ? (
-              <OptimizedVideoPlayer
-                src={siteConfigToUse.experienceVideo}
-                playsInline
-                autoPlay
-                loop
-                muted
-                controls
-                className="w-full h-full object-cover brightness-[0.8] saturate-[0.95] contrast-[1.1]"
-                poster={
-                  siteConfigToUse.experiencePoster &&
-                  !siteConfigToUse.experiencePoster.includes("umbra.page") &&
-                  !siteConfigToUse.experiencePoster.includes("8678b1b9")
-                    ? siteConfigToUse.experiencePoster
-                    : undefined
-                }
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                  <Video size={20} />
-                </div>
-                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-white mb-1">
-                  Video de Experiencia Exclusiva
-                </h3>
-                <p className="text-[10px] sm:text-xs text-gray-400 max-w-sm font-light leading-relaxed">
-                  {isAdmin
-                    ? "Agrega la URL de tu video personalizado (.mp4) utilizando el botón de edición o desde el Panel Admin."
-                    : "Colección Limitada. Piezas Únicas de Alta Gama."}
-                </p>
-                {isAdmin && (
-                  <button
-                    onClick={() => handleOpenVisualEdit("experienceVideo", "Video de Experiencia", "video")}
-                    className="mt-4 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-                  >
-                    <Pencil size={11} />
-                    <span>Configurar URL de Mi Video</span>
-                  </button>
+          {/* Side-by-Side Vertical Videos Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto px-2">
+            
+            {/* VIDEO 1 - ONDGAS */}
+            <div className="flex flex-col items-center">
+              <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-transform duration-300 hover:border-neutral-700">
+                {siteConfigToUse.experienceVideo &&
+                !siteConfigToUse.experienceVideo.includes("umbra.page") &&
+                !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
+                !siteConfigToUse.experienceVideo.includes("41ebdb") ? (
+                  <OptimizedVideoPlayer
+                    src={siteConfigToUse.experienceVideo}
+                    playsInline
+                    autoPlay
+                    loop
+                    muted
+                    className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                    poster={
+                      siteConfigToUse.experiencePoster &&
+                      !siteConfigToUse.experiencePoster.includes("umbra.page") &&
+                      !siteConfigToUse.experiencePoster.includes("8678b1b9")
+                        ? siteConfigToUse.experiencePoster
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                      <Video size={20} />
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-white mb-1">
+                      ONDGAS
+                    </h3>
+                    <p className="text-[10px] text-gray-400 max-w-xs font-light leading-relaxed">
+                      {isAdmin
+                        ? "Configura la URL del video ONDGAS (.mp4 o Google Drive)."
+                        : "Detalles Exclusivos en Alta Definición."}
+                    </p>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleOpenVisualEdit("experienceVideo", "Video ONDGAS", "video")}
+                        className="mt-4 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                      >
+                        <Pencil size={11} />
+                        <span>Agregar Video ONDGAS</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+              <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                ONDGAS
+              </span>
+            </div>
+
+            {/* VIDEO 2 - 800 DIAS */}
+            <div className="flex flex-col items-center">
+              <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-transform duration-300 hover:border-neutral-700">
+                {siteConfigToUse.experienceVideo2 &&
+                !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
+                !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
+                !siteConfigToUse.experienceVideo2.includes("41ebdb") ? (
+                  <OptimizedVideoPlayer
+                    src={siteConfigToUse.experienceVideo2}
+                    playsInline
+                    autoPlay
+                    loop
+                    muted
+                    className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                      <Video size={20} />
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-white mb-1">
+                      800 DÍAS
+                    </h3>
+                    <p className="text-[10px] text-gray-400 max-w-xs font-light leading-relaxed">
+                      {isAdmin
+                        ? "Pega aquí el enlace del video 800 DÍAS cuando lo tengas listo."
+                        : "Próximamente segundo video de colección."}
+                    </p>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleOpenVisualEdit("experienceVideo2", "Video 800 DÍAS", "video")}
+                        className="mt-4 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                      >
+                        <Pencil size={11} />
+                        <span>Agregar Video 800 DÍAS</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                800 DÍAS
+              </span>
+            </div>
+
           </div>
-          
-          <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-widest leading-relaxed max-w-md mx-auto relative flex justify-center items-center gap-1.5 flex-wrap">
-            <span>{siteConfigToUse.experienceSubtitle || "Colección Limitada. No son simples gorras, son piezas de exclusividad."}</span>
-            {renderEditButton("Subtítulo de Experiencia", "experienceSubtitle", "textarea")}
-          </p>
         </div>
       </section>
 

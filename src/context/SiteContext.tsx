@@ -36,6 +36,7 @@ export interface SiteConfig {
   instagramUrl: string;
   artistCredits: string;
   experienceVideo: string;
+  experienceVideo2?: string;
   heroVideo: string;
   showGlow: boolean;
   glowIntensity: string; // e.g. "0.15" representation
@@ -46,6 +47,7 @@ export interface SiteConfig {
   logoUrl?: string;
   heroPoster?: string;
   experiencePoster?: string;
+  experiencePoster2?: string;
   heroButton1Text?: string;
   heroButton2Text?: string;
   policyPrivacyName?: string;
@@ -173,7 +175,9 @@ const defaultSiteConfig: SiteConfig = {
   instagramUrl: "https://instagram.com/",
   artistCredits: "",
   experienceVideo: "https://drive.google.com/file/d/1ZEao13N6UNq8c9GMSlYqN0SNC7HFUFMI/view?usp=sharing",
+  experienceVideo2: "",
   experiencePoster: "",
+  experiencePoster2: "",
   heroVideo: "",
   showGlow: true,
   glowIntensity: "0.15",
