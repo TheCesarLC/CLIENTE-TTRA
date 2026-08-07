@@ -172,9 +172,9 @@ const defaultSiteConfig: SiteConfig = {
   whatsappNumber: "+521123456789",
   instagramUrl: "https://instagram.com/",
   artistCredits: "",
-  experienceVideo: "https://umbra.page/cdn/shop/videos/c/vp/8678b1b91e1b466fa7b9974f247cb36e/8678b1b91e1b466fa7b9974f247cb36e.HD-1080p-7.2Mbps-76999998.mp4?v=0",
-  experiencePoster: "https://umbra.page/cdn/shop/files/preview_images/8678b1b91e1b466fa7b9974f247cb36e.thumbnail.0000000000.jpg",
-  heroVideo: "https://umbra.page/cdn/shop/videos/c/vp/8678b1b91e1b466fa7b9974f247cb36e/8678b1b91e1b466fa7b9974f247cb36e.HD-1080p-7.2Mbps-76999998.mp4?v=0",
+  experienceVideo: "",
+  experiencePoster: "",
+  heroVideo: "",
   showGlow: true,
   glowIntensity: "0.15",
   experienceTitle: "DETALLES EXCLUSIVOS AL DETALLE",
@@ -243,11 +243,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.experienceSubtitle && parsed.experienceSubtitle.includes("Gamuza italiana")) {
           parsed.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
-        if (!parsed.experienceVideo || parsed.experienceVideo.includes("41ebdb3286fb4496bdb853e1b1aaf052")) {
-          parsed.experienceVideo = "https://umbra.page/cdn/shop/videos/c/vp/8678b1b91e1b466fa7b9974f247cb36e/8678b1b91e1b466fa7b9974f247cb36e.HD-1080p-7.2Mbps-76999998.mp4?v=0";
+        if (parsed.experienceVideo && (parsed.experienceVideo.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo.includes("41ebdb") || parsed.experienceVideo.includes("8678b1b9"))) {
+          parsed.experienceVideo = "";
         }
-        if (!parsed.experiencePoster || parsed.experiencePoster.includes("41ebdb3286fb4496bdb853e1b1aaf052")) {
-          parsed.experiencePoster = "https://umbra.page/cdn/shop/files/preview_images/8678b1b91e1b466fa7b9974f247cb36e.thumbnail.0000000000.jpg";
+        if (parsed.experiencePoster && (parsed.experiencePoster.includes("8678b1b9") || parsed.experiencePoster.includes("41ebdb"))) {
+          parsed.experiencePoster = "";
+        }
+        if (parsed.heroVideo && (parsed.heroVideo.includes("umbra.page/cdn/shop/videos") || parsed.heroVideo.includes("41ebdb") || parsed.heroVideo.includes("8678b1b9"))) {
+          parsed.heroVideo = "";
         }
         return { ...defaultSiteConfig, ...parsed };
       }
@@ -307,11 +310,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.experienceSubtitle && data.experienceSubtitle.includes("Gamuza italiana")) {
           data.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
-        if (!data.experienceVideo || data.experienceVideo.includes("41ebdb3286fb4496bdb853e1b1aaf052")) {
-          data.experienceVideo = "https://umbra.page/cdn/shop/videos/c/vp/8678b1b91e1b466fa7b9974f247cb36e/8678b1b91e1b466fa7b9974f247cb36e.HD-1080p-7.2Mbps-76999998.mp4?v=0";
+        if (data.experienceVideo && (data.experienceVideo.includes("umbra.page/cdn/shop/videos") || data.experienceVideo.includes("41ebdb") || data.experienceVideo.includes("8678b1b9"))) {
+          data.experienceVideo = "";
         }
-        if (!data.experiencePoster || data.experiencePoster.includes("41ebdb3286fb4496bdb853e1b1aaf052")) {
-          data.experiencePoster = "https://umbra.page/cdn/shop/files/preview_images/8678b1b91e1b466fa7b9974f247cb36e.thumbnail.0000000000.jpg";
+        if (data.experiencePoster && (data.experiencePoster.includes("8678b1b9") || data.experiencePoster.includes("41ebdb"))) {
+          data.experiencePoster = "";
+        }
+        if (data.heroVideo && (data.heroVideo.includes("umbra.page/cdn/shop/videos") || data.heroVideo.includes("41ebdb") || data.heroVideo.includes("8678b1b9"))) {
+          data.heroVideo = "";
         }
         setSiteConfig({ ...defaultSiteConfig, ...data } as SiteConfig);
         try {

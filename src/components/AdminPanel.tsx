@@ -36,8 +36,8 @@ interface AdminPanelProps {
 // PDF Ticket Printer & Email Dispatch Helpers for Admin
 const printOrderPDF = (ord: Order, logoUrl?: string) => {
   const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "medium" }) : new Date().toLocaleString("es-MX");
-  const isPaid = ord.status === "PAGO_RECIBIDO" || ord.status === "COMPLETADO" || ord.status === "EMPACADO" || ord.status === "ENVIADO" || ord.status === "ENTREGADO";
-  const isCancelled = ord.status === "CANCELADO";
+  const isPaid = ord.status === "PAGO_RECIBIDO" || (ord.status as string) === "COMPLETADO" || ord.status === "EMPACADO" || ord.status === "ENVIADO" || ord.status === "ENTREGADO";
+  const isCancelled = (ord.status as string) === "CANCELADO";
 
   const statusText = isPaid
     ? "PAGO RECIBIDO / CONFIRMADO"
@@ -215,7 +215,7 @@ const printOrderPDF = (ord: Order, logoUrl?: string) => {
 
 const sendOrderEmailPDF = (ord: Order, logoUrl?: string) => {
   const adminEmail = "hugocesarlemuscortes@gmail.com";
-  const isPaid = ord.status === "PAGO_RECIBIDO" || ord.status === "COMPLETADO" || ord.status === "EMPACADO" || ord.status === "ENVIADO" || ord.status === "ENTREGADO";
+  const isPaid = ord.status === "PAGO_RECIBIDO" || (ord.status as string) === "COMPLETADO" || ord.status === "EMPACADO" || ord.status === "ENVIADO" || ord.status === "ENTREGADO";
   const subject = encodeURIComponent(`[TETRA HATS] Comprobante PDF de Compra #${ord.id}`);
   const itemsText = (Array.isArray(ord.items) ? ord.items : []).map(i => `- ${i.productName || "Gorra"} (${i.quantity || 1} pza) : $${((i.priceMXN || 0) * (i.quantity || 1)).toLocaleString()} MXN`).join('\n');
   const totalMXN = typeof ord.totalMXN === "number" ? ord.totalMXN : 0;

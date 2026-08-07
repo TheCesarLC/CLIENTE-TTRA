@@ -178,7 +178,7 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="https://umbra.page/cdn/shop/files/..."
+                    placeholder="https://ejemplo.com/mi-imagen.jpg"
                     required
                   />
                 </div>
@@ -212,7 +212,7 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="https://umbra.page/cdn/shop/videos/..."
+                    placeholder="https://ejemplo.com/mi-video.mp4"
                     required
                   />
                 </div>

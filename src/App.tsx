@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { PRODUCTS } from "./data";
 import { Product, CartItem, GLOW_COLORS } from "./types";
-import { Sparkles, MessageSquare, ShieldCheck, Box, BadgeCheck, X, Settings2, Pencil } from "lucide-react";
+import { Sparkles, MessageSquare, ShieldCheck, Box, BadgeCheck, X, Settings2, Pencil, Video, Play } from "lucide-react";
 import { useSite, Order } from "./context/SiteContext";
 import { getOptimizedImageUrl } from "./lib/imageOptimizer";
 
@@ -403,16 +403,29 @@ export default function App() {
         
         {/* Absolute Background Videos / Fallback posters */}
         <div className="absolute inset-0 z-0">
-          <video
-            key={siteConfigToUse.heroVideo || "default-hero-video"}
-            src={siteConfigToUse.heroVideo || "https://umbra.page/cdn/shop/videos/c/vp/8678b1b91e1b466fa7b9974f247cb36e/8678b1b91e1b466fa7b9974f247cb36e.HD-1080p-7.2Mbps-76999998.mp4?v=0"}
-            playsInline
-            autoPlay
-            loop
-            muted
-            className="w-full h-full object-cover brightness-[0.4] saturate-[0.8] contrast-[1.15]"
-            poster={siteConfigToUse.heroPoster || "https://umbra.page/cdn/shop/files/preview_images/8678b1b91e1b466fa7b9974f247cb36e.thumbnail.0000000000.jpg"}
-          />
+          {siteConfigToUse.heroVideo &&
+          !siteConfigToUse.heroVideo.includes("umbra.page") &&
+          !siteConfigToUse.heroVideo.includes("8678b1b9") &&
+          !siteConfigToUse.heroVideo.includes("41ebdb") ? (
+            <video
+              key={siteConfigToUse.heroVideo}
+              src={siteConfigToUse.heroVideo}
+              playsInline
+              autoPlay
+              loop
+              muted
+              className="w-full h-full object-cover brightness-[0.4] saturate-[0.8] contrast-[1.15]"
+              poster={
+                siteConfigToUse.heroPoster &&
+                !siteConfigToUse.heroPoster.includes("umbra.page") &&
+                !siteConfigToUse.heroPoster.includes("8678b1b9")
+                  ? siteConfigToUse.heroPoster
+                  : undefined
+              }
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-b from-black via-neutral-950 to-black" />
+          )}
           {/* Black Vignette Overlays for deep aesthetic mystery */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/85" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80" />
@@ -544,25 +557,51 @@ export default function App() {
           )}
 
           <div className="relative rounded-xl border border-neutral-800 overflow-hidden bg-neutral-950 aspect-video shadow-[0_0_60px_rgba(255,255,255,0.02)]">
-            <video
-              key={siteConfigToUse.experienceVideo || "default-experience-video"}
-              src={
-                siteConfigToUse.experienceVideo && !siteConfigToUse.experienceVideo.includes("41ebdb3286fb4496bdb853e1b1aaf052")
-                  ? siteConfigToUse.experienceVideo
-                  : (siteConfigToUse.heroVideo || "https://umbra.page/cdn/shop/videos/c/vp/8678b1b91e1b466fa7b9974f247cb36e/8678b1b91e1b466fa7b9974f247cb36e.HD-1080p-7.2Mbps-76999998.mp4?v=0")
-              }
-              playsInline
-              autoPlay
-              loop
-              muted
-              className="w-full h-full object-cover brightness-[0.7] saturate-[0.9] contrast-[1.15]"
-              poster={
-                siteConfigToUse.experiencePoster && !siteConfigToUse.experiencePoster.includes("41ebdb3286fb4496bdb853e1b1aaf052")
-                  ? siteConfigToUse.experiencePoster
-                  : (siteConfigToUse.heroPoster || "https://umbra.page/cdn/shop/files/preview_images/8678b1b91e1b466fa7b9974f247cb36e.thumbnail.0000000000.jpg")
-              }
-              controls
-            />
+            {siteConfigToUse.experienceVideo &&
+            !siteConfigToUse.experienceVideo.includes("umbra.page") &&
+            !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
+            !siteConfigToUse.experienceVideo.includes("41ebdb") ? (
+              <video
+                key={siteConfigToUse.experienceVideo}
+                src={siteConfigToUse.experienceVideo}
+                playsInline
+                autoPlay
+                loop
+                muted
+                controls
+                className="w-full h-full object-cover brightness-[0.8] saturate-[0.95] contrast-[1.1]"
+                poster={
+                  siteConfigToUse.experiencePoster &&
+                  !siteConfigToUse.experiencePoster.includes("umbra.page") &&
+                  !siteConfigToUse.experiencePoster.includes("8678b1b9")
+                    ? siteConfigToUse.experiencePoster
+                    : undefined
+                }
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                  <Video size={20} />
+                </div>
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-white mb-1">
+                  Video de Experiencia Exclusiva
+                </h3>
+                <p className="text-[10px] sm:text-xs text-gray-400 max-w-sm font-light leading-relaxed">
+                  {isAdmin
+                    ? "Agrega la URL de tu video personalizado (.mp4) utilizando el botón de edición o desde el Panel Admin."
+                    : "Colección Limitada. Piezas Únicas de Alta Gama."}
+                </p>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleOpenVisualEdit("experienceVideo", "Video de Experiencia", "video")}
+                    className="mt-4 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  >
+                    <Pencil size={11} />
+                    <span>Configurar URL de Mi Video</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           
           <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-widest leading-relaxed max-w-md mx-auto relative flex justify-center items-center gap-1.5 flex-wrap">
