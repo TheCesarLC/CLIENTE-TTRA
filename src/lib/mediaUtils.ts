@@ -51,8 +51,8 @@ export function getDriveMediaConfig(url: string | null | undefined): DriveMediaC
     isDrive: true,
     fileId,
     // High-speed CDN stream for HTML5 <video> and <img>
-    directUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
-    // Download export URL fallback
+    directUrl: `https://lh3.googleusercontent.com/d/${fileId}=m22`,
+    // Download / direct stream fallback
     streamUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
     // Embedded Google Drive preview player for iframe fallback
     embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,

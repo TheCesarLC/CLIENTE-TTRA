@@ -58,6 +58,7 @@ export default function App() {
   // Temporary Live Visual Preview states
   const [previewSiteConfig, setPreviewSiteConfig] = useState<any>(null);
   const [previewProducts, setPreviewProducts] = useState<Product[] | null>(null);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   const siteConfigToUse = previewSiteConfig || siteConfig;
   const activeProducts = previewProducts || (products && products.length > 0 ? products : PRODUCTS);
@@ -580,9 +581,11 @@ export default function App() {
                 !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
                 !siteConfigToUse.experienceVideo.includes("41ebdb") ? (
                   <OptimizedVideoPlayer
+                    id="ondgas"
+                    activeVideoId={activeVideoId}
+                    onPlayRequest={setActiveVideoId}
                     src={siteConfigToUse.experienceVideo}
                     playsInline
-                    autoPlay
                     loop
                     muted
                     className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
@@ -620,7 +623,7 @@ export default function App() {
                 )}
               </div>
               <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === 'ondgas' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
                 ONDGAS
               </span>
             </div>
@@ -633,9 +636,11 @@ export default function App() {
                 !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
                 !siteConfigToUse.experienceVideo2.includes("41ebdb") ? (
                   <OptimizedVideoPlayer
+                    id="800dias"
+                    activeVideoId={activeVideoId}
+                    onPlayRequest={setActiveVideoId}
                     src={siteConfigToUse.experienceVideo2}
                     playsInline
-                    autoPlay
                     loop
                     muted
                     className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
@@ -666,7 +671,7 @@ export default function App() {
                 )}
               </div>
               <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === '800dias' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
                 800 DÍAS
               </span>
             </div>
