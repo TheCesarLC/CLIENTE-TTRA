@@ -160,45 +160,28 @@ export default function OptimizedVideoPlayer({
     }
   };
 
-  // Clean Google Drive iframe player handling
-  if (driveConfig.isDrive) {
-    if (!customOverlayControls || autoPlay) {
-      return (
-        <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none">
+  // If Google Drive link failed to stream directly in HTML5 video, render clean iframe as fallback
+  if (driveConfig.isDrive && videoError) {
+    const isThisActive = id ? activeVideoId === id : false;
+    return (
+      <div 
+        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer group"
+        onClick={() => {
+          if (id && onPlayRequest) {
+            onPlayRequest(isThisActive ? "" : id);
+          }
+        }}
+      >
+        {isThisActive || autoPlay ? (
           <iframe
-            src={`${driveConfig.embedUrl}?autoplay=1&muted=1`}
-            className="w-full h-full border-0 pointer-events-auto object-cover"
+            src={`${driveConfig.embedUrl}?autoplay=1&muted=${autoPlay ? 1 : 0}`}
+            className="w-full h-full border-0 object-cover"
             allow="autoplay; encrypted-media"
             allowFullScreen
             title="Video Player"
           />
-        </div>
-      );
-    }
-
-    const isThisActive = id ? activeVideoId === id : false;
-
-    return (
-      <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none group">
-        {isThisActive ? (
-          <div className="relative w-full h-full overflow-hidden flex items-center justify-center">
-            <iframe
-              src={`${driveConfig.embedUrl}?autoplay=1`}
-              className="w-full h-full border-0 pointer-events-auto object-cover"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              title="Google Drive Video Player"
-            />
-          </div>
         ) : (
-          <div 
-            className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-950 relative overflow-hidden cursor-pointer"
-            onClick={() => {
-              if (id && onPlayRequest) {
-                onPlayRequest(id);
-              }
-            }}
-          >
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-950 relative overflow-hidden">
             {effectivePoster && (
               <img 
                 src={effectivePoster} 
