@@ -247,6 +247,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.footerDescription && (parsed.footerDescription.includes("Nuestra marca es líder") || parsed.footerDescription.includes("alta gama y diseño conceptual"))) {
           parsed.footerDescription = "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.";
         }
+        if (parsed.experienceSubtitle && (
+          parsed.experienceSubtitle.includes("Gamuza italiana") ||
+          parsed.experienceSubtitle.includes("refractarios") ||
+          parsed.experienceSubtitle.includes("titanio") ||
+          parsed.experienceSubtitle.includes("estatus")
+        )) {
+          parsed.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
+        }
         if (parsed.experienceVideo && (parsed.experienceVideo.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo.includes("41ebdb") || parsed.experienceVideo.includes("8678b1b9"))) {
           parsed.experienceVideo = "";
         }
@@ -313,6 +321,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (data.footerDescription && (data.footerDescription.includes("Nuestra marca es líder") || data.footerDescription.includes("alta gama y diseño conceptual"))) {
           data.footerDescription = "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.";
+        }
+        if (data.experienceSubtitle && (
+          data.experienceSubtitle.includes("Gamuza italiana") ||
+          data.experienceSubtitle.includes("refractarios") ||
+          data.experienceSubtitle.includes("titanio") ||
+          data.experienceSubtitle.includes("estatus")
+        )) {
+          data.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
         if (data.experienceVideo && (data.experienceVideo.includes("umbra.page/cdn/shop/videos") || data.experienceVideo.includes("41ebdb") || data.experienceVideo.includes("8678b1b9"))) {
           data.experienceVideo = "";
