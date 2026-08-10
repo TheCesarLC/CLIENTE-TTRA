@@ -429,6 +429,7 @@ export default function App() {
         {/* Absolute Background Videos / Fallback posters */}
         <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center pointer-events-none">
           <OptimizedVideoPlayer
+            isHero
             src={
               (siteConfigToUse.heroVideo &&
               !siteConfigToUse.heroVideo.includes("umbra.page") &&

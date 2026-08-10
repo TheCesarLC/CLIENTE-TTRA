@@ -16,6 +16,7 @@ interface OptimizedVideoPlayerProps {
   playsInline?: boolean;
   onClick?: () => void;
   customOverlayControls?: boolean;
+  isHero?: boolean;
 }
 
 export default function OptimizedVideoPlayer({
@@ -32,6 +33,7 @@ export default function OptimizedVideoPlayer({
   playsInline = true,
   onClick,
   customOverlayControls = true,
+  isHero = false,
 }: OptimizedVideoPlayerProps) {
   const [videoError, setVideoError] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
@@ -46,8 +48,9 @@ export default function OptimizedVideoPlayer({
       ? `https://drive.google.com/thumbnail?id=${driveConfig.fileId}&sz=w1200`
       : undefined);
 
-  // Sync external activeVideoId state (Mutual exclusion: only 1 video plays at a time)
+  // Sync external activeVideoId state (Mutual exclusion: only 1 video plays at a time, Hero excluded)
   useEffect(() => {
+    if (isHero) return;
     if (id && activeVideoId !== undefined) {
       if (activeVideoId && activeVideoId === id) {
         if (videoRef.current && videoRef.current.paused) {
@@ -60,7 +63,7 @@ export default function OptimizedVideoPlayer({
         }
       }
     }
-  }, [activeVideoId, id]);
+  }, [activeVideoId, id, isHero]);
 
   // Continuous background autoPlay Optimization
   useEffect(() => {
@@ -133,9 +136,9 @@ export default function OptimizedVideoPlayer({
           onPlayRequest(null);
         }
       } else {
-        // Pause any other playing HTML5 videos on the page immediately
+        // Pause any other playing HTML5 videos on the page immediately (except hero background video)
         document.querySelectorAll("video").forEach((v) => {
-          if (v !== videoRef.current) {
+          if (v !== videoRef.current && v.getAttribute("data-hero") !== "true") {
             v.pause();
           }
         });
@@ -226,6 +229,7 @@ export default function OptimizedVideoPlayer({
         ref={videoRef}
         key={driveConfig.isDrive ? driveConfig.fileId || src : src}
         src={videoSrc}
+        data-hero={isHero ? "true" : undefined}
         playsInline={playsInline}
         // @ts-ignore iOS Safari non-standard attribute
         webkit-playsinline="true"
@@ -256,7 +260,7 @@ export default function OptimizedVideoPlayer({
         onPlay={() => {
           if (customOverlayControls) {
             document.querySelectorAll("video").forEach((v) => {
-              if (v !== videoRef.current) {
+              if (v !== videoRef.current && v.getAttribute("data-hero") !== "true") {
                 v.pause();
               }
             });
@@ -266,7 +270,12 @@ export default function OptimizedVideoPlayer({
             onPlayRequest(id);
           }
         }}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false);
+          if (isHero && videoRef.current && videoRef.current.paused) {
+            videoRef.current.play().catch(() => {});
+          }
+        }}
         onError={() => {
           if (driveConfig.isDrive) {
             setVideoError(true);
