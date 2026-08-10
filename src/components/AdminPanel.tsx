@@ -267,6 +267,31 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [editingCode, setEditingCode] = useState<Partial<AuthenticCode> | null>(null);
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<Order | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [stripeSecretInput, setStripeSecretInput] = useState(siteConfig.stripeSecretKey || "");
+  const [stripePublishableInput, setStripePublishableInput] = useState(siteConfig.stripePublishableKey || "");
+  const [isSavingStripeKey, setIsSavingStripeKey] = useState(false);
+
+  useEffect(() => {
+    setStripeSecretInput(siteConfig.stripeSecretKey || "");
+    setStripePublishableInput(siteConfig.stripePublishableKey || "");
+  }, [siteConfig.stripeSecretKey, siteConfig.stripePublishableKey]);
+
+  const handleSaveStripeKeys = async () => {
+    setIsSavingStripeKey(true);
+    try {
+      const cleanSecret = stripeSecretInput.replace(/["'\s]/g, "").trim();
+      const cleanPublishable = stripePublishableInput.replace(/["'\s]/g, "").trim();
+      await updateSiteConfig({
+        stripeSecretKey: cleanSecret,
+        stripePublishableKey: cleanPublishable,
+      });
+      showNotification("⚡ Claves de Stripe guardadas correctamente.");
+    } catch (err) {
+      showNotification("❌ Error al guardar las claves de Stripe.");
+    } finally {
+      setIsSavingStripeKey(false);
+    }
+  };
 
   const ADMIN_PRESET_STOCKS = [0, 1, 2, 3, 5, 10, 15, 20, 25, 50, 100];
 
@@ -485,8 +510,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     </label>
                     <input
                       type="password"
-                      value={siteConfig.stripeSecretKey || ""}
-                      onChange={(e) => updateSiteConfig({ stripeSecretKey: e.target.value.replace(/["'\s]/g, "") })}
+                      value={stripeSecretInput}
+                      onChange={(e) => setStripeSecretInput(e.target.value)}
                       className="w-full bg-black/90 border border-purple-500/40 rounded p-3 text-xs font-mono text-purple-300 focus:outline-none focus:border-purple-400 transition-colors"
                       placeholder="sk_live_... o sk_test_..."
                     />
@@ -501,8 +526,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     </label>
                     <input
                       type="text"
-                      value={siteConfig.stripePublishableKey || ""}
-                      onChange={(e) => updateSiteConfig({ stripePublishableKey: e.target.value.replace(/["'\s]/g, "") })}
+                      value={stripePublishableInput}
+                      onChange={(e) => setStripePublishableInput(e.target.value)}
                       className="w-full bg-black/90 border border-purple-500/40 rounded p-3 text-xs font-mono text-purple-300 focus:outline-none focus:border-purple-400 transition-colors"
                       placeholder="pk_live_... o pk_test_..."
                     />
@@ -510,6 +535,23 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       Tu Clave Publicable de Stripe.
                     </p>
                   </div>
+                </div>
+
+                <div className="pt-3 border-t border-purple-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-[10px] text-purple-300/80 flex items-center gap-1.5">
+                    <ShieldCheck size={14} className="text-emerald-400" />
+                    <span>Tus claves se guardan encriptadas de forma segura.</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveStripeKeys}
+                    disabled={isSavingStripeKey}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs tracking-widest uppercase rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all flex items-center justify-center gap-2 border border-purple-400/40 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Check size={16} />
+                    <span>{isSavingStripeKey ? "GUARDANDO..." : "GUARDAR CLAVE DE STRIPE"}</span>
+                  </button>
                 </div>
               </div>
 
