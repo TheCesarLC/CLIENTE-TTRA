@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { getDriveMediaConfig } from "../lib/mediaUtils";
-import { Play } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 
 interface OptimizedVideoPlayerProps {
   id?: string;
@@ -100,11 +100,15 @@ export default function OptimizedVideoPlayer({
   const [showTapIndicator, setShowTapIndicator] = useState(false);
   const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      const nextMuted = !isMuted;
+      videoRef.current.muted = nextMuted;
+      if (!nextMuted) {
+        videoRef.current.volume = 1;
+      }
+      setIsMuted(nextMuted);
     }
   };
 
@@ -295,26 +299,99 @@ export default function OptimizedVideoPlayer({
         </div>
       )}
 
-      {/* Modern, minimalist floating overlay */}
+      {/* Modern, minimalist floating overlay with audio & playback controls */}
       {customOverlayControls && !controls && (
-        <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2.5 sm:p-3.5 transition-opacity duration-300 z-10">
-          <div />
+        <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2.5 sm:p-3 transition-opacity duration-300 z-10">
+          {/* Top Audio Toggle Button */}
+          <div className="flex justify-end items-center pointer-events-auto">
+            <button
+              onClick={toggleMute}
+              title={isMuted ? "Activar Audio" : "Silenciar"}
+              className="px-2.5 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-all active:scale-95 shadow-xl flex items-center gap-1.5 cursor-pointer"
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX size={13} className="text-gray-300" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-200">Activar Audio</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 size={13} className="text-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Audio Activo</span>
+                </>
+              )}
+            </button>
+          </div>
 
-          {/* Center Play Indicator Overlay (Visible ONLY when paused or briefly upon user tap) */}
+          {/* Center Play / Pause Indicator */}
           {(!isPlaying || showTapIndicator) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[0.5px] pointer-events-none transition-opacity duration-300">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/90 text-black flex items-center justify-center shadow-xl transform transition-transform group-hover:scale-110 active:scale-95 border border-emerald-400/40">
-                <Play size={22} className="ml-0.5 fill-black" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[0.5px] pointer-events-none transition-opacity duration-300">
+              <div className="w-13 h-13 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 active:scale-95 border border-emerald-400/40">
+                {isPlaying ? <Pause size={22} className="fill-black" /> : <Play size={22} className="ml-0.5 fill-black" />}
               </div>
             </div>
           )}
 
-          {/* Ultra-thin 2px bottom progress bar (Clean, non-obtrusive) */}
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/30 overflow-hidden pointer-events-none">
-            <div
-              className="h-full bg-emerald-400 transition-all duration-150"
-              style={{ width: `${progress}%` }}
-            />
+          {/* Bottom Bar Controls (Interactive Scrubber & Playback Buttons) */}
+          <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex flex-col gap-1.5 pointer-events-auto z-20">
+            {/* Interactive Progress Bar Scrubber */}
+            <div 
+              className="w-full h-1.5 bg-white/25 hover:h-2 rounded-full cursor-pointer overflow-hidden transition-all relative"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (videoRef.current && videoRef.current.duration) {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                  videoRef.current.currentTime = pos * videoRef.current.duration;
+                  setProgress(pos * 100);
+                }
+              }}
+            >
+              <div
+                className="h-full bg-emerald-400 rounded-full transition-all duration-75"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            {/* Bottom Bar Controls */}
+            <div className="flex items-center justify-between text-white text-xs px-0.5">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePlay();
+                  }}
+                  className="p-1 rounded-full hover:bg-white/20 transition-colors text-white cursor-pointer"
+                  title={isPlaying ? "Pausar" : "Reproducir"}
+                >
+                  {isPlaying ? <Pause size={15} className="fill-white" /> : <Play size={15} className="fill-white ml-0.5" />}
+                </button>
+
+                <button
+                  onClick={toggleMute}
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer border border-white/15"
+                >
+                  {isMuted ? (
+                    <>
+                      <VolumeX size={13} className="text-gray-300" />
+                      <span className="text-[10px] text-gray-300 font-medium">Sin Sonido</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 size={13} className="text-emerald-400" />
+                      <span className="text-[10px] text-emerald-400 font-bold">Con Sonido</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Time indicator */}
+              <div className="text-[9px] font-mono text-gray-300 bg-black/50 px-2 py-0.5 rounded-full border border-white/10">
+                {videoRef.current && videoRef.current.duration
+                  ? `${Math.floor(videoRef.current.currentTime)}s / ${Math.floor(videoRef.current.duration)}s`
+                  : "0s"}
+              </div>
+            </div>
           </div>
         </div>
       )}
