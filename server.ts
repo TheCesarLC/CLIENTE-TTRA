@@ -21,6 +21,9 @@ async function startServer() {
     const fileId = req.query.id as string;
     if (!fileId) return res.status(400).send("Missing Google Drive file id");
 
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
     try {
       // Step 1: Initial download request
       const pageRes = await fetch(`https://drive.usercontent.google.com/download?id=${fileId}&export=download`);

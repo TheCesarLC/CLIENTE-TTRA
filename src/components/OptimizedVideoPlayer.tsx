@@ -167,7 +167,7 @@ export default function OptimizedVideoPlayer({
         <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none pointer-events-none">
           <iframe
             src={`${driveConfig.embedUrl}?autoplay=1&muted=1&controls=0&loop=1`}
-            className="w-[200vw] h-[200vh] min-w-[177.77vh] min-h-[56.25vw] max-w-none border-0 pointer-events-auto object-cover scale-125 brightness-[0.7] saturate-[0.85]"
+            className="w-[200vw] h-[200vh] min-w-[177.77vh] min-h-[56.25vw] max-w-none border-0 pointer-events-none object-cover scale-125 brightness-[0.7] saturate-[0.85]"
             allow="autoplay; encrypted-media"
             allowFullScreen={false}
             title="Header Background Video"
@@ -179,7 +179,7 @@ export default function OptimizedVideoPlayer({
     const isThisActive = id ? activeVideoId === id : false;
     return (
       <div 
-        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer"
+        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer group"
         onClick={() => {
           if (id && onPlayRequest) {
             onPlayRequest(isThisActive ? "" : id);
@@ -188,13 +188,21 @@ export default function OptimizedVideoPlayer({
       >
         {isThisActive ? (
           <div className="relative w-full h-full overflow-hidden pointer-events-none flex items-center justify-center">
+            {/* pointer-events-none ensures Google Drive native controls/overlays are NEVER triggered by touch/tap */}
             <iframe
               src={`${driveConfig.embedUrl}?autoplay=1`}
-              className="w-[130%] h-[150%] -ml-[15%] -mt-[25%] border-0 pointer-events-auto object-cover scale-110 brightness-[0.8]"
+              className="w-[140%] h-[160%] -ml-[20%] -mt-[30%] border-0 pointer-events-none object-cover scale-110 brightness-[0.85]"
               allow="autoplay; encrypted-media"
               allowFullScreen={false}
               title="Google Drive Video Player"
             />
+            {/* Floating indicator overlay */}
+            <div className="absolute top-2.5 right-2.5 z-20 pointer-events-auto">
+              <span className="px-2.5 py-1 rounded-full bg-black/60 text-emerald-400 text-[9px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1">
+                <Volume2 size={12} className="animate-pulse text-emerald-400" />
+                <span>Audio Google Drive</span>
+              </span>
+            </div>
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-950 relative overflow-hidden">
@@ -210,10 +218,10 @@ export default function OptimizedVideoPlayer({
               />
             )}
             <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
-            <div className="w-16 h-16 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-2xl z-10 transition-transform group-hover:scale-110 active:scale-95">
-              <Play size={28} className="ml-1 fill-black" />
+            <div className="w-12 h-12 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-2xl z-10 transition-transform group-hover:scale-110 active:scale-95 border border-emerald-400/40">
+              <Play size={22} className="ml-0.5 fill-black" />
             </div>
-            <span className="mt-3 text-xs font-black uppercase tracking-widest text-emerald-400 z-10 bg-black/70 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-emerald-500/30 shadow-lg">
+            <span className="mt-3 text-[10px] font-black uppercase tracking-widest text-emerald-400 z-10 bg-black/80 px-3 py-1 rounded-full backdrop-blur-md border border-emerald-500/30 shadow-lg">
               Reproducir Video
             </span>
           </div>
@@ -223,6 +231,10 @@ export default function OptimizedVideoPlayer({
   }
 
   // Standard or Google Drive Direct HTML5 Video (Sleek, Non-Intrusive)
+  const videoSrc = driveConfig.isDrive
+    ? `/api/video-stream?id=${driveConfig.fileId}`
+    : src;
+
   return (
     <div 
       className={`relative w-full h-full overflow-hidden select-none bg-black flex items-center justify-center ${
@@ -233,6 +245,7 @@ export default function OptimizedVideoPlayer({
       <video
         ref={videoRef}
         key={driveConfig.isDrive ? driveConfig.fileId || src : src}
+        src={videoSrc}
         playsInline={playsInline}
         // @ts-ignore iOS Safari non-standard attribute
         webkit-playsinline="true"
@@ -280,16 +293,12 @@ export default function OptimizedVideoPlayer({
           }
         }}
       >
-        {driveConfig.isDrive ? (
+        {driveConfig.isDrive && (
           <>
-            <source src={`/api/video-stream?id=${driveConfig.fileId}`} type="video/mp4" />
-            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
             <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
             <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
-            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}`} type="video/mp4" />
+            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
           </>
-        ) : (
-          <source src={src} />
         )}
         Tu navegador no soporta reproducción de video HTML5.
       </video>
