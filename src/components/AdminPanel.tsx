@@ -744,7 +744,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       onChange={(e) => updateSiteConfig({ footerDescription: e.target.value })}
                       rows={2}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors font-medium text-white"
-                      placeholder="Nuestra marca es líder..."
+                      placeholder="Marca líder en gorras..."
                     />
                   </div>
 

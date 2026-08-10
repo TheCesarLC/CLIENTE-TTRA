@@ -62,6 +62,39 @@ export default function OptimizedVideoPlayer({
     }
   }, [activeVideoId, id]);
 
+  // Continuous background autoPlay Optimization
+  useEffect(() => {
+    if ((autoPlay || !customOverlayControls) && videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
+      setIsMuted(true);
+      const attemptPlay = () => {
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.volume = 0;
+          videoRef.current
+            .play()
+            .then(() => setIsPlaying(true))
+            .catch(() => {
+              // User gesture fallback if iOS/browser policy blocks un-triggered autoplay
+              const unlockAutoplay = () => {
+                if (videoRef.current) {
+                  videoRef.current.muted = true;
+                  videoRef.current.volume = 0;
+                  videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+                }
+                window.removeEventListener("touchstart", unlockAutoplay);
+                window.removeEventListener("click", unlockAutoplay);
+              };
+              window.addEventListener("touchstart", unlockAutoplay, { once: true });
+              window.addEventListener("click", unlockAutoplay, { once: true });
+            });
+        }
+      };
+      attemptPlay();
+    }
+  }, [autoPlay, customOverlayControls, src]);
+
   if (!src) return null;
 
   const toggleMute = (e: React.MouseEvent) => {
@@ -108,15 +141,34 @@ export default function OptimizedVideoPlayer({
   const handleTimeUpdate = () => {
     if (videoRef.current && videoRef.current.duration) {
       setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
+      // Continuous instant loop: if close to end (0.2s remaining), restart immediately
+      if (loop && videoRef.current.currentTime >= videoRef.current.duration - 0.2) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+      }
     }
   };
 
   // If it's a Google Drive link and HTML5 video tag failed, render controlled iframe fallback
   if (driveConfig.isDrive && videoError) {
-    const isThisActive = id && activeVideoId === id;
+    if (!customOverlayControls || autoPlay) {
+      return (
+        <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none pointer-events-none">
+          <iframe
+            src={`${driveConfig.embedUrl}?autoplay=1&muted=1&controls=0&loop=1`}
+            className="w-[200vw] h-[200vh] min-w-[177.77vh] min-h-[56.25vw] max-w-none border-0 pointer-events-auto object-cover scale-125 brightness-[0.7] saturate-[0.85]"
+            allow="autoplay; encrypted-media"
+            allowFullScreen={false}
+            title="Header Background Video"
+          />
+        </div>
+      );
+    }
+
+    const isThisActive = id ? activeVideoId === id : false;
     return (
       <div 
-        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center rounded-2xl select-none group cursor-pointer"
+        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer"
         onClick={() => {
           if (id && onPlayRequest) {
             onPlayRequest(isThisActive ? "" : id);
@@ -124,10 +176,10 @@ export default function OptimizedVideoPlayer({
         }}
       >
         {isThisActive ? (
-          <div className="relative w-full h-full overflow-hidden">
+          <div className="relative w-full h-full overflow-hidden pointer-events-none flex items-center justify-center">
             <iframe
               src={`${driveConfig.embedUrl}?autoplay=1`}
-              className="w-full h-[120%] -mt-[8%] border-0 pointer-events-auto scale-[1.05]"
+              className="w-[130%] h-[150%] -ml-[15%] -mt-[25%] border-0 pointer-events-auto object-cover scale-110 brightness-[0.8]"
               allow="autoplay; encrypted-media"
               allowFullScreen={false}
               title="Google Drive Video Player"
@@ -162,8 +214,10 @@ export default function OptimizedVideoPlayer({
   // Standard or Google Drive Direct HTML5 Video (Sleek, Non-Intrusive)
   return (
     <div 
-      className="relative w-full h-full group overflow-hidden select-none cursor-pointer rounded-2xl bg-black"
-      onClick={togglePlay}
+      className={`relative w-full h-full overflow-hidden select-none bg-black flex items-center justify-center ${
+        customOverlayControls ? "group cursor-pointer" : "pointer-events-none"
+      }`}
+      onClick={customOverlayControls ? togglePlay : undefined}
     >
       <video
         ref={videoRef}
@@ -173,20 +227,37 @@ export default function OptimizedVideoPlayer({
         webkit-playsinline="true"
         disablePictureInPicture
         controlsList="nodownload nofullscreen noremoteplayback"
-        preload="metadata"
+        autoPlay={autoPlay}
+        preload={autoPlay ? "auto" : "metadata"}
         referrerPolicy="no-referrer"
         loop={loop}
-        muted={isMuted}
+        muted={!customOverlayControls ? true : isMuted}
+        defaultMuted={true}
         controls={false}
-        className={className}
-        poster={effectivePoster}
+        className={`${className} object-cover w-full h-full min-w-full min-h-full`}
+        poster={autoPlay ? undefined : effectivePoster}
+        onCanPlay={(e) => {
+          if (autoPlay || !customOverlayControls) {
+            e.currentTarget.muted = true;
+            e.currentTarget.volume = 0;
+            e.currentTarget.play().catch(() => {});
+          }
+        }}
         onTimeUpdate={handleTimeUpdate}
+        onEnded={() => {
+          if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().catch(() => {});
+          }
+        }}
         onPlay={() => {
-          document.querySelectorAll("video").forEach((v) => {
-            if (v !== videoRef.current) {
-              v.pause();
-            }
-          });
+          if (customOverlayControls) {
+            document.querySelectorAll("video").forEach((v) => {
+              if (v !== videoRef.current) {
+                v.pause();
+              }
+            });
+          }
           setIsPlaying(true);
           if (id && onPlayRequest && activeVideoId !== id) {
             onPlayRequest(id);
@@ -201,9 +272,10 @@ export default function OptimizedVideoPlayer({
       >
         {driveConfig.isDrive ? (
           <>
+            <source src={`/api/video-stream?id=${driveConfig.fileId}`} type="video/mp4" />
+            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
             <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
             <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
-            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
             <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}`} type="video/mp4" />
           </>
         ) : (
@@ -212,8 +284,8 @@ export default function OptimizedVideoPlayer({
         Tu navegador no soporta reproducción de video HTML5.
       </video>
 
-      {/* Poster / Thumbnail Overlay when not playing so video never appears pitch black */}
-      {!isPlaying && effectivePoster && (
+      {/* Poster / Thumbnail Overlay when not playing so video never appears pitch black (ONLY for interactive card players) */}
+      {!isPlaying && effectivePoster && customOverlayControls && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           <img
             src={effectivePoster}

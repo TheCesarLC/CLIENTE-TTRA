@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import { Readable } from "stream";
 import { createServer as createViteServer } from "vite";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import Stripe from "stripe";
@@ -13,6 +14,61 @@ async function startServer() {
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Google Drive Direct Video Stream Proxy for HTML5 <video> Autoplay, Loop & Mute
+  app.get("/api/video-stream", async (req, res) => {
+    const fileId = req.query.id as string;
+    if (!fileId) return res.status(400).send("Missing Google Drive file id");
+
+    try {
+      // Step 1: Initial download request
+      const pageRes = await fetch(`https://drive.usercontent.google.com/download?id=${fileId}&export=download`);
+      const contentType = pageRes.headers.get("content-type") || "";
+
+      let downloadUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+
+      // If Google Drive returns HTML virus warning for large files, extract confirm UUID
+      if (contentType.includes("text/html")) {
+        const html = await pageRes.text();
+        const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/);
+        const uuid = uuidMatch ? uuidMatch[1] : "";
+        downloadUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t${uuid ? `&uuid=${uuid}` : ""}`;
+      }
+
+      const forwardHeaders: Record<string, string> = {};
+      if (req.headers.range) {
+        forwardHeaders["Range"] = req.headers.range;
+      }
+
+      const videoRes = await fetch(downloadUrl, { headers: forwardHeaders });
+
+      res.status(videoRes.status);
+      res.setHeader("Content-Type", videoRes.headers.get("content-type") || "video/mp4");
+      if (videoRes.headers.get("content-length")) {
+        res.setHeader("Content-Length", videoRes.headers.get("content-length")!);
+      }
+      if (videoRes.headers.get("content-range")) {
+        res.setHeader("Content-Range", videoRes.headers.get("content-range")!);
+      }
+      if (videoRes.headers.get("accept-ranges")) {
+        res.setHeader("Accept-Ranges", videoRes.headers.get("accept-ranges")!);
+      } else {
+        res.setHeader("Accept-Ranges", "bytes");
+      }
+      res.setHeader("Cache-Control", "public, max-age=86400");
+
+      if (req.method === "HEAD" || !videoRes.body) {
+        return res.end();
+      }
+
+      Readable.fromWeb(videoRes.body as any).pipe(res);
+    } catch (err) {
+      console.error("Video proxy error:", err);
+      if (!res.headersSent) {
+        res.status(500).send("Error streaming video");
+      }
+    }
   });
 
   // Stripe Checkout Endpoint

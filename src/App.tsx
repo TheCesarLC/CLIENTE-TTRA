@@ -404,32 +404,35 @@ export default function App() {
       <section id="inicio" className="relative h-[95vh] w-full flex items-center justify-center overflow-hidden pt-20" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
         
         {/* Absolute Background Videos / Fallback posters */}
-        <div className="absolute inset-0 z-0">
-          {siteConfigToUse.heroVideo &&
-          !siteConfigToUse.heroVideo.includes("umbra.page") &&
-          !siteConfigToUse.heroVideo.includes("8678b1b9") &&
-          !siteConfigToUse.heroVideo.includes("41ebdb") ? (
-            <OptimizedVideoPlayer
-              src={siteConfigToUse.heroVideo}
-              playsInline
-              autoPlay
-              loop
-              muted
-              className="w-full h-full object-cover brightness-[0.4] saturate-[0.8] contrast-[1.15]"
-              poster={
-                siteConfigToUse.heroPoster &&
-                !siteConfigToUse.heroPoster.includes("umbra.page") &&
-                !siteConfigToUse.heroPoster.includes("8678b1b9")
-                  ? siteConfigToUse.heroPoster
-                  : undefined
-              }
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-b from-black via-neutral-950 to-black" />
-          )}
+        <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center pointer-events-none">
+          <OptimizedVideoPlayer
+            src={
+              (siteConfigToUse.heroVideo &&
+              !siteConfigToUse.heroVideo.includes("umbra.page") &&
+              !siteConfigToUse.heroVideo.includes("8678b1b9") &&
+              !siteConfigToUse.heroVideo.includes("41ebdb")
+                ? siteConfigToUse.heroVideo
+                : null) ||
+              siteConfigToUse.experienceVideo ||
+              "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4"
+            }
+            playsInline
+            autoPlay
+            loop
+            muted
+            customOverlayControls={false}
+            className="w-full h-full object-cover min-w-full min-h-full scale-[1.08] brightness-[0.5] saturate-[0.85] contrast-[1.1]"
+            poster={
+              siteConfigToUse.heroPoster &&
+              !siteConfigToUse.heroPoster.includes("umbra.page") &&
+              !siteConfigToUse.heroPoster.includes("8678b1b9")
+                ? siteConfigToUse.heroPoster
+                : undefined
+            }
+          />
           {/* Black Vignette Overlays for deep aesthetic mystery */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/85" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/85 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80 pointer-events-none" />
         </div>
 
         {/* Floating Hero Visual Config controls for Admin */}

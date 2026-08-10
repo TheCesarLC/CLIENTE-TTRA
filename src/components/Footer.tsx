@@ -202,7 +202,7 @@ export default function Footer({
             </div>
             <div className="flex flex-col gap-1 items-start">
               <p className="text-gray-500 text-[10px] uppercase leading-relaxed tracking-wider max-w-sm">
-                {siteConfig.footerDescription || "Nuestra marca es líder en gorras de colección urbana de alta gama y diseño conceptual con autenticación NFC y acabados premium de nivel internacional."}
+                {siteConfig.footerDescription || "Marca líder en gorras de colección  No son simples gorras, son piezas de exclusividad."}
               </p>
               {isAdmin && visualEditMode && onVisualEdit && (
                 <button
