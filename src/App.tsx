@@ -657,44 +657,29 @@ export default function App() {
             {/* VIDEO 2 - 800 DIAS */}
             <div className="flex flex-col items-center">
               <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-transform duration-300 hover:border-neutral-700">
-                {siteConfigToUse.experienceVideo2 &&
-                !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
-                !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
-                !siteConfigToUse.experienceVideo2.includes("41ebdb") ? (
-                  <OptimizedVideoPlayer
-                    id="800dias"
-                    activeVideoId={activeVideoId}
-                    onPlayRequest={setActiveVideoId}
-                    src={siteConfigToUse.experienceVideo2}
-                    playsInline
-                    loop
-                    muted
-                    className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                      <Video size={20} />
-                    </div>
-                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-white mb-1">
-                      800 DÍAS
-                    </h3>
-                    <p className="text-[10px] text-gray-400 max-w-xs font-light leading-relaxed">
-                      {isAdmin
-                        ? "Pega aquí el enlace del video 800 DÍAS cuando lo tengas listo."
-                        : "Próximamente segundo video de colección."}
-                    </p>
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleOpenVisualEdit("experienceVideo2", "Video 800 DÍAS", "video")}
-                        className="mt-4 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-                      >
-                        <Pencil size={11} />
-                        <span>Agregar Video 800 DÍAS</span>
-                      </button>
-                    )}
-                  </div>
-                )}
+                <OptimizedVideoPlayer
+                  id="800dias"
+                  activeVideoId={activeVideoId}
+                  onPlayRequest={setActiveVideoId}
+                  src={
+                    siteConfigToUse.experienceVideo2 &&
+                    !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
+                    !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
+                    !siteConfigToUse.experienceVideo2.includes("41ebdb")
+                      ? siteConfigToUse.experienceVideo2
+                      : "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4"
+                  }
+                  playsInline
+                  loop
+                  muted
+                  className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                  poster={
+                    siteConfigToUse.experiencePoster2 &&
+                    !siteConfigToUse.experiencePoster2.includes("umbra.page")
+                      ? siteConfigToUse.experiencePoster2
+                      : undefined
+                  }
+                />
               </div>
               <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === '800dias' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>

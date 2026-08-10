@@ -175,7 +175,7 @@ const defaultSiteConfig: SiteConfig = {
   instagramUrl: "https://instagram.com/",
   artistCredits: "",
   experienceVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
-  experienceVideo2: "",
+  experienceVideo2: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
   experiencePoster: "",
   experiencePoster2: "",
   heroVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
