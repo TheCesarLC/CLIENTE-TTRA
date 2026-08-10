@@ -120,25 +120,45 @@ export default function CartDrawer({
       console.warn("Pre-saving pending order to Firestore notice:", dbErr);
     }
 
+    const isMobileDevice = typeof window !== "undefined" && (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      window.innerWidth < 768
+    );
+
     let payWin: Window | null = null;
-    try {
-      payWin = window.open("", "_blank");
-      if (payWin) {
-        payWin.document.write(`
-          <!DOCTYPE html>
-          <html style="background:#09090b; color:#ffffff; font-family:system-ui, -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0;">
-            <head><title>Stripe Checkout - TETRA HATS</title></head>
-            <div style="text-align:center; padding:32px; max-width:380px; background:#18181b; border:1px solid #3f3f46; border-radius:16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
-              <div style="font-size:32px; margin-bottom:12px;">💳</div>
-              <h2 style="font-size:18px; font-weight:800; margin:0 0 8px 0; color:#c084fc;">Conectando con Stripe Checkout...</h2>
-              <p style="font-size:13px; color:#a1a1aa; line-height:1.5; margin:0;">Por favor espera un momento mientras te redirigimos a la pantalla de pago seguro.</p>
-            </div>
-          </html>
-        `);
+    // On desktop, try opening popup window to avoid popup blockers. On mobile, perform direct top-level redirect.
+    if (!isMobileDevice) {
+      try {
+        payWin = window.open("", "_blank");
+        if (payWin) {
+          payWin.document.write(`
+            <!DOCTYPE html>
+            <html style="background:#09090b; color:#ffffff; font-family:system-ui, -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0;">
+              <head><title>Stripe Checkout - TETRA HATS</title></head>
+              <div style="text-align:center; padding:32px; max-width:380px; background:#18181b; border:1px solid #3f3f46; border-radius:16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+                <div style="font-size:32px; margin-bottom:12px;">💳</div>
+                <h2 style="font-size:18px; font-weight:800; margin:0 0 8px 0; color:#c084fc;">Conectando con Stripe Checkout...</h2>
+                <p style="font-size:13px; color:#a1a1aa; line-height:1.5; margin:0;">Por favor espera un momento mientras te redirigimos a la pantalla de pago seguro.</p>
+              </div>
+            </html>
+          `);
+        }
+      } catch (e) {
+        console.warn("Popup init notice:", e);
       }
-    } catch (e) {
-      console.warn("Popup error:", e);
     }
+
+    const safeClosePopup = () => {
+      if (payWin) {
+        try {
+          if (!payWin.closed) {
+            payWin.close();
+          }
+        } catch (e) {
+          console.warn("Safe close popup notice:", e);
+        }
+      }
+    };
 
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
@@ -159,38 +179,53 @@ export default function CartDrawer({
         })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok || data.error) {
-        if (payWin && !payWin.closed) payWin.close();
+        safeClosePopup();
         setIsStripeLoading(false);
         if (data.error === "MISSING_STRIPE_KEY") {
           setErrorMsg("⚡ STRIPE: Ingrese su Clave Secreta de Stripe (sk_live_...) en el Panel Admin -> Pasarela de Pago.");
+        } else if (data.error === "INVALID_STRIPE_KEY") {
+          setErrorMsg(`⚡ STRIPE: ${data.message}`);
         } else {
-          setErrorMsg(data.message || "Error al conectar con la pasarela de Stripe.");
+          setErrorMsg(data.message || "Error al conectar con la pasarela de Stripe. Verifica tu clave de Stripe en el Panel de Admin.");
         }
         return;
       }
 
       if (data.url) {
-        if (payWin && !payWin.closed) {
-          payWin.location.href = data.url;
-        } else {
-          const opened = window.open(data.url, "_blank");
-          if (!opened) {
-            window.top ? (window.top.location.href = data.url) : (window.location.href = data.url);
+        let redirectedInPopup = false;
+        if (payWin) {
+          try {
+            if (!payWin.closed) {
+              payWin.location.href = data.url;
+              redirectedInPopup = true;
+            }
+          } catch (e) {
+            console.warn("Popup redirect error, falling back to top navigation:", e);
+          }
+        }
+
+        if (!redirectedInPopup) {
+          safeClosePopup();
+          // Direct navigation is 100% reliable across all mobile & desktop browsers
+          if (window.top) {
+            window.top.location.href = data.url;
+          } else {
+            window.location.href = data.url;
           }
         }
       } else {
-        if (payWin && !payWin.closed) payWin.close();
+        safeClosePopup();
         setIsStripeLoading(false);
         setErrorMsg("No se obtuvo el enlace de checkout de Stripe.");
       }
-    } catch (err) {
-      if (payWin && !payWin.closed) payWin.close();
-      console.error(err);
+    } catch (err: any) {
+      safeClosePopup();
+      console.error("Stripe fetch error:", err);
       setIsStripeLoading(false);
-      setErrorMsg("Error de comunicación con el servidor backend de Stripe.");
+      setErrorMsg(err?.message ? `Error de comunicación con Stripe: ${err.message}` : "Error de comunicación con el servidor backend de Stripe.");
     }
   };
 

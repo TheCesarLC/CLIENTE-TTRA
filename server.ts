@@ -78,16 +78,35 @@ async function startServer() {
   app.post("/api/stripe/create-checkout-session", async (req, res) => {
     try {
       const { items, orderId, buyerEmail, secretKey: customSecret } = req.body;
-      const secretKey = (customSecret && customSecret.trim()) || process.env.STRIPE_SECRET_KEY;
+      const rawSecret = (customSecret && typeof customSecret === "string" && customSecret.trim()) 
+        ? customSecret.trim() 
+        : (process.env.STRIPE_SECRET_KEY || "");
 
-      if (!secretKey) {
+      if (!rawSecret) {
         return res.status(400).json({
           error: "MISSING_STRIPE_KEY",
           message: "No se ha configurado la clave secreta de Stripe (Secret Key). Ingrésala en tu Panel de Administración -> Pasarela de Pago."
         });
       }
 
-      const stripe = new Stripe(secretKey.trim());
+      // Remove any surrounding single/double quotes or leading/trailing whitespace
+      const secretKey = rawSecret.replace(/^["']|["']$/g, "").trim();
+
+      if (secretKey.startsWith("pk_")) {
+        return res.status(400).json({
+          error: "INVALID_STRIPE_KEY",
+          message: "Has ingresado la Clave Publicable (pk_...) en el campo de Clave Secreta. Por favor ingresa tu Secret Key que comienza con sk_live_... o sk_test_... en el Panel Admin -> Pasarela de Pago."
+        });
+      }
+
+      if (!secretKey.startsWith("sk_")) {
+        return res.status(400).json({
+          error: "INVALID_STRIPE_KEY",
+          message: "La Clave Secreta de Stripe debe comenzar con 'sk_live_' o 'sk_test_'. Por favor verifica la clave en el Panel Admin -> Pasarela de Pago."
+        });
+      }
+
+      const stripe = new Stripe(secretKey);
       const origin = req.headers.origin || process.env.APP_URL || "http://localhost:3000";
 
       let totalCentavos = 0;
@@ -110,7 +129,6 @@ async function startServer() {
       });
 
       // Stripe requires a minimum charge of $10.00 MXN (1000 centavos) for MXN currency.
-      // If total is below 10 MXN (e.g. testing with $1 or $5 MXN), adjust to $10.00 MXN minimum.
       if (lineItems.length > 0 && totalCentavos < 1000) {
         const needed = 1000 - totalCentavos;
         lineItems[0].price_data.unit_amount += Math.ceil(needed / lineItems[0].quantity);
@@ -136,6 +154,13 @@ async function startServer() {
       let errorMessage = err?.message || "Ocurrió un error al crear la sesión de pago con Stripe.";
       if (err?.message?.includes("at least $10.00 MXN")) {
         errorMessage = "Stripe requiere un monto mínimo de cobro de $10.00 MXN ($10 pesos). Por favor intenta con una compra o producto mayor o igual a $10 MXN.";
+      } else if (
+        err?.type === "StripeAuthenticationError" || 
+        err?.message?.includes("Invalid API Key") || 
+        err?.message?.includes("ApiKey") ||
+        err?.code === "api_key_expired"
+      ) {
+        errorMessage = "Error de autenticación con Stripe: La Clave Secreta (Secret Key) proporcionada no es válida o pertenece a un entorno distinto. Por favor verifica tu clave (sk_live_... / sk_test_...) en el Panel de Administración -> Pasarela de Pago.";
       }
       return res.status(500).json({
         error: "ERROR_STRIPE",
