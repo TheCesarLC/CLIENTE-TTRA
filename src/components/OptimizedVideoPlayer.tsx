@@ -232,7 +232,6 @@ export default function OptimizedVideoPlayer({
         referrerPolicy="no-referrer"
         loop={loop}
         muted={!customOverlayControls ? true : isMuted}
-        defaultMuted={true}
         controls={false}
         className={`${className} object-cover w-full h-full min-w-full min-h-full`}
         poster={autoPlay ? undefined : effectivePoster}

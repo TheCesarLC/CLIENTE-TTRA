@@ -202,7 +202,7 @@ const defaultSiteConfig: SiteConfig = {
   newsletterTitle: "REGÍSTRATE EN NUESTRA LISTA",
   newsletterDescription: "Sé el primero en recibir notificaciones de próximos lanzamientos de gorras y accesos prioritarios.",
   newsletterButtonText: "Suscribirme",
-  footerDescription: "Marca líder en gorras de colección  No son simples gorras, son piezas de exclusividad.",
+  footerDescription: "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.",
   socialsTitle: "Síguenos en Redes",
   facebookUrl: "",
   youtubeUrl: "",
@@ -244,8 +244,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.footerSlogan && parsed.footerSlogan.includes("Elegancia, Sigilo")) {
           parsed.footerSlogan = "Alta Moda y Diseño Premium.";
         }
-        if (parsed.experienceSubtitle && parsed.experienceSubtitle.includes("Gamuza italiana")) {
-          parsed.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
+        if (parsed.footerDescription && (parsed.footerDescription.includes("Marca líder en gorras de colección  No son simples") || parsed.footerDescription.includes("piezas de exclusividad"))) {
+          parsed.footerDescription = "Nuestra marca es líder en gorras de colección urbana de alta gama y diseño conceptual con autenticación NFC y acabados premium de nivel internacional.";
         }
         if (parsed.experienceVideo && (parsed.experienceVideo.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo.includes("41ebdb") || parsed.experienceVideo.includes("8678b1b9"))) {
           parsed.experienceVideo = "";
@@ -311,8 +311,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.footerSlogan && data.footerSlogan.includes("Elegancia, Sigilo")) {
           data.footerSlogan = "Alta Moda y Diseño Premium.";
         }
-        if (data.experienceSubtitle && data.experienceSubtitle.includes("Gamuza italiana")) {
-          data.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
+        if (data.footerDescription && (data.footerDescription.includes("Marca líder en gorras de colección  No son simples") || data.footerDescription.includes("piezas de exclusividad"))) {
+          data.footerDescription = "Nuestra marca es líder en gorras de colección urbana de alta gama y diseño conceptual with autenticación NFC y acabados premium de nivel internacional.".replace("with", "y");
         }
         if (data.experienceVideo && (data.experienceVideo.includes("umbra.page/cdn/shop/videos") || data.experienceVideo.includes("41ebdb") || data.experienceVideo.includes("8678b1b9"))) {
           data.experienceVideo = "";

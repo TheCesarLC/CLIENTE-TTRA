@@ -1,6 +1,6 @@
 {
   "name": "TETRA HATS",
-  "description": "Marca líder en gorras de colección  No son simples gorras, son piezas de exclusividad.",
+  "description": "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -66,9 +66,32 @@ export default function App() {
   const [paymentStatusAlert, setPaymentStatusAlert] = useState<string | null>(null);
   const [completedReceiptOrder, setCompletedReceiptOrder] = useState<Order | null>(null);
 
-  // Ensure page title and check Stripe Checkout URL return parameters
+  // Ensure page title and meta description for SEO / Search Engine indexing
   useEffect(() => {
-    document.title = "TETRA HATS";
+    document.title = "TETRA HATS Gorras de colección exclusiva";
+
+    const descText = siteConfigToUse.footerDescription || "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.";
+    
+    // Update meta description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.setAttribute("name", "description");
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute("content", descText);
+
+    // Update OpenGraph title and description
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", "TETRA HATS Gorras de colección exclusiva");
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement("meta");
+      ogDesc.setAttribute("property", "og:description");
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.setAttribute("content", descText);
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
