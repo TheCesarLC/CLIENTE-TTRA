@@ -97,6 +97,9 @@ export default function OptimizedVideoPlayer({
 
   if (!src) return null;
 
+  const [showTapIndicator, setShowTapIndicator] = useState(false);
+  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) {
@@ -110,6 +113,14 @@ export default function OptimizedVideoPlayer({
       onClick();
       return;
     }
+
+    // Brief tap feedback indicator
+    setShowTapIndicator(true);
+    if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+    tapTimeoutRef.current = setTimeout(() => {
+      setShowTapIndicator(false);
+    }, 1200);
+
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -299,41 +310,41 @@ export default function OptimizedVideoPlayer({
         </div>
       )}
 
-      {/* Modern, minimalist floating overlay (Never blocks the video content) */}
+      {/* Modern, minimalist floating overlay (Never blocks video content on mobile) */}
       {customOverlayControls && !controls && (
-        <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3.5 transition-opacity duration-300">
-          {/* Top Sound Toggle Badge */}
+        <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2.5 sm:p-3.5 transition-opacity duration-300 z-10">
+          {/* Top Sound Toggle Badge (Minimalist & Compact) */}
           <div className="flex justify-end items-center pointer-events-auto">
             <button
               onClick={toggleMute}
               title={isMuted ? "Activar Sonido" : "Silenciar"}
-              className="px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 shadow-xl flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-full bg-black/50 hover:bg-black/75 text-white backdrop-blur-md border border-white/20 transition-all active:scale-95 shadow-lg flex items-center gap-1 cursor-pointer"
             >
               {isMuted ? (
                 <>
-                  <VolumeX size={14} className="text-gray-300" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">Sin Sonido</span>
+                  <VolumeX size={12} className="text-gray-300" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-gray-300">Sin Sonido</span>
                 </>
               ) : (
                 <>
-                  <Volume2 size={14} className="text-emerald-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Sonido Activo</span>
+                  <Volume2 size={12} className="text-emerald-400 animate-pulse" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Audio</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Center Play Button Overlay (Visible ONLY when paused so it NEVER obstructs video while playing) */}
-          {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/25 backdrop-blur-[1px] pointer-events-none">
-              <div className="w-14 h-14 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 active:scale-95">
-                <Play size={26} className="ml-1 fill-black" />
+          {/* Center Play Indicator Overlay (Visible ONLY when paused or briefly upon user tap) */}
+          {(!isPlaying || showTapIndicator) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[0.5px] pointer-events-none transition-opacity duration-300">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/90 text-black flex items-center justify-center shadow-xl transform transition-transform group-hover:scale-110 active:scale-95 border border-emerald-400/40">
+                <Play size={22} className="ml-0.5 fill-black" />
               </div>
             </div>
           )}
 
-          {/* Subtle 2px bottom progress bar line (Extremely clean, non-obtrusive) */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40 overflow-hidden pointer-events-none">
+          {/* Ultra-thin 2px bottom progress bar (Clean, non-obtrusive) */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/30 overflow-hidden pointer-events-none">
             <div
               className="h-full bg-emerald-400 transition-all duration-150"
               style={{ width: `${progress}%` }}
