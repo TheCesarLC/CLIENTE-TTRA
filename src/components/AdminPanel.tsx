@@ -486,7 +486,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     <input
                       type="password"
                       value={siteConfig.stripeSecretKey || ""}
-                      onChange={(e) => updateSiteConfig({ stripeSecretKey: e.target.value })}
+                      onChange={(e) => updateSiteConfig({ stripeSecretKey: e.target.value.replace(/["'\s]/g, "") })}
                       className="w-full bg-black/90 border border-purple-500/40 rounded p-3 text-xs font-mono text-purple-300 focus:outline-none focus:border-purple-400 transition-colors"
                       placeholder="sk_live_... o sk_test_..."
                     />
@@ -502,7 +502,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     <input
                       type="text"
                       value={siteConfig.stripePublishableKey || ""}
-                      onChange={(e) => updateSiteConfig({ stripePublishableKey: e.target.value })}
+                      onChange={(e) => updateSiteConfig({ stripePublishableKey: e.target.value.replace(/["'\s]/g, "") })}
                       className="w-full bg-black/90 border border-purple-500/40 rounded p-3 text-xs font-mono text-purple-300 focus:outline-none focus:border-purple-400 transition-colors"
                       placeholder="pk_live_... o pk_test_..."
                     />

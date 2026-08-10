@@ -111,22 +111,41 @@ async function startServer() {
 
       let totalCentavos = 0;
       const lineItems = (items || []).map((item: any) => {
-        const price = Number(item.priceMXN) || 0;
+        const price = Number(item.priceMXN) || Number(item.price) || Number(item.unitPrice) || 0;
         const qty = Number(item.quantity) || 1;
         const unitAmount = Math.round(price * 100);
         totalCentavos += unitAmount * qty;
+
+        // Stripe API requires image URLs to be absolute HTTP or HTTPS links
+        const rawImg = item.image || (Array.isArray(item.images) ? item.images[0] : null);
+        const validImages = (typeof rawImg === "string" && (rawImg.startsWith("http://") || rawImg.startsWith("https://"))) ? [rawImg] : [];
+
         return {
           price_data: {
             currency: "mxn",
             product_data: {
               name: item.name || item.productName || "Gorra TETRA HATS",
-              images: item.image ? [item.image] : [],
+              ...(validImages.length > 0 ? { images: validImages } : {}),
             },
             unit_amount: unitAmount,
           },
           quantity: qty,
         };
       });
+
+      if (lineItems.length === 0) {
+        lineItems.push({
+          price_data: {
+            currency: "mxn",
+            product_data: {
+              name: "Gorra TETRA HATS - Edición Exclusiva",
+            },
+            unit_amount: 129900,
+          },
+          quantity: 1,
+        });
+        totalCentavos = 129900;
+      }
 
       // Stripe requires a minimum charge of $10.00 MXN (1000 centavos) for MXN currency.
       if (lineItems.length > 0 && totalCentavos < 1000) {
