@@ -26,7 +26,9 @@ import {
   User,
   ExternalLink,
   CreditCard,
-  DollarSign
+  DollarSign,
+  Star,
+  MessageSquare
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -190,7 +192,7 @@ const printOrderPDF = (ord: Order, logoUrl?: string) => {
 
     <div class="footer-stamp">
       <p style="margin: 0 0 4px 0; font-weight: 800; color: #888888;">TETRA HATS — COMPROBANTE OFICIAL DE COMPRA</p>
-      <p style="margin: 0;">REMITENTE ADMINISTRADOR: hugocesarlemuscortes@gmail.com • SELLO DE AUTENTICIDAD FIRESTORE ENCRIPTADO</p>
+      <p style="margin: 0;">SELLO DE AUTENTICIDAD FIRESTORE ENCRIPTADO</p>
     </div>
   </div>
 
@@ -249,6 +251,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     siteConfig,
     products,
     reviews,
+    saveReview,
+    deleteReview,
     orders,
     contactMessages,
     authenticCodes,
@@ -266,7 +270,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     logout
   } = useSite();
 
-  const [activeTab, setActiveTab] = useState<"site" | "products" | "orders">("site");
+  const [activeTab, setActiveTab] = useState<"site" | "products" | "orders" | "reviews">("site");
+  const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "approved">("all");
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
 
   const SEMAFORO_STATUSES = [
@@ -555,6 +560,23 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             >
               <Truck size={15} />
               <span>Pagos y Envíos ({orders.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab("reviews"); setEditingProduct(null); setEditingCode(null); }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded text-left text-xs font-bold tracking-widest uppercase transition-all ${
+                activeTab === "reviews" ? "bg-emerald-500 text-black shadow-lg" : "text-gray-400 hover:bg-neutral-900 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Star size={15} />
+                <span>Opiniones ({reviews.length})</span>
+              </div>
+              {reviews.filter(r => r.approved === false).length > 0 && (
+                <span className="px-2 py-0.5 bg-amber-500 text-black font-black text-[9px] rounded-full animate-pulse">
+                  {reviews.filter(r => r.approved === false).length} PENDIENTES
+                </span>
+              )}
             </button>
           </nav>
         </div>
@@ -1695,24 +1717,13 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                             >
                               <span>📄 Ver Recibo / Comprobante PDF</span>
                             </button>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => printOrderPDF(ord, siteConfig.brandLogoUrl)}
-                                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black py-2 px-2.5 text-[10px] font-black tracking-wider uppercase rounded flex items-center justify-center gap-1 transition-all cursor-pointer"
-                              >
-                                <span>🖨️ Imprimir</span>
-                              </button>
-                              <button
-                                onClick={() => sendOrderEmailPDF(ord, siteConfig.brandLogoUrl)}
-                                className="flex-1 bg-neutral-900 hover:bg-neutral-800 border border-emerald-500/50 text-emerald-400 py-2 px-2.5 text-[10px] font-black tracking-wider uppercase rounded flex items-center justify-center gap-1 transition-all cursor-pointer"
-                              >
-                                <span>✉️ Correo</span>
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => printOrderPDF(ord, siteConfig.brandLogoUrl)}
+                              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black py-2 px-2.5 text-[10px] font-black tracking-wider uppercase rounded flex items-center justify-center gap-1 transition-all cursor-pointer"
+                            >
+                              <span>🖨️ Imprimir Ticket</span>
+                            </button>
                           </div>
-                          <p className="text-[9px] text-gray-500 uppercase text-center font-mono">
-                            Admin Remitente: hugocesarlemuscortes@gmail.com
-                          </p>
                         </div>
 
                         <div className="bg-neutral-900 p-2.5 rounded border border-neutral-800 flex items-center justify-between">
@@ -1724,6 +1735,156 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                 );
               })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: REVIEWS APPROVAL & MANAGEMENT */}
+        {activeTab === "reviews" && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-900 pb-4">
+              <div>
+                <h3 className="text-lg font-black tracking-widest uppercase text-white flex items-center gap-2">
+                  <Star className="text-amber-400" size={18} />
+                  Aprobación y Gestión de Opiniones
+                </h3>
+                <p className="text-xs text-gray-400 uppercase tracking-wider">
+                  Las opiniones enviadas por los clientes no se mostrarán públicamente hasta que las apruebes.
+                </p>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex gap-2 bg-neutral-900 p-1 rounded-lg border border-neutral-800 self-start md:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter("all")}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer ${
+                    reviewFilter === "all" ? "bg-white text-black" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Todas ({reviews.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter("pending")}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                    reviewFilter === "pending" ? "bg-amber-500 text-black" : "text-amber-400 hover:text-amber-300"
+                  }`}
+                >
+                  <span>Pendientes ({reviews.filter((r) => r.approved === false).length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter("approved")}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer ${
+                    reviewFilter === "approved" ? "bg-emerald-500 text-black" : "text-emerald-400 hover:text-emerald-300"
+                  }`}
+                >
+                  Aprobadas ({reviews.filter((r) => r.approved !== false).length})
+                </button>
+              </div>
+            </div>
+
+            {/* List of Reviews */}
+            {reviews.length === 0 ? (
+              <div className="p-8 border border-neutral-900 rounded-lg text-center space-y-2">
+                <p className="text-xs text-gray-400 uppercase font-bold">No hay opiniones registradas aún en el sistema</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {reviews
+                  .filter((r) => {
+                    if (reviewFilter === "pending") return r.approved === false;
+                    if (reviewFilter === "approved") return r.approved !== false;
+                    return true;
+                  })
+                  .map((rev) => {
+                    const isPending = rev.approved === false;
+                    return (
+                      <div
+                        key={rev.id}
+                        className={`p-4 rounded-xl border space-y-3 relative text-left transition-all ${
+                          isPending
+                            ? "bg-amber-950/20 border-amber-500/50"
+                            : "bg-neutral-950 border-neutral-800"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between border-b border-neutral-900 pb-2.5">
+                          <div>
+                            <h4 className="text-xs font-black text-white uppercase">{rev.name}</h4>
+                            <p className="text-[9px] text-gray-500 uppercase">{rev.date} • {rev.capName}</p>
+                          </div>
+                          <span
+                            className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                              isPending
+                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            }`}
+                          >
+                            {isPending ? "⏳ Pendiente" : "✓ Aprobada"}
+                          </span>
+                        </div>
+
+                        <div className="flex text-amber-400 gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={12}
+                              fill={s <= rev.rating ? "currentColor" : "none"}
+                              className={s <= rev.rating ? "text-amber-400" : "text-neutral-700"}
+                            />
+                          ))}
+                        </div>
+
+                        {rev.title && (
+                          <h5 className="text-xs font-extrabold uppercase text-white">{rev.title}</h5>
+                        )}
+
+                        <p className="text-[11px] text-gray-300 uppercase leading-relaxed">{rev.reviewText}</p>
+
+                        <div className="pt-2 border-t border-neutral-900 flex items-center justify-between gap-2">
+                          {isPending ? (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await saveReview({ ...rev, approved: true });
+                                showNotification("✅ Opinión aprobada y publicada en la tienda.");
+                              }}
+                              className="bg-emerald-500 hover:bg-emerald-400 text-black py-1.5 px-3 text-[10px] font-black uppercase rounded tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <Check size={12} />
+                              <span>Aprobar y Publicar</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await saveReview({ ...rev, approved: false });
+                                showNotification("⏸️ Opinión ocultada del público.");
+                              }}
+                              className="bg-neutral-900 hover:bg-neutral-800 border border-amber-500/40 text-amber-400 py-1.5 px-3 text-[10px] font-bold uppercase rounded tracking-wider transition-all cursor-pointer"
+                            >
+                              <span>Ocultar / Desaprobar</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (window.confirm("¿Seguro que deseas eliminar esta opinión de forma permanente?")) {
+                                await deleteReview(rev.id);
+                                showNotification("🗑️ Opinión eliminada correctamente.");
+                              }
+                            }}
+                            className="bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-400 hover:text-white py-1.5 px-3 text-[10px] font-bold uppercase rounded tracking-wider transition-all cursor-pointer"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

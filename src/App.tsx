@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { PRODUCTS } from "./data";
 import { Product, CartItem, GLOW_COLORS } from "./types";
-import { Sparkles, MessageSquare, ShieldCheck, Box, BadgeCheck, X, Settings2, Pencil, Video, Play } from "lucide-react";
+import { Sparkles, MessageSquare, ShieldCheck, Box, BadgeCheck, X, Settings2, Pencil, Video, Play, LogIn, LogOut, User, Image, Download, FileText, CheckCircle2, Clock } from "lucide-react";
 import { useSite, Order } from "./context/SiteContext";
 import { getOptimizedImageUrl } from "./lib/imageOptimizer";
 
@@ -46,6 +46,7 @@ export default function App() {
     orders, 
     isAdmin, 
     loginWithGoogle, 
+    logout,
     currentUser,
     visualEditMode,
     updateSiteConfig,
@@ -138,7 +139,9 @@ export default function App() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const userOrders = orders 
-    ? (isAdmin && currentUser ? orders.filter((o) => o.userEmail === currentUser.email) : orders)
+    ? (currentUser 
+        ? orders.filter((o) => !o.userEmail || o.userEmail.toLowerCase() === currentUser.email?.toLowerCase())
+        : [])
     : [];
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -745,91 +748,166 @@ export default function App() {
             onClick={() => setAccountOpen(false)}
             className="fixed inset-0 bg-black/90 backdrop-blur-sm cursor-pointer"
           />
-          <div className="relative bg-neutral-950 border border-neutral-800 rounded-lg max-w-md w-full p-6 text-white shadow-2xl z-10 space-y-6 animate-fade-in">
+          <div className="relative bg-neutral-950 border border-neutral-800 rounded-xl max-w-lg w-full p-6 text-white shadow-2xl z-10 space-y-6 animate-fade-in max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setAccountOpen(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-white"
+              className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors"
             >
-              <X size={15} />
+              <X size={16} />
             </button>
 
-            <div className="text-left space-y-1.5 border-b border-neutral-900 pb-4">
-              <h3 className="text-sm font-black tracking-widest uppercase">Perfil del Destinatario</h3>
-              <p className="text-[10px] text-gray-500 uppercase">Bienvenido a la red exclusiva</p>
+            <div className="text-left space-y-1 border-b border-neutral-900 pb-4">
+              <h3 className="text-sm font-black tracking-widest uppercase flex items-center gap-2">
+                <User size={16} className="text-purple-400" />
+                Mi Cuenta y Comprobantes de Compra
+              </h3>
+              <p className="text-[10px] text-gray-400 uppercase">
+                {currentUser ? `Sesión vinculada a ${currentUser.email}` : "Inicia sesión con Google para acceder a tus recibos"}
+              </p>
             </div>
 
-            <div className="space-y-4 text-left">
-              <div className="bg-neutral-900 p-4 border border-neutral-800 rounded space-y-1">
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Familia Miembro</p>
-                <p className="text-sm font-bold text-white uppercase">{localStorage.getItem("user_nickname") || "Invitado Distinguido"}</p>
-                <div className="pt-2 flex gap-2">
-                  <input
-                    type="text"
-                    id="set-nickname-input"
-                    placeholder="Cambiar Nombre o Apodo"
-                    defaultValue={localStorage.getItem("user_nickname") || ""}
-                    className="flex-1 bg-black border border-neutral-800 rounded p-1 px-2 text-[10px] text-white focus:outline-none placeholder-gray-650 uppercase"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (val) {
-                          localStorage.setItem("user_nickname", val);
-                          setAccountOpen(false);
-                          setTimeout(() => setAccountOpen(true), 10);
-                        }
-                      }
-                    }}
-                  />
+            <div className="space-y-5 text-left">
+              {/* Google Account Profile Card */}
+              {currentUser ? (
+                <div className="bg-neutral-900/80 p-4 border border-emerald-500/30 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {currentUser.photoURL ? (
+                        <img src={currentUser.photoURL} alt="Google Avatar" className="w-10 h-10 rounded-full border border-emerald-400" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-emerald-400 font-black text-sm">
+                          {(currentUser.displayName || currentUser.email || "G").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs font-black text-white uppercase">{currentUser.displayName || "Usuario Registrado"}</p>
+                        <p className="text-[10px] text-emerald-400 font-mono">{currentUser.email}</p>
+                      </div>
+                    </div>
+                    <span className="text-[8px] font-black px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded uppercase tracking-wider">
+                      Google Active
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between">
+                    <span className="text-[9px] text-gray-400 uppercase font-mono">
+                      {userOrders.length} {userOrders.length === 1 ? "recibo guardado" : "recibos guardados"}
+                    </span>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setAccountOpen(false);
+                      }}
+                      className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase flex items-center gap-1 cursor-pointer"
+                    >
+                      <LogOut size={12} />
+                      <span>Cerrar Sesión</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-purple-950/60 to-neutral-900 p-4 border border-purple-500/40 rounded-lg space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-black uppercase text-purple-300 flex items-center gap-1.5">
+                      <LogIn size={14} className="text-purple-400" /> Inicia Sesión con tu Cuenta de Google
+                    </p>
+                    <p className="text-[10px] text-gray-300 leading-relaxed">
+                      Al iniciar sesión, todas tus compras y recibos oficiales se guardarán automáticamente en tu historial para que puedas consultarlos y descargarlos como imagen en cualquier momento.
+                    </p>
+                  </div>
+
                   <button
                     onClick={() => {
-                      const input = document.getElementById("set-nickname-input") as HTMLInputElement;
-                      if (input && input.value.trim()) {
-                        localStorage.setItem("user_nickname", input.value.trim());
-                        setAccountOpen(false);
-                        setTimeout(() => setAccountOpen(true), 10);
-                      }
+                      loginWithGoogle();
                     }}
-                    className="p-1 px-4 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded select-none cursor-pointer"
+                    className="w-full bg-white hover:bg-neutral-200 text-black py-3 px-4 text-xs font-black tracking-wider uppercase rounded-lg shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-colors"
                   >
-                    Guardar
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>Ingresar con Google</span>
                   </button>
                 </div>
-              </div>
+              )}
 
-              {/* Order statuses section */}
-              <div className="space-y-2.5">
-                <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest block">Mis Pedidos Reales</span>
+              {/* Order Receipts History Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-gray-300 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
+                    <FileText size={12} className="text-emerald-400" /> Historial de Comprobantes de Compra ({userOrders.length})
+                  </span>
+                  {currentUser && (
+                    <span className="text-[9px] text-emerald-400 font-mono font-bold">
+                      Sincronizado Firestore
+                    </span>
+                  )}
+                </div>
+
                 {userOrders.length === 0 ? (
-                  <div className="border border-neutral-900 p-4 bg-neutral-900/10 rounded text-center text-[10px] uppercase tracking-wider text-gray-500">
-                    Aún no cuentas con pedidos registrados en la base de datos Firestore.
+                  <div className="border border-neutral-900 p-6 bg-neutral-900/20 rounded-lg text-center space-y-2">
+                    <p className="text-xs text-gray-400 uppercase font-bold">
+                      No tienes compras o comprobantes registrados
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      Cuando realices un pedido con tu correo ({currentUser?.email || "Google"}), aparecerá aquí tu comprobante digital listo para descargar.
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                     {userOrders.map((order) => {
-                      const formattedDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "";
+                      const formattedDate = order.createdAt ? (() => {
+                        try {
+                          return new Date(order.createdAt).toLocaleDateString("es-MX", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric"
+                          });
+                        } catch {
+                          return order.createdAt;
+                        }
+                      })() : "";
+
+                      const isOrderPaid = order.status === "PAGO_RECIBIDO" || order.status === "COMPLETADO" || order.status === "EMPACADO" || order.status === "ENVIADO" || order.status === "ENTREGADO";
+
                       return (
-                        <div key={order.id} className="border border-neutral-900 p-3 bg-neutral-900/30 rounded flex flex-col gap-1 text-[11px] leading-relaxed">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-extrabold text-white">#ORD-{order.id ? order.id.substring(0, 7).toUpperCase() : ""}</h4>
-                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                order.status === "ENTREGADO" 
-                                  ? "bg-white text-black" 
-                                  : order.status === "PAGO_PENDIENTE" 
-                                  ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" 
-                                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-400/20"
-                              }`}
-                            >
+                        <div key={order.id} className="border border-neutral-800 p-3.5 bg-neutral-900/40 rounded-lg space-y-2.5 text-xs hover:border-neutral-700 transition-colors">
+                          <div className="flex items-center justify-between border-b border-neutral-800/80 pb-2">
+                            <div>
+                              <h4 className="font-black text-white text-xs">#{order.id}</h4>
+                              <p className="text-[9px] text-gray-400 font-mono">{formattedDate}</p>
+                            </div>
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                              isOrderPaid
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                            }`}>
                               {order.status}
                             </span>
                           </div>
-                          <p className="text-[9px] text-gray-400 uppercase">F. Registro: {formattedDate}</p>
-                          <p className="text-[9px] text-gray-400 uppercase">Pago: {order.paymentMethod}</p>
-                          <p className="text-[9px] text-gray-400 uppercase truncate">Dirección: {order.shippingAddress}</p>
-                          {order.trackingNumber ? (
-                            <p className="text-[9px] font-bold text-emerald-400 uppercase">Guía tracking: {order.trackingNumber}</p>
-                          ) : (
-                            <p className="text-[9px] text-gray-500 uppercase">Guía tracking: Preparando DHL Express</p>
-                          )}
+
+                          <div className="text-[10px] space-y-1 text-gray-300">
+                            <p><strong className="text-gray-400">Total:</strong> <span className="text-emerald-400 font-black">${(order.totalMXN || 0).toLocaleString()} MXN</span></p>
+                            <p className="truncate"><strong className="text-gray-400">Método:</strong> {order.paymentMethod}</p>
+                            {order.items && order.items.length > 0 && (
+                              <p className="truncate text-gray-400">
+                                <strong>Artículos:</strong> {order.items.map(i => `${i.productName || "Gorra"} (${i.quantity}x)`).join(", ")}
+                              </p>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setCompletedReceiptOrder(order);
+                              setAccountOpen(false);
+                            }}
+                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-3 text-[10px] font-black tracking-wider uppercase rounded shadow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Image size={13} />
+                            <span>Ver / Descargar Comprobante (Imagen/PDF)</span>
+                          </button>
                         </div>
                       );
                     })}
@@ -837,8 +915,8 @@ export default function App() {
                 )}
               </div>
 
-              <p className="text-[9px] text-center text-gray-600 leading-normal uppercase">
-                Utiliza tu apodo guardado para firmar tus reseñas verificadas. Gracias por pertenecer a nuestra exclusiva familia.
+              <p className="text-[9px] text-center text-gray-500 leading-normal uppercase pt-2 border-t border-neutral-900">
+                TETRA HATS — Colección Exclusiva. Todos tus comprobantes quedan encriptados y protegidos en Firestore.
               </p>
             </div>
           </div>

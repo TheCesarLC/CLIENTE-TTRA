@@ -27,6 +27,7 @@ export interface Review {
   title?: string;
   reviewText: string;
   verified: boolean;
+  approved?: boolean;
 }
 
 export interface GlowColor {

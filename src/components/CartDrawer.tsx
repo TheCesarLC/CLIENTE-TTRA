@@ -52,7 +52,7 @@ export default function CartDrawer({
   const [lastCardDigits, setLastCardDigits] = useState("");
   const [lastTicketSummary, setLastTicketSummary] = useState<TicketSummary | null>(null);
 
-  const { currentUser, siteConfig, saveOrder, products } = useSite();
+  const { currentUser, siteConfig, saveOrder, products, loginWithGoogle } = useSite();
 
   // Auto-adjust cart items if real-time stock drops below cart item quantity
   useEffect(() => {
@@ -184,12 +184,14 @@ export default function CartDrawer({
       if (!res.ok || data.error) {
         safeClosePopup();
         setIsStripeLoading(false);
-        if (data.error === "MISSING_STRIPE_KEY") {
-          setErrorMsg("⚡ STRIPE: Ingrese su Clave Secreta de Stripe (sk_live_...) en el Panel Admin -> Pasarela de Pago.");
+        if (res.status === 404) {
+          setErrorMsg("⚡ ERROR DE SERVIDOR (404): Las rutas de API de Stripe (/api/stripe) no respondieron. Si publicaste el sitio en un hosting de archivos estáticos (como Hostinger o GitHub Pages sin servidor Node.js), las funciones backend no se ejecutan. Despliega la app en Cloud Run o Vercel con servidor Node.");
+        } else if (data.error === "MISSING_STRIPE_KEY") {
+          setErrorMsg("⚡ STRIPE: Ingrese su Clave Secreta de Stripe (sk_live_... o sk_test_...) en el Panel Admin -> Pasarela de Pago y guarde los cambios.");
         } else if (data.error === "INVALID_STRIPE_KEY") {
           setErrorMsg(`⚡ STRIPE: ${data.message}`);
         } else {
-          setErrorMsg(data.message || "Error al conectar con la pasarela de Stripe. Verifica tu clave de Stripe en el Panel de Admin.");
+          setErrorMsg(data.message || data.rawDetails || "Error al conectar con la pasarela de Stripe. Verifica tu clave de Stripe en el Panel de Admin.");
         }
         return;
       }
@@ -618,7 +620,7 @@ export default function CartDrawer({
 
     <div class="footer-stamp">
       <p style="margin: 0 0 4px 0; font-weight: 800; color: #888888;">¡GRACIAS POR TU COMPRA EN TETRA HATS!</p>
-      <p style="margin: 0;">REMITENTE OFICIAL ADMINISTRADOR: hugocesarlemuscortes@gmail.com • SELLO DE AUTENTICIDAD FIRESTORE ENCRIPTADO • CONSERVA ESTE TICKET PDF PARA SEGUIMIENTO DE TU ENVÍO</p>
+      <p style="margin: 0;">SELLO DE AUTENTICIDAD FIRESTORE ENCRIPTADO • CONSERVA ESTE TICKET PDF PARA SEGUIMIENTO DE TU ENVÍO</p>
     </div>
   </div>
 
@@ -815,6 +817,35 @@ export default function CartDrawer({
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-neutral-950 text-white z-50 flex flex-col border-l border-neutral-800 shadow-2xl"
           >
+            {/* Blinking Top Banner Inciting Sign-In for Receipts History */}
+            {!currentUser ? (
+              <button
+                onClick={loginWithGoogle}
+                className="w-full bg-gradient-to-r from-purple-950 via-purple-900 to-purple-950 border-b border-purple-500/50 p-3 px-4 text-[10px] font-black uppercase tracking-wider text-purple-200 flex items-center justify-between gap-2 shadow-xl transition-all hover:brightness-125 cursor-pointer animate-pulse"
+                title="Inicia sesión con Google"
+              >
+                <div className="flex items-center gap-2 text-left">
+                  <span className="text-sm shrink-0">✨</span>
+                  <span className="leading-tight text-white font-extrabold tracking-wide">
+                    ¡INICIA SESIÓN CON GOOGLE PARA GUARDAR Y ACCEDER AL HISTORIAL DE RECIBOS DE TODAS TUS COMPRAS!
+                  </span>
+                </div>
+                <span className="bg-purple-500 hover:bg-purple-400 text-white text-[9px] font-black px-2.5 py-1 rounded shrink-0 shadow uppercase tracking-wider border border-purple-300/40">
+                  INGRESAR
+                </span>
+              </button>
+            ) : (
+              <div className="w-full bg-emerald-950/80 border-b border-emerald-500/40 p-2.5 px-4 text-[10px] font-bold uppercase tracking-wider text-emerald-300 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="truncate">Sesión Activa: <strong className="text-white">{currentUser.email}</strong></span>
+                </div>
+                <span className="text-[9px] font-mono text-emerald-400 shrink-0 font-extrabold">
+                  RECIBOS AUTO-GUARDADOS
+                </span>
+              </div>
+            )}
+
             {/* Drawer Header */}
             <div className="p-6 border-b border-neutral-900 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -869,10 +900,6 @@ export default function CartDrawer({
                       >
                         <span>✉️ Enviar Ticket PDF por Correo ({buyerEmail})</span>
                       </button>
-
-                      <div className="p-2.5 bg-neutral-900/80 border border-neutral-800 rounded text-[9px] text-gray-400 uppercase font-mono text-center">
-                        * Remitente Oficial Admin: <span className="text-emerald-400 font-bold">hugocesarlemuscortes@gmail.com</span>
-                      </div>
                     </div>
                   )}
 

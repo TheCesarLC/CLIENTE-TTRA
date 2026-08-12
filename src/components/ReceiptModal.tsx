@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Order } from "../context/SiteContext";
-import { X, Printer, CheckCircle2, ShieldCheck, CreditCard, Truck, FileText, Clock } from "lucide-react";
+import { X, Printer, CheckCircle2, ShieldCheck, CreditCard, Truck, FileText, Clock, Image, Download } from "lucide-react";
+import html2canvas from "html2canvas";
 
 interface ReceiptModalProps {
   order: Order | null;
@@ -9,6 +10,9 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logoUrl }) => {
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [downloadingImage, setDownloadingImage] = useState(false);
+
   if (!order) return null;
 
   const isPaid = order.status === "PAGO_RECIBIDO" || order.status === "COMPLETADO" || order.status === "EMPACADO" || order.status === "ENVIADO" || order.status === "ENTREGADO";
@@ -16,6 +20,31 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadImage = async () => {
+    if (!receiptRef.current) return;
+    setDownloadingImage(true);
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#0a0a0a",
+        logging: false,
+      });
+      const imageUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = imageUrl;
+      link.download = `Comprobante-TETRA-HATS-${order.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Error al generar imagen de comprobante:", err);
+      alert("No se pudo generar la imagen automáticamente. Intenta con la opción de Imprimir / PDF.");
+    } finally {
+      setDownloadingImage(false);
+    }
   };
 
   const formattedDate = order.createdAt ? (() => {
@@ -40,18 +69,27 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
       <div className="relative w-full max-w-2xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden print:border-none print:shadow-none print:bg-white print:text-black print:max-w-none print:w-full print:rounded-none">
         
         {/* Top bar screen action controls - hidden during print */}
-        <div className="flex items-center justify-between px-6 py-4 bg-neutral-900/80 border-b border-neutral-800 print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 bg-neutral-900/80 border-b border-neutral-800 print:hidden">
           <div className="flex items-center gap-2">
             <FileText size={18} className="text-purple-400" />
             <span className="text-xs font-black tracking-widest text-white uppercase">Comprobante de Pago Oficial</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <button
+              onClick={handleDownloadImage}
+              disabled={downloadingImage}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-lg transition-all shadow-lg cursor-pointer disabled:opacity-50"
+              title="Descargar comprobante como imagen PNG"
+            >
+              {downloadingImage ? <Download size={14} className="animate-bounce" /> : <Image size={14} />}
+              <span>{downloadingImage ? "Generando..." : "Descargar Imagen"}</span>
+            </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-lg transition-all shadow-lg cursor-pointer"
             >
               <Printer size={14} />
-              <span>Imprimir / Guardar PDF</span>
+              <span>Imprimir / PDF</span>
             </button>
             <button
               onClick={onClose}
@@ -64,7 +102,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
         </div>
 
         {/* PRINTABLE RECEIPT CONTENT BODY */}
-        <div className="p-8 space-y-6 print:p-6 print:space-y-4">
+        <div ref={receiptRef} className="p-8 space-y-6 bg-neutral-950 text-white print:bg-white print:text-black print:p-6 print:space-y-4">
           
           {/* Header Brand & Order Status */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 print:border-black/20 pb-6">
@@ -237,7 +275,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
         </div>
 
         {/* Footer actions for screen view */}
-        <div className="p-4 bg-neutral-900/90 border-t border-neutral-800 flex justify-end gap-3 print:hidden">
+        <div className="p-4 bg-neutral-900/90 border-t border-neutral-800 flex flex-wrap justify-end gap-3 print:hidden">
           <button
             onClick={onClose}
             className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
@@ -245,11 +283,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
             Cerrar
           </button>
           <button
+            onClick={handleDownloadImage}
+            disabled={downloadingImage}
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {downloadingImage ? <Download size={15} className="animate-bounce" /> : <Image size={15} />}
+            <span>{downloadingImage ? "Generando Imagen..." : "Descargar Imagen (.PNG)"}</span>
+          </button>
+          <button
             onClick={handlePrint}
             className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-all shadow-lg flex items-center gap-2 cursor-pointer"
           >
             <Printer size={15} />
-            <span>Imprimir / Descargar PDF</span>
+            <span>Imprimir / PDF</span>
           </button>
         </div>
 

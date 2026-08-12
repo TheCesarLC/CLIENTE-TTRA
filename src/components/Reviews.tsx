@@ -49,19 +49,26 @@ export default function Reviews() {
     setEditingReviewId(null);
   };
 
+  const handleApproveReview = async (rev: Review) => {
+    await saveReview({ ...rev, approved: true });
+  };
+
   const handleDeleteReview = async (id: string) => {
     if (window.confirm("¿Seguro que deseas eliminar esta opinión de forma permanente del catálogo?")) {
       await deleteReview(id);
     }
   };
 
-  const totalReviewsCount = reviewsList.length || 1;
+  const approvedReviews = reviewsList.filter((r) => r.approved !== false);
+  const displayReviews = isAdmin ? reviewsList : approvedReviews;
+
+  const totalReviewsCount = approvedReviews.length || 1;
   const averageRating = (
-    reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / totalReviewsCount
+    approvedReviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviewsCount
   ).toFixed(2);
 
   const starCounts = [0, 0, 0, 0, 0];
-  reviewsList.forEach((r) => {
+  approvedReviews.forEach((r) => {
     const starIdx = Math.max(1, Math.min(r.rating, 5)) - 1;
     starCounts[starIdx]++;
   });
@@ -78,7 +85,8 @@ export default function Reviews() {
       capName: formCap.toUpperCase(),
       title: formTitle.trim() ? formTitle.trim().toUpperCase() : undefined,
       reviewText: formText.trim().toUpperCase(),
-      verified: true
+      verified: true,
+      approved: false // Pending admin approval
     };
 
     await saveReview(newReview);
@@ -91,7 +99,7 @@ export default function Reviews() {
     setTimeout(() => {
       setSuccessMsg(false);
       setFormOpen(false);
-    }, 3000);
+    }, 4000);
   };
 
   return (
@@ -238,8 +246,8 @@ export default function Reviews() {
                     <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400">
                       ¡Gracias por tu opinión!
                     </h3>
-                    <p className="text-[11px] text-gray-400 uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
-                      Tu reseña ha sido procesada e insertada de forma inmediata al catálogo.
+                    <p className="text-[11px] text-gray-300 uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
+                      Tu opinión ha sido enviada correctamente. Se publicará en el sitio en cuanto sea revisada y aprobada por el administrador.
                     </p>
                     <button
                       type="button"
@@ -374,13 +382,34 @@ export default function Reviews() {
 
         {/* Existing Reviews List Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-          {reviewsList.map((rev) => {
+          {displayReviews.map((rev) => {
             const isEditing = editingReviewId === rev.id;
+            const isPending = rev.approved === false;
             return (
               <div
                 key={rev.id}
-                className="bg-neutral-950/60 backdrop-blur-md p-5 rounded-lg border border-neutral-800 space-y-4 hover:border-neutral-700 transition-colors text-left relative"
+                className={`bg-neutral-950/60 backdrop-blur-md p-5 rounded-lg border space-y-4 transition-colors text-left relative ${
+                  isPending ? "border-amber-500/50 bg-amber-950/10" : "border-neutral-800 hover:border-neutral-700"
+                }`}
               >
+                {/* Pending Approval Badge */}
+                {isPending && (
+                  <div className="flex items-center justify-between bg-amber-500/20 border border-amber-500/40 p-2 rounded text-[10px] font-black uppercase text-amber-300 tracking-wider">
+                    <span className="flex items-center gap-1.5">
+                      ⏳ Pendiente de Aprobación por Admin
+                    </span>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleApproveReview(rev)}
+                        className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-black font-black rounded shadow cursor-pointer transition-transform hover:scale-105"
+                      >
+                        ✓ Aprobar Opinión
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {isEditing ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between border-b border-neutral-900 pb-2">

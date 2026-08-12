@@ -710,7 +710,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const colRef = collection(db, path);
     const q = isAdmin 
       ? colRef 
-      : query(colRef, where("userEmail", "==", currentUser.email || ""));
+      : query(colRef, where("userEmail", "==", (currentUser.email || "").toLowerCase()));
 
     const unsubscribe = onSnapshot(q, (querySnap) => {
       const orderList: Order[] = [];
@@ -732,9 +732,17 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (e) {
+    } catch (e: any) {
+      if (
+        e?.code === "auth/popup-closed-by-user" ||
+        e?.code === "auth/cancelled-popup-request" ||
+        e?.code === "auth/popup-blocked" ||
+        String(e?.message || "").includes("popup-closed-by-user")
+      ) {
+        console.info("Inicio de sesión con Google cancelado por el usuario.");
+        return;
+      }
       console.error("Google login failed:", e);
-      throw e;
     }
   };
 
@@ -851,6 +859,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const orderId = orderData.id || ("UM-" + Math.floor(100000 + Math.random() * 900000));
       const newOrder: Order = {
         ...orderData,
+        userEmail: (orderData.userEmail || "").toLowerCase(),
         id: orderId
       };
       await setDoc(doc(db, path, orderId), cleanDocData(newOrder));
