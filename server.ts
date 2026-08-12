@@ -74,6 +74,29 @@ async function startServer() {
     }
   });
 
+  // Helper to extract clean, valid absolute Origin URL in all environments (AI Studio dev, published domain, Cloud Run, iframes)
+  const getRequestOrigin = (req: express.Request): string => {
+    const originHeader = req.headers.origin;
+    if (originHeader && originHeader !== "null" && originHeader.trim() !== "") {
+      return originHeader.replace(/\/$/, "");
+    }
+    const refererHeader = req.headers.referer;
+    if (refererHeader) {
+      try {
+        const parsed = new URL(refererHeader);
+        return `${parsed.protocol}//${parsed.host}`;
+      } catch (e) {
+        // invalid referer URL
+      }
+    }
+    const hostHeader = (req.headers["x-forwarded-host"] as string) || req.headers.host;
+    const protoHeader = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
+    if (hostHeader) {
+      return `${protoHeader}://${hostHeader}`.replace(/\/$/, "");
+    }
+    return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  };
+
   // Stripe Verification Endpoint
   app.post("/api/stripe/verify-keys", async (req, res) => {
     try {
@@ -175,7 +198,7 @@ async function startServer() {
       }
 
       const stripe = new Stripe(secretKey);
-      const origin = req.headers.origin || process.env.APP_URL || "http://localhost:3000";
+      const origin = getRequestOrigin(req);
 
       let totalCentavos = 0;
       const lineItems = (items || []).map((item: any) => {
@@ -186,7 +209,15 @@ async function startServer() {
 
         // Stripe API requires image URLs to be absolute HTTP or HTTPS links
         const rawImg = item.image || (Array.isArray(item.images) ? item.images[0] : null);
-        const validImages = (typeof rawImg === "string" && (rawImg.startsWith("http://") || rawImg.startsWith("https://"))) ? [rawImg] : [];
+        let validImages: string[] = [];
+        if (typeof rawImg === "string" && rawImg.trim()) {
+          const trimmedImg = rawImg.trim();
+          if (trimmedImg.startsWith("http://") || trimmedImg.startsWith("https://")) {
+            validImages = [trimmedImg];
+          } else if (trimmedImg.startsWith("/")) {
+            validImages = [`${origin}${trimmedImg}`];
+          }
+        }
 
         return {
           price_data: {
@@ -294,7 +325,7 @@ async function startServer() {
         currency_id: "MXN",
       }));
 
-      const origin = req.headers.origin || process.env.APP_URL || "http://localhost:3000";
+      const origin = getRequestOrigin(req);
 
       const isTestToken = accessToken.trim().startsWith("TEST-");
 

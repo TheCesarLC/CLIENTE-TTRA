@@ -209,10 +209,14 @@ export default function CartDrawer({
 
         if (!redirectedInPopup) {
           safeClosePopup();
-          // Direct navigation is 100% reliable across all mobile & desktop browsers
-          if (window.top) {
-            window.top.location.href = data.url;
-          } else {
+          // Direct navigation is 100% reliable across all mobile & desktop browsers and handles cross-origin iframe security
+          try {
+            if (window.top && window.top !== window) {
+              window.top.location.href = data.url;
+            } else {
+              window.location.href = data.url;
+            }
+          } catch (navErr) {
             window.location.href = data.url;
           }
         }
