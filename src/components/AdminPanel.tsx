@@ -159,6 +159,10 @@ const printOrderPDF = (ord: Order, logoUrl?: string) => {
       </div>
     </div>
 
+    <div style="margin: 16px 0; padding: 12px 16px; background-color: #1e112a; border: 1px solid #9333ea; border-radius: 8px; color: #e9d5ff; font-size: 11px; font-weight: 800; text-transform: uppercase; line-height: 1.5;">
+      🚚 AVISO: SE TE HARA LLEGAR TU GUIA DE SEGUIMIENTO DE ENVIO A TU CORREO O WHATSAPP PERSONAL EN LOS PROXIMOS 2 DIAS HABILES...
+    </div>
+
     <div class="section-title">PRODUCTOS ADQUIRIDOS</div>
     <table>
       <thead>
@@ -227,8 +231,9 @@ const sendOrderEmailPDF = (ord: Order, logoUrl?: string) => {
     `• ID de Compra: ${ord.id}\n` +
     `• ${isPaid ? "Total Pagado" : "Total a Pagar (Pendiente)"}: $${totalMXN.toLocaleString()} MXN / $${totalUSD.toLocaleString()} USD\n` +
     `• Estado de Pago: ${ord.status || "PAGO_PENDIENTE"}\n` +
-    `• Guía de Envío DHL: ${ord.trackingNumber || "En preparación"}\n` +
-    `• Dirección de Envío: ${ord.shippingAddress || "Sin Dirección"}\n\n` +
+    `• Guía de Envío: ${ord.trackingNumber || "En preparación"}\n` +
+    `• Dirección de Envío: ${ord.shippingAddress || "Sin Dirección"}\n` +
+    `• AVISO DE SEGUIMIENTO: SE TE HARA LLEGAR TU GUIA DE SEGUIMIENTO DE ENVIO A TU CORREO O WHATSAPP PERSONAL EN LOS PROXIMOS 2 DIAS HABILES...\n\n` +
     `PRODUCTOS ADQUIRIDOS:\n${itemsText}\n\n` +
     `Atentamente,\n` +
     `Hugo César Lemus Cortés — Administrador TETRA HATS\n` +
@@ -263,6 +268,50 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
   const [activeTab, setActiveTab] = useState<"site" | "products" | "orders">("site");
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
+
+  const SEMAFORO_STATUSES = [
+    {
+      key: "PENDIENTE_DE_REVISION",
+      label: "1: PENDIENTE DE REVISION",
+      shortLabel: "PENDIENTE DE REVISION",
+      activeClass: "bg-red-600 text-white border-red-400 shadow-lg shadow-red-950/80 ring-2 ring-red-500 font-black",
+      inactiveClass: "bg-black/80 text-red-400/80 border-red-900/50 hover:bg-red-950/40 hover:text-red-300 hover:border-red-700",
+      dotClass: "bg-red-500 shadow-red-500/80 shadow-sm"
+    },
+    {
+      key: "REVISADO",
+      label: "2: REVISADO",
+      shortLabel: "REVISADO",
+      activeClass: "bg-amber-500 text-black border-amber-300 shadow-lg shadow-amber-950/80 ring-2 ring-amber-400 font-black",
+      inactiveClass: "bg-black/80 text-amber-400/80 border-amber-900/50 hover:bg-amber-950/40 hover:text-amber-300 hover:border-amber-700",
+      dotClass: "bg-amber-400 shadow-amber-400/80 shadow-sm"
+    },
+    {
+      key: "ENVIADO",
+      label: "3: ENVIADO",
+      shortLabel: "ENVIADO",
+      activeClass: "bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-950/80 ring-2 ring-blue-500 font-black",
+      inactiveClass: "bg-black/80 text-blue-400/80 border-blue-900/50 hover:bg-blue-950/40 hover:text-blue-300 hover:border-blue-700",
+      dotClass: "bg-blue-400 shadow-blue-400/80 shadow-sm"
+    },
+    {
+      key: "FINALIZADO",
+      label: "4: FINALIZADO",
+      shortLabel: "FINALIZADO",
+      activeClass: "bg-emerald-500 text-black border-emerald-300 shadow-lg shadow-emerald-950/80 ring-2 ring-emerald-400 font-black",
+      inactiveClass: "bg-black/80 text-emerald-400/80 border-emerald-900/50 hover:bg-emerald-950/40 hover:text-emerald-300 hover:border-emerald-700",
+      dotClass: "bg-emerald-400 shadow-emerald-400/80 shadow-sm"
+    }
+  ];
+
+  const getNormalizedSemAforoKey = (rawStatus: string) => {
+    const s = (rawStatus || "").toUpperCase();
+    if (s === "REVISADO") return "REVISADO";
+    if (s === "ENVIADO") return "ENVIADO";
+    if (s === "FINALIZADO" || s === "ENTREGADO") return "FINALIZADO";
+    if (s === "PAGO_RECIBIDO" || s === "EMPACADO") return "REVISADO";
+    return "PENDIENTE_DE_REVISION";
+  };
   const [isAdminCustomStock, setIsAdminCustomStock] = useState(false);
   const [editingCode, setEditingCode] = useState<Partial<AuthenticCode> | null>(null);
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<Order | null>(null);
@@ -271,10 +320,72 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [stripePublishableInput, setStripePublishableInput] = useState(siteConfig.stripePublishableKey || "");
   const [isSavingStripeKey, setIsSavingStripeKey] = useState(false);
 
+  const [stripeVerification, setStripeVerification] = useState<{
+    loading: boolean;
+    valid: boolean | null;
+    message: string;
+    livemode?: boolean;
+    currency?: string;
+  }>({
+    loading: false,
+    valid: null,
+    message: ""
+  });
+
   useEffect(() => {
     setStripeSecretInput(siteConfig.stripeSecretKey || "");
     setStripePublishableInput(siteConfig.stripePublishableKey || "");
   }, [siteConfig.stripeSecretKey, siteConfig.stripePublishableKey]);
+
+  const handleVerifyStripeKeys = async (secretOverride?: string) => {
+    const keyToTest = secretOverride !== undefined
+      ? secretOverride
+      : stripeSecretInput.replace(/["'\s]/g, "").trim();
+
+    if (!keyToTest) {
+      setStripeVerification({
+        loading: false,
+        valid: false,
+        message: "⚠️ No hay ninguna Clave Secreta ingresada. Por favor ingresa tu Secret Key (sk_live_... o sk_test_...)."
+      });
+      return;
+    }
+
+    setStripeVerification((prev) => ({ ...prev, loading: true }));
+    try {
+      const res = await fetch("/api/stripe/verify-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secretKey: keyToTest })
+      });
+      const data = await res.json();
+      setStripeVerification({
+        loading: false,
+        valid: data.valid,
+        message: data.message || "Verificación completada.",
+        livemode: data.livemode,
+        currency: data.currency
+      });
+    } catch (err) {
+      setStripeVerification({
+        loading: false,
+        valid: false,
+        message: "❌ Error de conexión al verificar la clave con el servidor backend."
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (siteConfig.stripeSecretKey && siteConfig.stripeSecretKey.trim()) {
+      handleVerifyStripeKeys(siteConfig.stripeSecretKey.trim());
+    } else {
+      setStripeVerification({
+        loading: false,
+        valid: null,
+        message: "Sin clave configurada. Ingrese su clave secreta de Stripe para verificar."
+      });
+    }
+  }, [siteConfig.stripeSecretKey]);
 
   const handleSaveStripeKeys = async () => {
     setIsSavingStripeKey(true);
@@ -286,6 +397,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         stripePublishableKey: cleanPublishable,
       });
       showNotification("⚡ Claves de Stripe guardadas correctamente.");
+      await handleVerifyStripeKeys(cleanSecret);
     } catch (err) {
       showNotification("❌ Error al guardar las claves de Stripe.");
     } finally {
@@ -537,21 +649,72 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                 </div>
 
+                {/* Banner de Estado de Verificación Directa de Stripe */}
+                <div className={`p-4 rounded-xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${
+                  stripeVerification.loading
+                    ? "bg-purple-900/30 border-purple-500/50 text-purple-200"
+                    : stripeVerification.valid === true
+                    ? "bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-lg shadow-emerald-950/50"
+                    : stripeVerification.valid === false
+                    ? "bg-red-950/80 border-red-500 text-red-200 shadow-lg shadow-red-950/50"
+                    : "bg-black/60 border-purple-500/30 text-gray-400"
+                }`}>
+                  <div className="flex items-start gap-3">
+                    {stripeVerification.loading ? (
+                      <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin shrink-0 mt-0.5" />
+                    ) : stripeVerification.valid === true ? (
+                      <ShieldCheck size={22} className="text-emerald-400 shrink-0 mt-0.5" />
+                    ) : stripeVerification.valid === false ? (
+                      <CircleAlert size={22} className="text-red-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <Activity size={22} className="text-purple-400 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <span className="font-extrabold text-[11px] uppercase tracking-wider block">
+                        DIAGNÓSTICO EN TIEMPO REAL: {
+                          stripeVerification.loading 
+                            ? "CONECTANDO Y PROBANDO CLAVE CON STRIPE API..." 
+                            : stripeVerification.valid === true 
+                            ? (stripeVerification.livemode ? "✅ CLAVE VÁLIDA Y ACTIVA (MODO PRODUCCIÓN LIVE)" : "✅ CLAVE VÁLIDA Y ACTIVA (MODO PRUEBAS TEST)")
+                            : stripeVerification.valid === false
+                            ? "❌ CLAVE INVALIDA O RECHAZADA"
+                            : "PENDIENTE DE VERIFICACIÓN"
+                        }
+                      </span>
+                      <p className="text-[11px] opacity-90 mt-1 leading-relaxed font-mono">
+                        {stripeVerification.message || "Presiona 'PROBAR CONEXIÓN' para verificar inmediatamente si la clave funciona."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyStripeKeys()}
+                    disabled={stripeVerification.loading}
+                    className="shrink-0 w-full sm:w-auto px-4 py-2 bg-purple-900/90 hover:bg-purple-800 text-purple-100 text-[10px] font-black uppercase tracking-widest rounded-lg border border-purple-400/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+                  >
+                    <Activity size={14} />
+                    <span>{stripeVerification.loading ? "PROBANDO..." : "PROBAR CONEXIÓN"}</span>
+                  </button>
+                </div>
+
                 <div className="pt-3 border-t border-purple-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="text-[10px] text-purple-300/80 flex items-center gap-1.5">
                     <ShieldCheck size={14} className="text-emerald-400" />
                     <span>Tus claves se guardan encriptadas de forma segura.</span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveStripeKeys}
-                    disabled={isSavingStripeKey}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs tracking-widest uppercase rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all flex items-center justify-center gap-2 border border-purple-400/40 active:scale-95 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Check size={16} />
-                    <span>{isSavingStripeKey ? "GUARDANDO..." : "GUARDAR CLAVE DE STRIPE"}</span>
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={handleSaveStripeKeys}
+                      disabled={isSavingStripeKey}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs tracking-widest uppercase rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all flex items-center justify-center gap-2 border border-purple-400/40 active:scale-95 disabled:opacity-50 cursor-pointer"
+                    >
+                      <Check size={16} />
+                      <span>{isSavingStripeKey ? "GUARDANDO..." : "GUARDAR Y VERIFICAR CLAVE"}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1396,7 +1559,6 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
           <div className="space-y-8">
             <div className="border-b border-neutral-900 pb-4">
               <h3 className="text-xl font-black uppercase tracking-widest">Envíos y Control de Transacciones</h3>
-              <p className="text-xs text-gray-500 mt-1 uppercase">Visualiza los recibos creados por Google users y actualiza las guías de rastreo DHL</p>
             </div>
 
             {orders.length === 0 ? (
@@ -1415,6 +1577,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   const safeTotalUSD = typeof ord.totalUSD === "number" ? ord.totalUSD : Math.round(safeTotalMXN / 20);
                   const safeStatus = ord.status || "PAGO_PENDIENTE";
 
+                  const currentSemAforoKey = getNormalizedSemAforoKey(ord.status);
+
                   return (
                     <div key={ord.id} className="bg-neutral-950 border border-neutral-800 rounded p-6 space-y-4">
                       {/* Header line of the single order card */}
@@ -1425,20 +1589,9 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <select
-                            value={safeStatus}
-                            onChange={async (e) => {
-                              await updateOrder(ord.id, { status: e.target.value as any });
-                              showNotification("Status de pedido actualizado con éxito en Firestore.");
-                            }}
-                            className="bg-neutral-900 text-white font-black tracking-widest uppercase text-[10px] border border-neutral-800 rounded px-2.5 py-1.5 focus:outline-none"
-                          >
-                            <option value="PAGO_PENDIENTE">PAGO PENDIENTE</option>
-                            <option value="PAGO_RECIBIDO">PAGO RECIBIDO</option>
-                            <option value="EMPACADO">EMPACADO</option>
-                            <option value="ENVIADO">ENVIADO (GUÍA LISTA)</option>
-                            <option value="ENTREGADO">ENTREGADO</option>
-                          </select>
+                          <span className="px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-full text-[10px] font-black uppercase tracking-wider text-purple-300">
+                            {SEMAFORO_STATUSES.find(s => s.key === currentSemAforoKey)?.shortLabel || ord.status}
+                          </span>
 
                           <button
                             onClick={() => {
@@ -1494,25 +1647,44 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                           </div>
                         </div>
 
-                      {/* Tracking guide / DHL integration inputs */}
+                      {/* Semáforo de Estado de Pedido */}
                       <div className="space-y-4 bg-neutral-900/30 p-4 border border-neutral-900/60 rounded flex flex-col justify-between">
                         <div className="space-y-2">
-                          <h5 className="font-extrabold tracking-widest uppercase text-gray-400 text-[10px] flex items-center gap-1">
-                            <Truck size={12} className="text-emerald-400" />
-                            <span>Guía de Envío DHL Express</span>
+                          <h5 className="font-extrabold tracking-widest uppercase text-gray-300 text-[10px] flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <Activity size={13} className="text-purple-400" />
+                              <span>ESTADO DEL PEDIDO (SEMÁFORO)</span>
+                            </span>
                           </h5>
-                          <p className="text-[10px] text-gray-400 leading-normal uppercase">Registra el código de DHL, Estafeta o FedEx para que el usuario pueda rastrearlo desde su cuenta.</p>
-                          <input
-                            type="text"
-                            placeholder="Ej: DHL-82930219"
-                            defaultValue={ord.trackingNumber || ""}
-                            onBlur={async (e) => {
-                              const v = e.target.value.trim();
-                              await updateOrder(ord.id, { trackingNumber: v });
-                              showNotification(`Número de guía de ${ord.id} actualizado.`);
-                            }}
-                            className="w-full bg-black border border-neutral-800 rounded p-2 text-xs focus:outline-none focus:border-emerald-500 uppercase"
-                          />
+
+                          <div className="grid grid-cols-1 gap-1.5 pt-1">
+                            {SEMAFORO_STATUSES.map((st) => {
+                              const isSelected = currentSemAforoKey === st.key;
+                              return (
+                                <button
+                                  key={st.key}
+                                  type="button"
+                                  onClick={async () => {
+                                    await updateOrder(ord.id, { status: st.key as any });
+                                    showNotification(`Estatus de orden ${ord.id} actualizado a: ${st.shortLabel}`);
+                                  }}
+                                  className={`w-full py-2 px-3 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all duration-150 flex items-center justify-between cursor-pointer active:scale-98 ${
+                                    isSelected ? st.activeClass : st.inactiveClass
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <span className={`w-2.5 h-2.5 rounded-full ${st.dotClass} ${isSelected ? 'animate-pulse' : 'opacity-50'}`} />
+                                    <span>{st.label}</span>
+                                  </span>
+                                  {isSelected && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/50 text-white uppercase font-mono font-bold">
+                                      ACTIVO
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                         
                         <div className="space-y-2">

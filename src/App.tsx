@@ -99,7 +99,7 @@ export default function App() {
     const pendingOrderId = localStorage.getItem("pending_stripe_order_id");
 
     if (payment === "success" || payment === "stripe_success") {
-      setPaymentStatusAlert("¡Pago acreditado exitosamente con Stripe! Tu compra ha sido confirmada.");
+      setPaymentStatusAlert("¡Pago acreditado exitosamente! SE TE HARA LLEGAR TU GUIA DE SEGUIMIENTO DE ENVIO A TU CORREO O WHATSAPP PERSONAL EN LOS PROXIMOS 2 DIAS HABILES...");
       setCart([]);
       localStorage.removeItem("exclusive_caps_cart");
 

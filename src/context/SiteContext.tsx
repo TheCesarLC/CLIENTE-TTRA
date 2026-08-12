@@ -749,19 +749,20 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Realtime update operations
   const updateSiteConfig = async (newConfig: Partial<SiteConfig>) => {
     const path = "site_configs";
-    try {
-      const docRef = doc(db, path, "global");
-      await setDoc(docRef, cleanDocData(newConfig), { merge: true });
-      // update local storage immediately for fast UI feedback
+    setSiteConfig((prev) => {
+      const updated = { ...prev, ...newConfig };
       try {
-        const nextConfig = { ...siteConfig, ...newConfig };
-        localStorage.setItem("shop_site_config", JSON.stringify(nextConfig));
+        localStorage.setItem("shop_site_config", JSON.stringify(updated));
       } catch (err) {
         console.error("Error saving updated config to localStorage", err);
       }
+      return updated;
+    });
+
+    try {
+      const docRef = doc(db, path, "global");
+      await setDoc(docRef, cleanDocData(newConfig), { merge: true });
     } catch (e) {
-      // Offline edit / permission check
-      setSiteConfig((prev) => ({ ...prev, ...newConfig }));
       console.warn("Config update in Firestore failed. Switched value locally.", e);
     }
   };

@@ -74,6 +74,74 @@ async function startServer() {
     }
   });
 
+  // Stripe Verification Endpoint
+  app.post("/api/stripe/verify-keys", async (req, res) => {
+    try {
+      const { secretKey: customSecret } = req.body;
+      const rawSecret = (customSecret && typeof customSecret === "string" && customSecret.trim())
+        ? customSecret.trim()
+        : (process.env.STRIPE_SECRET_KEY || "");
+
+      if (!rawSecret) {
+        return res.status(200).json({
+          valid: false,
+          status: "EMPTY",
+          message: "No se ha ingresado ninguna Clave Secreta (Secret Key)."
+        });
+      }
+
+      const secretKey = rawSecret.replace(/^["']|["']$/g, "").trim();
+
+      if (secretKey.startsWith("pk_")) {
+        return res.status(200).json({
+          valid: false,
+          status: "WRONG_KEY_TYPE",
+          message: "⚠️ Error de Tipo: Has ingresado una Clave Publicable (pk_...) en el campo de Clave Secreta. Debes ingresar la Secret Key (sk_live_... o sk_test_...)."
+        });
+      }
+
+      if (!secretKey.startsWith("sk_")) {
+        return res.status(200).json({
+          valid: false,
+          status: "INVALID_FORMAT",
+          message: "⚠️ Formato Inválido: La Clave Secreta debe comenzar con 'sk_live_' o 'sk_test_'."
+        });
+      }
+
+      const stripe = new Stripe(secretKey);
+      const balance = await stripe.balance.retrieve();
+
+      const isLiveMode = Boolean(balance.livemode);
+      const modeText = isLiveMode ? "PRODUCCIÓN (Live Mode)" : "PRUEBAS (Test Mode)";
+
+      return res.status(200).json({
+        valid: true,
+        status: "SUCCESS",
+        livemode: isLiveMode,
+        message: `✅ CONEXIÓN EXITOSA CON STRIPE: Tu clave secreta está activa en modo ${modeText}.`,
+        currency: balance.available?.[0]?.currency?.toUpperCase() || "MXN"
+      });
+    } catch (err: any) {
+      console.error("Stripe Verification Error:", err);
+      const rawMsg = err?.message || err?.raw?.message || "";
+      const errType = err?.type || err?.raw?.type || "";
+
+      let userMsg = "Error al autenticar con Stripe.";
+      if (errType === "StripeAuthenticationError" || rawMsg.includes("Invalid API Key") || rawMsg.includes("No such API key")) {
+        userMsg = "❌ CLAVE INVÁLIDA: Stripe rechazó la clave secreta. Revisa que sea correcta en dashboard.stripe.com/apikeys y que no esté cancelada.";
+      } else if (rawMsg) {
+        userMsg = `❌ ERROR EN STRIPE: ${rawMsg}`;
+      }
+
+      return res.status(200).json({
+        valid: false,
+        status: "FAILED",
+        message: userMsg,
+        rawDetails: rawMsg
+      });
+    }
+  });
+
   // Stripe Checkout Endpoint
   app.post("/api/stripe/create-checkout-session", async (req, res) => {
     try {
@@ -169,21 +237,35 @@ async function startServer() {
         sessionId: session.id,
       });
     } catch (err: any) {
-      console.error("Stripe Session Error:", err);
-      let errorMessage = err?.message || "Ocurrió un error al crear la sesión de pago con Stripe.";
-      if (err?.message?.includes("at least $10.00 MXN")) {
+      console.error("Stripe Session Detailed Error:", err);
+      const rawMsg = err?.message || err?.raw?.message || "";
+      const errType = err?.type || err?.raw?.type || "";
+      const errCode = err?.code || err?.raw?.code || "";
+
+      let errorMessage = rawMsg || "Ocurrió un error al conectar con la API de Stripe.";
+
+      if (rawMsg.includes("at least $10.00 MXN")) {
         errorMessage = "Stripe requiere un monto mínimo de cobro de $10.00 MXN ($10 pesos). Por favor intenta con una compra o producto mayor o igual a $10 MXN.";
       } else if (
-        err?.type === "StripeAuthenticationError" || 
-        err?.message?.includes("Invalid API Key") || 
-        err?.message?.includes("ApiKey") ||
-        err?.code === "api_key_expired"
+        errType === "StripeAuthenticationError" || 
+        rawMsg.includes("Invalid API Key") || 
+        rawMsg.includes("ApiKey") ||
+        rawMsg.includes("No such API key") ||
+        errCode === "api_key_expired"
       ) {
-        errorMessage = "Error de autenticación con Stripe: La Clave Secreta (Secret Key) proporcionada no es válida o pertenece a un entorno distinto. Por favor verifica tu clave (sk_live_... / sk_test_...) en el Panel de Administración -> Pasarela de Pago.";
+        errorMessage = "Error de autenticación con Stripe: La Clave Secreta (Secret Key) ingresada no es válida o pertenece a un entorno cancelado. Por favor verifica tu clave (sk_live_... o sk_test_...) en tu dashboard de Stripe y guárdala en el Panel de Admin.";
+      } else if (rawMsg.includes("live charges") || rawMsg.includes("cannot accept payments") || rawMsg.includes("account is restricted")) {
+        errorMessage = "Tu cuenta de Stripe no puede procesar cargos en vivo actualmente. Por favor verifica que tu cuenta de Stripe esté activada en dashboard.stripe.com o utiliza tu clave de prueba (sk_test_...).";
+      } else if (rawMsg.includes("test mode") || rawMsg.includes("live mode")) {
+        errorMessage = `Aviso de Stripe: ${rawMsg}. Asegúrate de que las claves de tu cuenta coincidan con el entorno (sk_live_ o sk_test_).`;
+      } else if (rawMsg) {
+        errorMessage = `Aviso de Stripe: ${rawMsg}`;
       }
+
       return res.status(500).json({
         error: "ERROR_STRIPE",
         message: errorMessage,
+        rawDetails: rawMsg
       });
     }
   });

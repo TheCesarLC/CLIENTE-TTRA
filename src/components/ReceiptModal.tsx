@@ -146,6 +146,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
             </div>
           </div>
 
+          {/* Notice of Tracking Number Delivery */}
+          <div className="p-4 bg-purple-900/30 print:bg-purple-50 border border-purple-500/40 print:border-purple-300 rounded-xl text-purple-200 print:text-purple-950 flex items-start gap-3 shadow-md">
+            <Truck size={20} className="text-purple-400 print:text-purple-700 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="font-extrabold uppercase tracking-widest text-[10px] text-purple-300 print:text-purple-900 block">
+                Aviso de Rastreo de Envío
+              </span>
+              <p className="text-xs font-black leading-relaxed tracking-wide uppercase">
+                SE TE HARA LLEGAR TU GUIA DE SEGUIMIENTO DE ENVIO A TU CORREO O WHATSAPP PERSONAL EN LOS PROXIMOS 2 DIAS HABILES...
+              </p>
+            </div>
+          </div>
+
           {/* Items Purchased Table */}
           <div className="space-y-3">
             <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-400 print:text-gray-700">
