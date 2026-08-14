@@ -49,6 +49,8 @@ export default function App() {
     logout,
     currentUser,
     visualEditMode,
+    authError,
+    clearAuthError,
     updateSiteConfig,
     updateOrder,
     saveProduct,
@@ -979,6 +981,48 @@ export default function App() {
           onClose={() => setCompletedReceiptOrder(null)}
           logoUrl={siteConfigToUse.brandLogoUrl}
         />
+      )}
+
+      {/* Firebase Auth Error Diagnostic Modal */}
+      {authError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 text-white relative">
+            <button
+              onClick={clearAuthError}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="flex items-center gap-3 text-amber-400">
+              <ShieldCheck size={24} />
+              <h3 className="text-base font-bold uppercase tracking-wider">Aviso de Autenticación Firebase</h3>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              {authError}
+            </p>
+            <div className="p-3 bg-neutral-950 rounded-lg border border-neutral-800 font-mono text-[11px] text-emerald-400 flex items-center justify-between">
+              <span>Dominio actual: <strong>{window.location.hostname}</strong></span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.hostname);
+                  alert("¡Dominio copiado al portapapeles!");
+                }}
+                className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 text-white rounded text-[10px] uppercase font-bold tracking-wider cursor-pointer"
+              >
+                Copiar
+              </button>
+            </div>
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={clearAuthError}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+              >
+                Entendido / Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

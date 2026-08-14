@@ -140,6 +140,8 @@ interface SiteContextType {
   authenticCodes: AuthenticCode[];
   visualEditMode: boolean;
   setVisualEditMode: (mode: boolean) => void;
+  authError: string | null;
+  clearAuthError: () => void;
   // Auth operations
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -277,17 +279,40 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [authenticCodes, setAuthenticCodes] = useState<AuthenticCode[]>([]);
   const [visualEditMode, setVisualEditMode] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const clearAuthError = () => setAuthError(null);
 
   // Monitor Auth Changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // hugocesarlemuscortes@gmail.com is absolute administrator
-        if (user.email?.toLowerCase() === "hugocesarlemuscortes@gmail.com") {
+        const userEmail = (user.email || "").trim().toLowerCase();
+        // hugocesarlemuscortes@gmail.com is absolute super administrator
+        if (userEmail === "hugocesarlemuscortes@gmail.com") {
           setIsAdmin(true);
+          try {
+            await setDoc(doc(db, "admins", user.uid), {
+              email: user.email,
+              role: "superadmin",
+              lastLogin: new Date().toISOString()
+            }, { merge: true });
+          } catch (err) {
+            console.info("Admin sync note:", err);
+          }
         } else {
-          setIsAdmin(false);
+          // Check if admin collection has this user's UID
+          try {
+            const adminDoc = await getDoc(doc(db, "admins", user.uid));
+            if (adminDoc.exists()) {
+              setIsAdmin(true);
+            } else {
+              setIsAdmin(false);
+            }
+          } catch {
+            setIsAdmin(false);
+          }
         }
       } else {
         setIsAdmin(false);
@@ -730,19 +755,33 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Auth Operations
   const loginWithGoogle = async () => {
+    setAuthError(null);
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (e: any) {
       if (
         e?.code === "auth/popup-closed-by-user" ||
         e?.code === "auth/cancelled-popup-request" ||
-        e?.code === "auth/popup-blocked" ||
         String(e?.message || "").includes("popup-closed-by-user")
       ) {
         console.info("Inicio de sesión con Google cancelado por el usuario.");
         return;
       }
+
       console.error("Google login failed:", e);
+
+      if (e?.code === "auth/unauthorized-domain") {
+        const currentDomain = window.location.hostname;
+        setAuthError(
+          `DOMINIO NO AUTORIZADO (${currentDomain}): Firebase bloquea los accesos desde dominios nuevos por seguridad. Para habilitar el inicio de sesión con Google en este dominio, debes agregarlo en Firebase Console: Ve a Firebase Console -> Authentication -> Configuración -> Dominios autorizados -> Agregar dominio ("${currentDomain}").`
+        );
+      } else if (e?.code === "auth/popup-blocked") {
+        setAuthError("Tu navegador bloqueó la ventana emergente de inicio de sesión de Google. Por favor permite las ventanas emergentes (popups) para este sitio.");
+      } else if (e?.code === "auth/operation-not-allowed") {
+        setAuthError("El proveedor de inicio de sesión con Google no está habilitado en tu consola de Firebase. Actívalo en Firebase Console -> Authentication -> Sign-in method -> Google.");
+      } else {
+        setAuthError(e?.message || "Ocurrió un error inesperado al iniciar sesión con Google.");
+      }
     }
   };
 
@@ -965,6 +1004,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authenticCodes,
         visualEditMode,
         setVisualEditMode,
+        authError,
+        clearAuthError,
         loginWithGoogle,
         logout,
         updateSiteConfig,

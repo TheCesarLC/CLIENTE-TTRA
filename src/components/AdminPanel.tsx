@@ -451,9 +451,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       details: Array.isArray(editingProduct.details) ? editingProduct.details : []
     };
 
-    await saveProduct(formattedProduct);
-    setEditingProduct(null);
-    showNotification("Producto guardado correctamente en Firestore.");
+    try {
+      await saveProduct(formattedProduct);
+      setEditingProduct(null);
+      showNotification("✅ Producto guardado correctamente en Firestore.");
+    } catch (err: any) {
+      console.error("Error guardando producto:", err);
+      showNotification("❌ Error de permisos: Verifica haber iniciado sesión con hugocesarlemuscortes@gmail.com");
+    }
   };
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
@@ -468,9 +473,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       item: editingCode.item || "Modelo Desconocido"
     };
 
-    await saveAuthenticCode(formattedCode);
-    setEditingCode(null);
-    showNotification("Código de autenticación registrado.");
+    try {
+      await saveAuthenticCode(formattedCode);
+      setEditingCode(null);
+      showNotification("✅ Código de autenticación registrado.");
+    } catch (err: any) {
+      console.error("Error guardando código:", err);
+      showNotification("❌ Error de permisos al registrar código de autenticidad.");
+    }
   };
 
   return (
