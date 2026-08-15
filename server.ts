@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import { Readable } from "stream";
-import { createServer as createViteServer } from "vite";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import Stripe from "stripe";
 
@@ -391,6 +390,7 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
