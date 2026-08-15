@@ -5,6 +5,7 @@ import { CartItem } from "../types";
 import { useSite } from "../context/SiteContext";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 import { postApi } from "../lib/api";
+import { createStripeCheckoutSession } from "../lib/stripeClient";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -162,12 +163,12 @@ export default function CartDrawer({
     };
 
     try {
-      const { res, data } = await postApi("/api/stripe/create-checkout-session", {
+      const { url } = await createStripeCheckoutSession({
         orderId,
         buyerName: buyerName.trim(),
         buyerEmail: buyerEmail.trim(),
         secretKey: siteConfig.stripeSecretKey || "",
-        clientOrigin: window.location.origin,
+        origin: window.location.origin,
         items: cart.map(i => ({
           productId: i.product.id,
           name: i.product.name,
@@ -175,29 +176,14 @@ export default function CartDrawer({
           priceMXN: i.product.priceMXN,
           image: i.product.images?.[0]
         }))
-      }, (siteConfig as any).customBackendApiUrl);
+      });
 
-      if (!res.ok || data.error) {
-        safeClosePopup();
-        setIsStripeLoading(false);
-        if (res.status === 404) {
-          setErrorMsg("⚡ ERROR DE SERVIDOR (404): Las rutas de API de Stripe (/api/stripe) no respondieron. Si publicaste el sitio en un hosting de archivos estáticos (como Hostinger o GitHub Pages sin servidor Node.js), las funciones backend no se ejecutan. Despliega la app en Cloud Run o Vercel con servidor Node.");
-        } else if (data.error === "MISSING_STRIPE_KEY") {
-          setErrorMsg("⚡ STRIPE: Ingrese su Clave Secreta de Stripe (sk_live_... o sk_test_...) en el Panel Admin -> Pasarela de Pago y guarde los cambios.");
-        } else if (data.error === "INVALID_STRIPE_KEY") {
-          setErrorMsg(`⚡ STRIPE: ${data.message}`);
-        } else {
-          setErrorMsg(data.message || data.rawDetails || "Error al conectar con la pasarela de Stripe. Verifica tu clave de Stripe en el Panel de Admin.");
-        }
-        return;
-      }
-
-      if (data.url) {
+      if (url) {
         let redirectedInPopup = false;
         if (payWin) {
           try {
             if (!payWin.closed) {
-              payWin.location.href = data.url;
+              payWin.location.href = url;
               redirectedInPopup = true;
             }
           } catch (e) {
@@ -210,12 +196,12 @@ export default function CartDrawer({
           // Direct navigation is 100% reliable across all mobile & desktop browsers and handles cross-origin iframe security
           try {
             if (window.top && window.top !== window) {
-              window.top.location.href = data.url;
+              window.top.location.href = url;
             } else {
-              window.location.href = data.url;
+              window.location.href = url;
             }
           } catch (navErr) {
-            window.location.href = data.url;
+            window.location.href = url;
           }
         }
       } else {
@@ -225,9 +211,9 @@ export default function CartDrawer({
       }
     } catch (err: any) {
       safeClosePopup();
-      console.error("Stripe fetch error:", err);
+      console.error("Stripe Checkout error:", err);
       setIsStripeLoading(false);
-      setErrorMsg(err?.message ? `Error de comunicación con Stripe: ${err.message}` : "Error de comunicación con el servidor backend de Stripe.");
+      setErrorMsg(err?.message ? `Error de comunicación con Stripe: ${err.message}` : "Error de comunicación con Stripe.");
     }
   };
 

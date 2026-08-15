@@ -4,6 +4,7 @@ import { Product } from "../types";
 import { ProductImageManager } from "./ProductImageManager";
 import { ReceiptModal } from "./ReceiptModal";
 import { postApi } from "../lib/api";
+import { verifyStripeKey } from "../lib/stripeClient";
 import { 
   X, 
   Settings, 
@@ -359,21 +360,19 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
     setStripeVerification((prev) => ({ ...prev, loading: true }));
     try {
-      const { res, data } = await postApi("/api/stripe/verify-keys", {
-        secretKey: keyToTest
-      }, (siteConfig as any).customBackendApiUrl);
+      const result = await verifyStripeKey(keyToTest);
       setStripeVerification({
         loading: false,
-        valid: data.valid,
-        message: data.message || "Verificación completada.",
-        livemode: data.livemode,
-        currency: data.currency
+        valid: result.valid,
+        message: result.message,
+        livemode: result.livemode,
+        currency: result.currency
       });
-    } catch (err) {
+    } catch (err: any) {
       setStripeVerification({
         loading: false,
         valid: false,
-        message: "❌ Error de conexión al verificar la clave con el servidor backend."
+        message: `❌ Error al verificar clave: ${err?.message || "Comprueba tu conexión a internet"}`
       });
     }
   };
