@@ -841,6 +841,32 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               </div>
 
               <div className="space-y-2">
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                  <span>Miniatura / Preview ONDGAS (URL de Imagen o Poster)</span>
+                  {siteConfig.experiencePoster && (
+                    <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
+                  )}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={siteConfig.experiencePoster || ""}
+                    placeholder="https://... (dejar vacío para usar foto oficial de gorra ONDGAS)"
+                    onChange={(e) => updateSiteConfig({ experiencePoster: e.target.value })}
+                    className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
+                  />
+                  {siteConfig.experiencePoster && (
+                    <img 
+                      src={siteConfig.experiencePoster} 
+                      alt="Preview ONDGAS" 
+                      className="w-11 h-11 object-cover rounded border border-neutral-700" 
+                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
                   <span>Video 800 DÍAS (.mp4 URL o enlace de Google Drive)</span>
                 </label>
@@ -851,6 +877,32 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   onChange={(e) => updateSiteConfig({ experienceVideo2: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                  <span>Miniatura / Preview 800 DÍAS (URL de Imagen o Poster)</span>
+                  {siteConfig.experiencePoster2 && (
+                    <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
+                  )}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={siteConfig.experiencePoster2 || ""}
+                    placeholder="https://... (dejar vacío para usar foto oficial de gorra 800 DÍAS)"
+                    onChange={(e) => updateSiteConfig({ experiencePoster2: e.target.value })}
+                    className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
+                  />
+                  {siteConfig.experiencePoster2 && (
+                    <img 
+                      src={siteConfig.experiencePoster2} 
+                      alt="Preview 800 DIAS" 
+                      className="w-11 h-11 object-cover rounded border border-neutral-700" 
+                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1770,35 +1822,59 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 </p>
               </div>
 
-              {/* Filter Tabs */}
-              <div className="flex gap-2 bg-neutral-900 p-1 rounded-lg border border-neutral-800 self-start md:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setReviewFilter("all")}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer ${
-                    reviewFilter === "all" ? "bg-white text-black" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Todas ({reviews.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReviewFilter("pending")}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
-                    reviewFilter === "pending" ? "bg-amber-500 text-black" : "text-amber-400 hover:text-amber-300"
-                  }`}
-                >
-                  <span>Pendientes ({reviews.filter((r) => r.approved === false).length})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReviewFilter("approved")}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer ${
-                    reviewFilter === "approved" ? "bg-emerald-500 text-black" : "text-emerald-400 hover:text-emerald-300"
-                  }`}
-                >
-                  Aprobadas ({reviews.filter((r) => r.approved !== false).length})
-                </button>
+              {/* Filter Tabs & Bulk Actions */}
+              <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+                <div className="flex gap-1.5 bg-neutral-900 p-1 rounded-lg border border-neutral-800">
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("all")}
+                    className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer ${
+                      reviewFilter === "all" ? "bg-white text-black" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    Todas ({reviews.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("pending")}
+                    className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                      reviewFilter === "pending" ? "bg-amber-500 text-black" : "text-amber-400 hover:text-amber-300"
+                    }`}
+                  >
+                    <span>Pendientes ({reviews.filter((r) => r.approved === false).length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("approved")}
+                    className={`px-3 py-1.5 text-[10px] font-black uppercase rounded tracking-wider transition-colors cursor-pointer ${
+                      reviewFilter === "approved" ? "bg-emerald-500 text-black" : "text-emerald-400 hover:text-emerald-300"
+                    }`}
+                  >
+                    Aprobadas ({reviews.filter((r) => r.approved !== false).length})
+                  </button>
+                </div>
+
+                {reviews.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmDelete({
+                        title: "Eliminar Todas las Opiniones",
+                        message: `¿Estás seguro de que deseas eliminar permanentemente todas las ${reviews.length} opiniones registradas? Esta acción no se puede deshacer.`,
+                        onConfirm: async () => {
+                          for (const rev of reviews) {
+                            await deleteReview(rev.id);
+                          }
+                          showNotification("Todas las opiniones han sido eliminadas.");
+                        }
+                      });
+                    }}
+                    className="px-3 py-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Trash2 size={12} />
+                    <span>Eliminar Todas</span>
+                  </button>
+                )}
               </div>
             </div>
 

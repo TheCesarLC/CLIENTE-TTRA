@@ -5,9 +5,10 @@ import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 interface OptimizedVideoPlayerProps {
   id?: string;
   activeVideoId?: string | null;
-  onPlayRequest?: (id: string) => void;
+  onPlayRequest?: (id: string | null) => void;
   src: string;
   poster?: string;
+  fallbackPoster?: string;
   className?: string;
   controls?: boolean;
   autoPlay?: boolean;
@@ -25,6 +26,7 @@ export default function OptimizedVideoPlayer({
   onPlayRequest,
   src,
   poster,
+  fallbackPoster,
   className = "w-full h-full object-cover",
   controls = false,
   autoPlay = false,
@@ -36,17 +38,27 @@ export default function OptimizedVideoPlayer({
   isHero = false,
 }: OptimizedVideoPlayerProps) {
   const [videoError, setVideoError] = useState(false);
+  const [posterError, setPosterError] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const driveConfig = getDriveMediaConfig(src);
+  
+  // Resolve best poster preview automatically to never leave a black video container
+  let autoDerivedPoster: string | undefined = undefined;
+  if (driveConfig.isDrive && driveConfig.fileId) {
+    autoDerivedPoster = `https://drive.google.com/thumbnail?id=${driveConfig.fileId}&sz=w1200`;
+  } else if (src && src.includes("cloudinary.com") && /\.(mp4|mov|webm)(\?.*)?$/i.test(src)) {
+    autoDerivedPoster = src.replace(/\.(mp4|mov|webm)(\?.*)?$/i, ".jpg$2");
+  }
+
   const effectivePoster =
-    poster ||
-    (driveConfig.isDrive && driveConfig.fileId
-      ? `https://drive.google.com/thumbnail?id=${driveConfig.fileId}&sz=w1200`
-      : undefined);
+    (!posterError && poster) ||
+    autoDerivedPoster ||
+    fallbackPoster ||
+    undefined;
 
   // Sync external activeVideoId state (Mutual exclusion: only 1 video plays at a time, Hero excluded)
   useEffect(() => {

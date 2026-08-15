@@ -606,92 +606,85 @@ export default function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto px-2">
             
             {/* VIDEO 1 - ONDGAS */}
-            <div className="flex flex-col items-center">
-              <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-transform duration-300 hover:border-neutral-700">
-                {siteConfigToUse.experienceVideo &&
+            {(() => {
+              const ondgasProduct = activeProducts.find(p => p.name.toUpperCase().includes("ON DGAS") || p.name.toUpperCase().includes("ONDGAS")) || activeProducts[0];
+              const ondgasFallbackPoster = ondgasProduct?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const ondgasVideoSrc = siteConfigToUse.experienceVideo &&
                 !siteConfigToUse.experienceVideo.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
-                !siteConfigToUse.experienceVideo.includes("41ebdb") ? (
-                  <OptimizedVideoPlayer
-                    id="ondgas"
-                    activeVideoId={activeVideoId}
-                    onPlayRequest={setActiveVideoId}
-                    src={siteConfigToUse.experienceVideo}
-                    playsInline
-                    loop
-                    muted
-                    className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
-                    poster={
-                      siteConfigToUse.experiencePoster &&
-                      !siteConfigToUse.experiencePoster.includes("umbra.page") &&
-                      !siteConfigToUse.experiencePoster.includes("8678b1b9")
-                        ? siteConfigToUse.experiencePoster
-                        : undefined
-                    }
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                      <Video size={20} />
-                    </div>
-                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-white mb-1">
-                      ONDGAS
-                    </h3>
-                    <p className="text-[10px] text-gray-400 max-w-xs font-light leading-relaxed">
-                      {isAdmin
-                        ? "Configura la URL del video ONDGAS (.mp4 o Google Drive)."
-                        : "Detalles Exclusivos en Alta Definición."}
-                    </p>
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleOpenVisualEdit("experienceVideo", "Video ONDGAS", "video")}
-                        className="mt-4 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-                      >
-                        <Pencil size={11} />
-                        <span>Agregar Video ONDGAS</span>
-                      </button>
-                    )}
+                !siteConfigToUse.experienceVideo.includes("41ebdb")
+                  ? siteConfigToUse.experienceVideo
+                  : "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4";
+
+              return (
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                    <OptimizedVideoPlayer
+                      id="ondgas"
+                      activeVideoId={activeVideoId}
+                      onPlayRequest={setActiveVideoId}
+                      src={ondgasVideoSrc}
+                      playsInline
+                      loop
+                      muted
+                      className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                      poster={
+                        siteConfigToUse.experiencePoster &&
+                        !siteConfigToUse.experiencePoster.includes("umbra.page") &&
+                        !siteConfigToUse.experiencePoster.includes("8678b1b9")
+                          ? siteConfigToUse.experiencePoster
+                          : undefined
+                      }
+                      fallbackPoster={ondgasFallbackPoster}
+                    />
                   </div>
-                )}
-              </div>
-              <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === 'ondgas' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
-                ONDGAS
-              </span>
-            </div>
+                  <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === 'ondgas' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
+                    ONDGAS
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* VIDEO 2 - 800 DIAS */}
-            <div className="flex flex-col items-center">
-              <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-transform duration-300 hover:border-neutral-700">
-                <OptimizedVideoPlayer
-                  id="800dias"
-                  activeVideoId={activeVideoId}
-                  onPlayRequest={setActiveVideoId}
-                  src={
-                    siteConfigToUse.experienceVideo2 &&
-                    !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
-                    !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
-                    !siteConfigToUse.experienceVideo2.includes("41ebdb")
-                      ? siteConfigToUse.experienceVideo2
-                      : "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4"
-                  }
-                  playsInline
-                  loop
-                  muted
-                  className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
-                  poster={
-                    siteConfigToUse.experiencePoster2 &&
-                    !siteConfigToUse.experiencePoster2.includes("umbra.page")
-                      ? siteConfigToUse.experiencePoster2
-                      : undefined
-                  }
-                />
-              </div>
-              <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === '800dias' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
-                800 DÍAS
-              </span>
-            </div>
+            {(() => {
+              const d800Product = activeProducts.find(p => p.name.toUpperCase().includes("800 DIAS") || p.name.toUpperCase().includes("800 DÍAS")) || activeProducts[1] || activeProducts[0];
+              const d800FallbackPoster = d800Product?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const d800VideoSrc = siteConfigToUse.experienceVideo2 &&
+                !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
+                !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
+                !siteConfigToUse.experienceVideo2.includes("41ebdb")
+                  ? siteConfigToUse.experienceVideo2
+                  : "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4";
+
+              return (
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                    <OptimizedVideoPlayer
+                      id="800dias"
+                      activeVideoId={activeVideoId}
+                      onPlayRequest={setActiveVideoId}
+                      src={d800VideoSrc}
+                      playsInline
+                      loop
+                      muted
+                      className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                      poster={
+                        siteConfigToUse.experiencePoster2 &&
+                        !siteConfigToUse.experiencePoster2.includes("umbra.page")
+                          ? siteConfigToUse.experiencePoster2
+                          : undefined
+                      }
+                      fallbackPoster={d800FallbackPoster}
+                    />
+                  </div>
+                  <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === '800dias' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
+                    800 DÍAS
+                  </span>
+                </div>
+              );
+            })()}
 
           </div>
         </div>

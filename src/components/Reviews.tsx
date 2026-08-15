@@ -62,10 +62,10 @@ export default function Reviews() {
   const approvedReviews = reviewsList.filter((r) => r.approved !== false);
   const displayReviews = isAdmin ? reviewsList : approvedReviews;
 
-  const totalReviewsCount = approvedReviews.length || 1;
-  const averageRating = (
-    approvedReviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviewsCount
-  ).toFixed(2);
+  const totalReviewsCount = approvedReviews.length;
+  const averageRating = totalReviewsCount > 0
+    ? (approvedReviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviewsCount).toFixed(1)
+    : "5.0";
 
   const starCounts = [0, 0, 0, 0, 0];
   approvedReviews.forEach((r) => {
@@ -382,7 +382,30 @@ export default function Reviews() {
 
         {/* Existing Reviews List Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-          {displayReviews.map((rev) => {
+          {displayReviews.length === 0 ? (
+            <div className="md:col-span-2 py-12 px-6 text-center border border-neutral-900 rounded-xl bg-neutral-950/40 space-y-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-neutral-900 text-gray-500 mx-auto">
+                <Star size={20} className="text-gray-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                  Aún no hay opiniones registradas
+                </h3>
+                <p className="text-xs text-gray-400 uppercase tracking-wider max-w-md mx-auto">
+                  Sé el primero en compartir tu experiencia con nuestras gorras de colección.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-black text-xs font-black tracking-widest uppercase hover:bg-neutral-200 rounded transition-colors cursor-pointer"
+              >
+                <MessageSquarePlus size={14} />
+                <span>Escribir Opinión</span>
+              </button>
+            </div>
+          ) : (
+            displayReviews.map((rev) => {
             const isEditing = editingReviewId === rev.id;
             const isPending = rev.approved === false;
             return (
@@ -575,7 +598,7 @@ export default function Reviews() {
                 )}
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
 

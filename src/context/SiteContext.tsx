@@ -493,105 +493,34 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
-  // Sync / Listen to Reviews (with seeding)
+  // Sync / Listen to Reviews (No template seeding)
   useEffect(() => {
     const path = "reviews";
     const colRef = collection(db, path);
     
     const unsubscribe = onSnapshot(colRef, async (querySnap) => {
-      if (querySnap.empty) {
-        // Double-guard: If already seeded locally, respect that they might have been deleted by the admin
-        const locallySeeded = localStorage.getItem("seeded_reviews") === "true";
-        if (locallySeeded) {
-          console.log("Reviews already seeded but empty, skipping.");
-          setReviews([]);
-          return;
-        }
+      const revList: Review[] = [];
+      const legacyTemplateIds = new Set([
+        "rev1", "rev2", "rev3", "rev4", "rev5", "rev6", "rev7", "rev8", "rev9", "rev10"
+      ]);
 
-        try {
-          const statusSnap = await getDoc(doc(db, "site_configs", "seed_status"));
-          if (statusSnap.exists() && statusSnap.data()?.reviews === true) {
-            console.log("Reviews already seeded in DB but empty, skipping.");
-            localStorage.setItem("seeded_reviews", "true");
-            setReviews([]);
-            return;
-          }
-        } catch (err) {
-          console.warn("Could not retrieve seed status:", err);
-        }
-
-        console.log("Seeding reviews to Firestore db...");
-        for (const rev of REVIEWS) {
-          try {
-            await setDoc(doc(db, "reviews", rev.id), rev);
-          } catch (e) {
-            console.error("Failed to seed review", rev.id, e);
-          }
-        }
-        try {
-          await setDoc(doc(db, "site_configs", "seed_status"), { reviews: true }, { merge: true });
-        } catch (e) {
-          console.error("Failed to write review seed status", e);
-        }
-        localStorage.setItem("seeded_reviews", "true");
-      } else {
-        const revList: Review[] = [];
-        let hasOldReviews = false;
-        querySnap.forEach((docSnap) => {
-          if (!docSnap.id.startsWith("_")) {
-            const data = docSnap.data() as Review;
+      querySnap.forEach((docSnap) => {
+        if (!docSnap.id.startsWith("_")) {
+          const data = docSnap.data() as Review;
+          // If a legacy template review was found, purge it from Firestore
+          if (legacyTemplateIds.has(docSnap.id) || (data.id && legacyTemplateIds.has(data.id))) {
+            deleteDoc(doc(db, "reviews", docSnap.id)).catch(() => {});
+          } else {
             revList.push(data);
-            if (data.capName !== "ON DGAS" && data.capName !== "800 DIAS") {
-              hasOldReviews = true;
-            }
-          }
-        });
-
-        // Check if v2 migration has already been recorded
-        let isAlreadyMigrated = localStorage.getItem("migrated_v2") === "true";
-        if (!isAlreadyMigrated && hasOldReviews) {
-          try {
-            const statusSnap = await getDoc(doc(db, "site_configs", "seed_status"));
-            if (statusSnap.exists() && statusSnap.data()?.migrated_v2 === true) {
-              isAlreadyMigrated = true;
-              localStorage.setItem("migrated_v2", "true");
-            }
-          } catch (err) {
-            console.warn("Could not retrieve seed status for review migration:", err);
           }
         }
+      });
 
-        if (hasOldReviews && !isAlreadyMigrated) {
-          console.log("Old reviews detected. Migrating reviews to new cap models...");
-          for (const docSnap of querySnap.docs) {
-            try {
-              await deleteDoc(doc(db, "reviews", docSnap.id));
-            } catch (e) {
-              console.error("Failed to delete review", docSnap.id, e);
-            }
-          }
-          for (const rev of REVIEWS) {
-            try {
-              await setDoc(doc(db, "reviews", rev.id), rev);
-            } catch (e) {
-              console.error("Failed to write review", rev.id, e);
-            }
-          }
-          try {
-            await setDoc(doc(db, "site_configs", "seed_status"), { migrated_v2: true }, { merge: true });
-            localStorage.setItem("migrated_v2", "true");
-          } catch (e) {
-            console.error("Failed to mark migration_v2 status", e);
-          }
-          return;
-        }
-
-        setReviews(revList);
-        localStorage.setItem("seeded_reviews", "true");
-      }
+      setReviews(revList);
+      localStorage.setItem("seeded_reviews", "true");
     }, (error) => {
-      console.warn("Firestore reviews reading failed, falling back to local REVIEWS:", error);
-      setReviews(REVIEWS);
+      console.warn("Firestore reviews reading failed or offline:", error);
+      setReviews([]);
     });
 
     return unsubscribe;
