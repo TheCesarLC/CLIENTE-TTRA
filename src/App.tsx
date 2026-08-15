@@ -192,6 +192,48 @@ export default function App() {
     }
   }, [cart]);
 
+  // Synchronize cart with real-time activeProducts (price updates, stock changes, name updates)
+  useEffect(() => {
+    if (!activeProducts || activeProducts.length === 0) return;
+    setCart((prevCart) => {
+      let changed = false;
+      const updated = prevCart.map((item) => {
+        const liveProd = activeProducts.find(
+          (p) => p.id === item.product.id || p.name.toLowerCase() === item.product.name?.toLowerCase()
+        );
+        if (!liveProd) return item;
+        const currentPrice = item.product.priceMXN;
+        const newPrice = liveProd.priceMXN;
+        const currentStock = item.product.stockQuantity;
+        const newStock = liveProd.stockQuantity;
+        const currentOutOfStock = item.product.outOfStock;
+        const newOutOfStock = liveProd.outOfStock;
+        const currentName = item.product.name;
+        const newName = liveProd.name;
+        const currentImage = item.product.images?.[0];
+        const newImage = liveProd.images?.[0];
+
+        if (
+          currentPrice !== newPrice ||
+          currentStock !== newStock ||
+          currentOutOfStock !== newOutOfStock ||
+          currentName !== newName ||
+          currentImage !== newImage
+        ) {
+          changed = true;
+          const maxStock = typeof newStock === "number" && newStock > 0 ? newStock : 10;
+          return {
+            ...item,
+            product: liveProd,
+            quantity: Math.max(1, Math.min(item.quantity, maxStock))
+          };
+        }
+        return item;
+      });
+      return changed ? updated : prevCart;
+    });
+  }, [activeProducts]);
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-[#000000] z-50 flex flex-col items-center justify-center select-none">

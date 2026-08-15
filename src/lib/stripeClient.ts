@@ -2,6 +2,8 @@
 // Ensures Stripe payments and key verifications work 100% in all deployment types:
 // Vercel Static, Vercel Serverless, Cloud Run, Localhost, Netlify, Custom Domains (tetra-hats.com)
 
+import { sanitizeCheckoutItems } from "./security";
+
 export interface StripeVerifyResult {
   valid: boolean;
   livemode?: boolean;
@@ -133,6 +135,9 @@ export async function createStripeCheckoutSession(params: StripeCheckoutParams):
     throw new Error("No hay Clave Secreta de Stripe configurada.");
   }
 
+  // Strictly sanitize & enforce authentic prices against official catalog
+  const verifiedItems = sanitizeCheckoutItems(params.items);
+
   const currentOrigin = params.origin || (typeof window !== "undefined" ? window.location.origin : "https://tetra-hats.com");
 
   // 1. Try Backend Endpoint first
@@ -146,7 +151,7 @@ export async function createStripeCheckoutSession(params: StripeCheckoutParams):
         buyerEmail: params.buyerEmail,
         secretKey: cleanSecret,
         clientOrigin: currentOrigin,
-        items: params.items
+        items: verifiedItems
       })
     });
 
@@ -182,7 +187,7 @@ export async function createStripeCheckoutSession(params: StripeCheckoutParams):
   bodyParams.append("shipping_address_collection[allowed_countries][1]", "US");
   bodyParams.append("shipping_address_collection[allowed_countries][2]", "CA");
 
-  params.items.forEach((item, index) => {
+  verifiedItems.forEach((item, index) => {
     const unitAmount = Math.round((item.priceMXN || 0) * 100);
     bodyParams.append(`line_items[${index}][price_data][currency]`, "mxn");
     bodyParams.append(`line_items[${index}][price_data][unit_amount]`, String(unitAmount > 0 ? unitAmount : 5000));

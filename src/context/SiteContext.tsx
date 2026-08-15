@@ -294,6 +294,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // hugocesarlemuscortes@gmail.com is absolute super administrator
         if (userEmail === "hugocesarlemuscortes@gmail.com") {
           setIsAdmin(true);
+          window.__TETRA_ADMIN__ = true;
           try {
             await setDoc(doc(db, "admins", user.uid), {
               email: user.email,
@@ -309,15 +310,19 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const adminDoc = await getDoc(doc(db, "admins", user.uid));
             if (adminDoc.exists()) {
               setIsAdmin(true);
+              window.__TETRA_ADMIN__ = true;
             } else {
               setIsAdmin(false);
+              window.__TETRA_ADMIN__ = false;
             }
           } catch {
             setIsAdmin(false);
+            window.__TETRA_ADMIN__ = false;
           }
         }
       } else {
         setIsAdmin(false);
+        window.__TETRA_ADMIN__ = false;
         setVisualEditMode(false);
       }
       setAuthLoaded(true);

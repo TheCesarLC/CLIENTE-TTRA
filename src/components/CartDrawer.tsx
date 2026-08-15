@@ -103,13 +103,17 @@ export default function CartDrawer({
         userEmail: buyerEmail.trim(),
         userName: buyerName.trim(),
         createdAt: new Date().toISOString(),
-        items: cart.map(i => ({
-          productId: i.product.id,
-          productName: i.product.name,
-          quantity: i.quantity,
-          priceMXN: i.product.priceMXN,
-          image: i.product.images?.[0] || ""
-        })),
+        items: cart.map(i => {
+          const liveProd = products?.find(p => p.id === i.product.id || p.name.toLowerCase() === i.product.name?.toLowerCase());
+          const effectivePrice = typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (i.product?.priceMXN || 0);
+          return {
+            productId: liveProd?.id || i.product.id,
+            productName: liveProd?.name || i.product.name,
+            quantity: i.quantity,
+            priceMXN: effectivePrice,
+            image: liveProd?.images?.[0] || i.product.images?.[0] || ""
+          };
+        }),
         totalMXN: subtotalMXN,
         status: "PAGO_PENDIENTE",
         shippingAddress: shippingAddress.trim(),
@@ -169,13 +173,17 @@ export default function CartDrawer({
         buyerEmail: buyerEmail.trim(),
         secretKey: siteConfig.stripeSecretKey || "",
         origin: window.location.origin,
-        items: cart.map(i => ({
-          productId: i.product.id,
-          name: i.product.name,
-          quantity: i.quantity,
-          priceMXN: i.product.priceMXN,
-          image: i.product.images?.[0]
-        }))
+        items: cart.map(i => {
+          const liveProd = products?.find(p => p.id === i.product.id || p.name.toLowerCase() === i.product.name?.toLowerCase());
+          const effectivePrice = typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (i.product?.priceMXN || 0);
+          return {
+            productId: liveProd?.id || i.product.id,
+            name: liveProd?.name || i.product.name,
+            quantity: i.quantity,
+            priceMXN: effectivePrice,
+            image: liveProd?.images?.[0] || i.product.images?.[0]
+          };
+        })
       });
 
       if (url) {
@@ -281,7 +289,11 @@ export default function CartDrawer({
   };
 
   const getSubtotalMXN = () => {
-    return cart.reduce((acc, item) => acc + (item.product?.priceMXN || 0) * item.quantity, 0);
+    return cart.reduce((acc, item) => {
+      const liveProd = products?.find(p => p.id === item.product.id || p.name.toLowerCase() === item.product.name?.toLowerCase());
+      const effectivePrice = typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (item.product?.priceMXN || 0);
+      return acc + effectivePrice * item.quantity;
+    }, 0);
   };
 
   const subtotalMXN = getSubtotalMXN();
@@ -1067,12 +1079,12 @@ export default function CartDrawer({
               ) : (
                 <div className="space-y-4">
                   {cart.map((item) => {
-                    const liveProduct = products?.find((p) => p.id === item.product.id) || item.product;
+                    const liveProduct = products?.find((p) => p.id === item.product.id || p.name.toLowerCase() === item.product.name?.toLowerCase()) || item.product;
                     const availableStock = typeof liveProduct.stockQuantity === "number"
                       ? liveProduct.stockQuantity
                       : (typeof item.product.stockQuantity === "number" ? item.product.stockQuantity : 10);
                     const isOutOfStock = liveProduct.outOfStock || availableStock <= 0;
-                    const priceToUse = liveProduct.priceMXN ?? item.product.priceMXN;
+                    const priceToUse = typeof liveProduct.priceMXN === "number" ? liveProduct.priceMXN : item.product.priceMXN;
 
                     return (
                       <div
