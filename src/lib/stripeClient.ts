@@ -188,9 +188,15 @@ export async function createStripeCheckoutSession(params: StripeCheckoutParams):
   bodyParams.append("shipping_address_collection[allowed_countries][2]", "CA");
 
   verifiedItems.forEach((item, index) => {
-    const unitAmount = Math.round((item.priceMXN || 0) * 100);
+    let rawPrice = item.priceMXN;
+    if (typeof rawPrice === "string") {
+      rawPrice = parseFloat(String(rawPrice).replace(/[^0-9.]/g, ""));
+    }
+    const price = Number(rawPrice) > 0 ? Number(rawPrice) : 1499;
+    // Stripe requires minimum 10.00 MXN (1000 centavos)
+    const unitAmount = Math.max(1000, Math.round(price * 100));
     bodyParams.append(`line_items[${index}][price_data][currency]`, "mxn");
-    bodyParams.append(`line_items[${index}][price_data][unit_amount]`, String(unitAmount > 0 ? unitAmount : 5000));
+    bodyParams.append(`line_items[${index}][price_data][unit_amount]`, String(unitAmount));
     bodyParams.append(`line_items[${index}][price_data][product_data][name]`, item.name || "Gorra TETRA HATS");
     bodyParams.append(`line_items[${index}][quantity]`, String(item.quantity || 1));
     if (item.image && item.image.startsWith("http")) {

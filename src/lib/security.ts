@@ -55,17 +55,19 @@ export function sanitizeCheckoutItems(
       p.name.toLowerCase() === targetName
     );
 
-    // Strictly enforce live catalog authoritative price
-    let verifiedPrice = typeof item.priceMXN === "number" && item.priceMXN > 0 ? item.priceMXN : 500;
-    if (matchedProduct && typeof matchedProduct.priceMXN === "number" && matchedProduct.priceMXN > 0) {
+    // Strictly enforce valid authoritative price (Stripe requires minimum $10.00 MXN / 1000 centavos)
+    let verifiedPrice = typeof item.priceMXN === "number" && item.priceMXN >= 10 ? item.priceMXN : 1499;
+    if (matchedProduct && typeof matchedProduct.priceMXN === "number" && matchedProduct.priceMXN >= 10) {
       verifiedPrice = matchedProduct.priceMXN;
+    } else if (typeof item.priceMXN === "number" && item.priceMXN > 0) {
+      verifiedPrice = Math.max(10, item.priceMXN);
     }
 
     return {
       productId: matchedProduct?.id || item.productId || "item",
       name: matchedProduct?.name || item.name || "Gorra TETRA HATS",
       quantity: qty,
-      priceMXN: verifiedPrice,
+      priceMXN: Math.max(10, verifiedPrice),
       image: item.image || matchedProduct?.images?.[0]
     };
   });

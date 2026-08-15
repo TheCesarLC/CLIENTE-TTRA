@@ -209,9 +209,14 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
     let totalCentavos = 0;
     const lineItems = (items || []).map((item: any) => {
-      const price = Number(item.priceMXN) || Number(item.price) || Number(item.unitPrice) || 0;
-      const qty = Number(item.quantity) || 1;
-      const unitAmount = Math.round(price * 100);
+      let rawPrice = item.priceMXN ?? item.price ?? item.unitPrice ?? 1499;
+      if (typeof rawPrice === "string") {
+        rawPrice = parseFloat(rawPrice.replace(/[^0-9.]/g, ""));
+      }
+      const price = Number(rawPrice) > 0 ? Number(rawPrice) : 1499;
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+      // Stripe requires minimum 10.00 MXN (1000 centavos) per line item
+      const unitAmount = Math.max(1000, Math.round(price * 100));
       totalCentavos += unitAmount * qty;
 
       // Stripe API requires image URLs to be absolute HTTP or HTTPS links

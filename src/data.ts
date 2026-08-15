@@ -4,7 +4,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "9073020371194",
     name: "ON DGAS",
-    priceMXN: 1,
+    priceMXN: 1499,
     originalPriceMXN: 1600,
     stockQuantity: 15,
     images: [
@@ -29,7 +29,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "9073019060474",
     name: "800 DIAS",
-    priceMXN: 1,
+    priceMXN: 1499,
     originalPriceMXN: 1600,
     stockQuantity: 10,
     images: [
