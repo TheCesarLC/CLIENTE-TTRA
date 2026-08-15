@@ -174,7 +174,7 @@ app.post("/api/stripe/verify-keys", async (req, res) => {
 // Stripe Checkout Endpoint
 app.post("/api/stripe/create-checkout-session", async (req, res) => {
   try {
-    const { items, orderId, buyerEmail, secretKey: customSecret } = req.body;
+    const { items, orderId, buyerEmail, secretKey: customSecret, clientOrigin } = req.body;
     const rawSecret = (customSecret && typeof customSecret === "string" && customSecret.trim()) 
       ? customSecret.trim() 
       : (process.env.STRIPE_SECRET_KEY || "");
@@ -204,7 +204,9 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     }
 
     const stripe = new Stripe(secretKey);
-    const origin = getRequestOrigin(req);
+    const origin = (clientOrigin && typeof clientOrigin === "string" && clientOrigin.startsWith("http"))
+      ? clientOrigin.replace(/\/$/, "")
+      : getRequestOrigin(req);
 
     let totalCentavos = 0;
     const lineItems = (items || []).map((item: any) => {
@@ -306,7 +308,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 // Mercado Pago Preference Endpoint
 app.post("/api/mercadopago/create-preference", async (req, res) => {
   try {
-    const { items, orderId, buyerEmail, backUrl, accessToken: customToken } = req.body;
+    const { items, orderId, buyerEmail, backUrl, accessToken: customToken, clientOrigin } = req.body;
     const accessToken = (customToken && typeof customToken === "string" && customToken.trim())
       ? customToken.trim()
       : (process.env.MERCADOPAGO_ACCESS_TOKEN || "");
@@ -332,7 +334,9 @@ app.post("/api/mercadopago/create-preference", async (req, res) => {
       currency_id: "MXN",
     }));
 
-    const origin = getRequestOrigin(req);
+    const origin = (clientOrigin && typeof clientOrigin === "string" && clientOrigin.startsWith("http"))
+      ? clientOrigin.replace(/\/$/, "")
+      : getRequestOrigin(req);
 
     const isTestToken = accessToken.trim().startsWith("TEST-");
 

@@ -83,6 +83,7 @@ export interface SiteConfig {
   mercadoPagoPublicKey?: string;
   stripeSecretKey?: string;
   stripePublishableKey?: string;
+  customBackendApiUrl?: string;
 }
 
 // Order record in Firestore
@@ -217,7 +218,8 @@ const defaultSiteConfig: SiteConfig = {
   mercadoPagoAccessToken: "",
   mercadoPagoPublicKey: "",
   stripeSecretKey: "",
-  stripePublishableKey: ""
+  stripePublishableKey: "",
+  customBackendApiUrl: ""
 };
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -4,6 +4,7 @@ import { X, Trash2, Plus, Minus, Box, CheckCircle, CreditCard, Lock, AlertCircle
 import { CartItem } from "../types";
 import { useSite } from "../context/SiteContext";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { postApi } from "../lib/api";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -161,25 +162,20 @@ export default function CartDrawer({
     };
 
     try {
-      const res = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          buyerName: buyerName.trim(),
-          buyerEmail: buyerEmail.trim(),
-          secretKey: siteConfig.stripeSecretKey || "",
-          items: cart.map(i => ({
-            productId: i.product.id,
-            name: i.product.name,
-            quantity: i.quantity,
-            priceMXN: i.product.priceMXN,
-            image: i.product.images?.[0]
-          }))
-        })
-      });
-
-      const data = await res.json().catch(() => ({}));
+      const { res, data } = await postApi("/api/stripe/create-checkout-session", {
+        orderId,
+        buyerName: buyerName.trim(),
+        buyerEmail: buyerEmail.trim(),
+        secretKey: siteConfig.stripeSecretKey || "",
+        clientOrigin: window.location.origin,
+        items: cart.map(i => ({
+          productId: i.product.id,
+          name: i.product.name,
+          quantity: i.quantity,
+          priceMXN: i.product.priceMXN,
+          image: i.product.images?.[0]
+        }))
+      }, (siteConfig as any).customBackendApiUrl);
 
       if (!res.ok || data.error) {
         safeClosePopup();

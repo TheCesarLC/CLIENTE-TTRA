@@ -3,6 +3,7 @@ import { useSite, SiteConfig, Order, AuthenticCode, ContactMessage } from "../co
 import { Product } from "../types";
 import { ProductImageManager } from "./ProductImageManager";
 import { ReceiptModal } from "./ReceiptModal";
+import { postApi } from "../lib/api";
 import { 
   X, 
   Settings, 
@@ -358,12 +359,9 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
     setStripeVerification((prev) => ({ ...prev, loading: true }));
     try {
-      const res = await fetch("/api/stripe/verify-keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secretKey: keyToTest })
-      });
-      const data = await res.json();
+      const { res, data } = await postApi("/api/stripe/verify-keys", {
+        secretKey: keyToTest
+      }, (siteConfig as any).customBackendApiUrl);
       setStripeVerification({
         loading: false,
         valid: data.valid,
@@ -644,6 +642,15 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     <p className="text-xs text-purple-200/80 mt-0.5">
                       Stripe no rechaza tarjetas por conflicto de titular. Acepta todas las tarjetas de Débito y Crédito (Visa, Mastercard, AMEX) en México e internacionalmente al instante.
                     </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-bold px-2 py-0.5 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        PAGOS ACTIVOS EN TETRA-HATS.COM Y WEB PUBLICADA
+                      </span>
+                      <span className="text-[9px] text-purple-300/80 font-mono">
+                        CORS y redirección de retorno automáticos
+                      </span>
+                    </div>
                   </div>
                 </div>
 
