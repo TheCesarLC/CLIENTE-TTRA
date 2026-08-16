@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, ShoppingBag, ShieldCheck, Box, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ShoppingBag, ShieldCheck, Box, ChevronLeft, ChevronRight } from "lucide-react";
 import { Product } from "../types";
 import { getOptimizedImageUrl, preloadImages } from "../lib/imageOptimizer";
 
@@ -267,23 +267,6 @@ export default function ProductModal({
             <p className="text-xs text-gray-400 leading-relaxed font-medium mb-6 uppercase">
               {product.description}
             </p>
-
-            {/* List characteristics */}
-            {product.details && product.details.length > 0 && (
-              <div className="space-y-2 border-t border-neutral-900 pt-6 mb-8">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Especificaciones Técnicas
-                </h4>
-                <ul className="space-y-1.5">
-                  {product.details.map((detail, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-xs text-gray-300">
-                      <BadgeCheck size={12} className="text-gray-500 flex-shrink-0" />
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
 
           <div className="border-t border-neutral-900 pt-6 space-y-4">

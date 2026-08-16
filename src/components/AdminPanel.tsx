@@ -1617,17 +1617,6 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider block">Detalles del Modelo (Uno por línea)</label>
-                    <textarea
-                      value={Array.isArray(editingProduct.details) ? editingProduct.details.join("\n") : ""}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, details: e.target.value.split("\n").map(d => d.trim()).filter(Boolean) })}
-                      rows={3}
-                      placeholder="Gamuza con acabado premium italiana&#10;Bordados espectrales que brillan en la oscuridad&#10;Visera de tacto sedoso"
-                      className="w-full bg-black border border-neutral-800 rounded p-2.5 text-white focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider block">Descripción Narrativa del Producto</label>
                     <textarea
                       value={editingProduct.description || ""}
