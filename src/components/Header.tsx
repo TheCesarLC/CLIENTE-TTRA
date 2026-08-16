@@ -201,7 +201,7 @@ export default function Header({
                 id="spectral-glow-toggle"
               >
                 <Sparkles size={11} style={{ color: glowMode ? colorHex : undefined }} className={glowMode ? "" : "text-gray-400"} />
-                <span className="hidden sm:inline">Modo Glow</span>
+                <span className="hidden sm:inline">THEGLOW</span>
               </button>
 
               {/* Color dots picker */}
