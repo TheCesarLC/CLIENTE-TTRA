@@ -10,6 +10,7 @@ interface Star {
   twinklePhase: number;
   color: string;
   hasFlare: boolean;
+  parallaxSpeed: number;
 }
 
 interface Meteor {
@@ -72,6 +73,8 @@ export default function StarryBackground() {
           : Math.random() * 1.8 + 1.2; // 15% brighter, larger stars
 
         const hasFlare = radius > 2.0 && Math.random() < 0.35;
+        // Parallax speed depth factor (closer/larger stars move faster during page scroll)
+        const parallaxSpeed = 0.2 + (radius / 2.0) * 0.35;
 
         stars.push({
           x: Math.random() * width,
@@ -82,7 +85,8 @@ export default function StarryBackground() {
           twinkleSpeed: Math.random() * 0.02 + 0.005,
           twinklePhase: Math.random() * Math.PI * 2,
           color: starColors[Math.floor(Math.random() * starColors.length)],
-          hasFlare
+          hasFlare,
+          parallaxSpeed
         });
       }
 
@@ -109,10 +113,22 @@ export default function StarryBackground() {
 
     initStars();
 
+    let targetScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+    let smoothedScrollY = targetScrollY;
+
+    const handleScroll = () => {
+      targetScrollY = window.scrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     let time = 0;
 
     const render = () => {
       time += 1;
+      // Smooth lerp scroll displacement
+      smoothedScrollY += (targetScrollY - smoothedScrollY) * 0.1;
+
       ctx.clearRect(0, 0, width, height);
 
       // 1. Draw subtle cosmic gradient background depth
@@ -131,7 +147,7 @@ export default function StarryBackground() {
       ctx.fillStyle = deepGradient;
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Render stars
+      // 2. Render stars with parallax scroll displacement
       for (let i = 0; i < stars.length; i++) {
         const star = stars[i];
 
@@ -142,19 +158,22 @@ export default function StarryBackground() {
           star.baseAlpha + Math.sin(star.twinklePhase) * 0.35
         );
 
+        // Seamless vertical wrapping with scroll parallax
+        const starRenderY = ((star.y - smoothedScrollY * star.parallaxSpeed) % height + height) % height;
+
         ctx.save();
         ctx.globalAlpha = currentAlpha;
         ctx.fillStyle = star.color;
 
         // Draw star core
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.arc(star.x, starRenderY, star.radius, 0, Math.PI * 2);
         ctx.fill();
 
         // Draw soft glow for larger stars
         if (star.radius > 1.2) {
           ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius * 2.5, 0, Math.PI * 2);
+          ctx.arc(star.x, starRenderY, star.radius * 2.5, 0, Math.PI * 2);
           ctx.fillStyle = star.color;
           ctx.globalAlpha = currentAlpha * 0.18;
           ctx.fill();
@@ -170,11 +189,11 @@ export default function StarryBackground() {
 
           ctx.beginPath();
           // Horizontal cross ray
-          ctx.moveTo(star.x - flareLen, star.y);
-          ctx.lineTo(star.x + flareLen, star.y);
+          ctx.moveTo(star.x - flareLen, starRenderY);
+          ctx.lineTo(star.x + flareLen, starRenderY);
           // Vertical cross ray
-          ctx.moveTo(star.x, star.y - flareLen);
-          ctx.lineTo(star.x, star.y + flareLen);
+          ctx.moveTo(star.x, starRenderY - flareLen);
+          ctx.lineTo(star.x, starRenderY + flareLen);
           ctx.stroke();
         }
 
@@ -239,6 +258,7 @@ export default function StarryBackground() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

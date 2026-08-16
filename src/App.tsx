@@ -15,8 +15,10 @@ import Reviews from "./components/Reviews";
 import Footer from "./components/Footer";
 import AdminPanel from "./components/AdminPanel";
 import StarryBackground from "./components/StarryBackground";
+import CosmicLogo from "./components/CosmicLogo";
 import { ReceiptModal } from "./components/ReceiptModal";
 import OptimizedVideoPlayer from "./components/OptimizedVideoPlayer";
+import { getOrderStatusDetails } from "./lib/orderStatus";
 
 // Visual Inline Dialogs
 import VisualEditDialog from "./components/VisualEditDialog";
@@ -83,12 +85,15 @@ export default function App() {
 
   const [paymentStatusAlert, setPaymentStatusAlert] = useState<string | null>(null);
   const [completedReceiptOrder, setCompletedReceiptOrder] = useState<Order | null>(null);
+  const activeReceiptOrder = completedReceiptOrder 
+    ? (orders?.find(o => o.id === completedReceiptOrder.id) || completedReceiptOrder)
+    : null;
 
-  // Ensure page title and meta description for SEO / Search Engine indexing
+  // Ensure page title, favicon and meta description for SEO / Search Engine indexing
   useEffect(() => {
-    document.title = "TETRA HATS Gorras de colección exclusiva";
+    document.title = "TETRA HATS | Gorras de Colección Exclusiva";
 
-    const descText = siteConfigToUse.footerDescription || "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.";
+    const descText = siteConfigToUse.footerDescription || "Alta Moda y Diseño Premium. Gorras de Colección Exclusiva.";
     
     // Update meta description
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -101,7 +106,7 @@ export default function App() {
 
     // Update OpenGraph title and description
     let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute("content", "TETRA HATS Gorras de colección exclusiva");
+    if (ogTitle) ogTitle.setAttribute("content", "TETRA HATS | Gorras de Colección Exclusiva");
 
     let ogDesc = document.querySelector('meta[property="og:description"]');
     if (!ogDesc) {
@@ -110,6 +115,16 @@ export default function App() {
       document.head.appendChild(ogDesc);
     }
     ogDesc.setAttribute("content", descText);
+
+    // Ensure Favicon in head
+    let favIcon = document.querySelector('link[rel="icon"]');
+    if (!favIcon) {
+      favIcon = document.createElement("link");
+      favIcon.setAttribute("rel", "icon");
+      favIcon.setAttribute("type", "image/svg+xml");
+      document.head.appendChild(favIcon);
+    }
+    favIcon.setAttribute("href", "/favicon.svg");
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
@@ -553,13 +568,12 @@ export default function App() {
 
         {/* Hero content presentation */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center space-y-8 flex flex-col items-center">
-          <img
+          <CosmicLogo
             src={getOptimizedImageUrl(siteConfigToUse.logoUrl || "https://umbra.page/cdn/shop/files/Letras_Blancas.png", 800)}
-            alt="Logo Large"
-            loading="eager"
-            decoding="async"
-            className="w-[85%] max-w-lg mb-2 object-contain filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-transform duration-[2000ms] hover:scale-[1.015]"
-            referrerPolicy="no-referrer"
+            alt="Tetra Hats Logo"
+            className="w-[85%] max-w-lg mb-2"
+            glowColor={glowColor}
+            glowMode={glowMode}
           />
 
           <p className="text-gray-300 text-[11px] sm:text-xs md:text-sm font-semibold tracking-[0.4em] uppercase max-w-xl leading-relaxed relative flex items-center justify-center gap-2 flex-wrap">
@@ -922,7 +936,7 @@ export default function App() {
                         }
                       })() : "";
 
-                      const isOrderPaid = order.status === "PAGO_RECIBIDO" || order.status === "COMPLETADO" || order.status === "EMPACADO" || order.status === "ENVIADO" || order.status === "ENTREGADO";
+                      const statusInfo = getOrderStatusDetails(order.status);
 
                       return (
                         <div key={order.id} className="border border-neutral-800 p-3.5 bg-neutral-900/40 rounded-lg space-y-2.5 text-xs hover:border-neutral-700 transition-colors">
@@ -931,17 +945,13 @@ export default function App() {
                               <h4 className="font-black text-white text-xs">#{order.id}</h4>
                               <p className="text-[9px] text-gray-400 font-mono">{formattedDate}</p>
                             </div>
-                            <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
-                              isOrderPaid
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                            }`}>
-                              {order.status}
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider border ${statusInfo.badgeClass}`}>
+                              {statusInfo.label}
                             </span>
                           </div>
 
                           <div className="text-[10px] space-y-1 text-gray-300">
-                            <p><strong className="text-gray-400">Total:</strong> <span className="text-emerald-400 font-black">${(order.totalMXN || 0).toLocaleString()} MXN</span></p>
+                            <p><strong className="text-gray-400">{statusInfo.totalLabel}</strong> <span className="text-emerald-400 font-black">${(order.totalMXN || 0).toLocaleString()} MXN</span></p>
                             <p className="truncate"><strong className="text-gray-400">Método:</strong> {order.paymentMethod}</p>
                             {order.items && order.items.length > 0 && (
                               <p className="truncate text-gray-400">
@@ -1025,9 +1035,9 @@ export default function App() {
       />
 
       {/* Printable / Downloadable Receipt Modal overlay for completed purchases */}
-      {completedReceiptOrder && (
+      {activeReceiptOrder && (
         <ReceiptModal
-          order={completedReceiptOrder}
+          order={activeReceiptOrder}
           onClose={() => setCompletedReceiptOrder(null)}
           logoUrl={siteConfigToUse.brandLogoUrl}
         />

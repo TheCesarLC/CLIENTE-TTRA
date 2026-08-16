@@ -1,8 +1,15 @@
-import { isGoogleDriveUrl, extractGoogleDriveId } from "./mediaUtils";
+import { 
+  isGoogleDriveUrl, 
+  extractGoogleDriveId, 
+  isCloudinaryImageUrl, 
+  isCloudinaryVideoUrl,
+  getOptimizedCloudinaryImageUrl,
+  getOptimizedCloudinaryPosterUrl 
+} from "./mediaUtils";
 
 /**
- * Image Optimizer Utility for TETRA HATS & Umbra CDN
- * Converts heavy raw PNG images and Google Drive links into ultra-fast CDN thumbnails
+ * Image Optimizer Utility for TETRA HATS & Umbra CDN / Cloudinary
+ * Converts heavy raw PNG images, Google Drive links, and Cloudinary media into ultra-fast compressed CDN thumbnails
  */
 
 export function getOptimizedImageUrl(
@@ -13,6 +20,16 @@ export function getOptimizedImageUrl(
 
   const trimmed = url.trim();
   if (!trimmed) return "";
+
+  // Check if it's a Cloudinary image URL
+  if (isCloudinaryImageUrl(trimmed)) {
+    return getOptimizedCloudinaryImageUrl(trimmed, targetWidth);
+  }
+
+  // Check if it's a Cloudinary video URL being used as an image (convert to instant frame 0 thumbnail)
+  if (isCloudinaryVideoUrl(trimmed)) {
+    return getOptimizedCloudinaryPosterUrl(trimmed, targetWidth);
+  }
 
   // Check if it's a Google Drive link
   if (isGoogleDriveUrl(trimmed)) {
@@ -63,3 +80,4 @@ export function preloadImages(urls: string[], width: number = 600): void {
     }
   });
 }
+

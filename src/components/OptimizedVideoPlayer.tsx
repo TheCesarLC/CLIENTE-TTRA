@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { getDriveMediaConfig } from "../lib/mediaUtils";
+import { 
+  getDriveMediaConfig, 
+  isCloudinaryVideoUrl, 
+  getOptimizedCloudinaryVideoUrl, 
+  getOptimizedCloudinaryPosterUrl 
+} from "../lib/mediaUtils";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 
 interface OptimizedVideoPlayerProps {
@@ -41,24 +46,67 @@ export default function OptimizedVideoPlayer({
   const [posterError, setPosterError] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasRenderedFrame, setHasRenderedFrame] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [inView, setInView] = useState(isHero || autoPlay);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const driveConfig = getDriveMediaConfig(src);
-  
-  // Resolve best poster preview automatically to never leave a black video container
-  let autoDerivedPoster: string | undefined = undefined;
-  if (driveConfig.isDrive && driveConfig.fileId) {
-    autoDerivedPoster = `https://drive.google.com/thumbnail?id=${driveConfig.fileId}&sz=w1200`;
-  } else if (src && src.includes("cloudinary.com") && /\.(mp4|mov|webm)(\?.*)?$/i.test(src)) {
-    autoDerivedPoster = src.replace(/\.(mp4|mov|webm)(\?.*)?$/i, ".jpg$2");
-  }
+  const isCloudinary = isCloudinaryVideoUrl(src);
 
-  const effectivePoster =
-    (!posterError && poster) ||
-    autoDerivedPoster ||
-    fallbackPoster ||
-    undefined;
+  // Build ordered list of candidate poster URLs to test sequentially
+  const posterCandidates: string[] = React.useMemo(() => {
+    const list: string[] = [];
+
+    // 1. Explicit poster prop passed from parent/admin config
+    if (poster && typeof poster === "string" && poster.trim()) {
+      list.push(poster.trim());
+    }
+
+    // 2. Google drive thumbnail or Cloudinary dynamic frame snapshots
+    if (driveConfig.isDrive && driveConfig.fileId) {
+      if (driveConfig.thumbnailUrl) list.push(driveConfig.thumbnailUrl);
+    } else if (isCloudinary) {
+      // Content-aware snapshot (avoids black initial frames)
+      const autoPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 1280 : 800, "auto");
+      if (autoPoster) list.push(autoPoster);
+
+      // Offset snapshot at 1.0 second
+      const offsetPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 1280 : 800, "1.0");
+      if (offsetPoster && offsetPoster !== autoPoster) list.push(offsetPoster);
+
+      // Frame 0 snapshot
+      const frame0Poster = getOptimizedCloudinaryPosterUrl(src, isHero ? 1280 : 800, "0");
+      if (frame0Poster && !list.includes(frame0Poster)) list.push(frame0Poster);
+    } else if (src && src.includes("cloudinary.com") && /\.(mp4|mov|webm)(\?.*)?$/i.test(src)) {
+      list.push(src.replace(/\.(mp4|mov|webm)(\?.*)?$/i, ".jpg$2"));
+    }
+
+    // 3. Fallback poster (e.g. corresponding cap product image)
+    if (fallbackPoster && typeof fallbackPoster === "string" && fallbackPoster.trim() && !list.includes(fallbackPoster.trim())) {
+      list.push(fallbackPoster.trim());
+    }
+
+    return list;
+  }, [poster, src, fallbackPoster, driveConfig, isCloudinary, isHero]);
+
+  // Reset candidate index when inputs change
+  useEffect(() => {
+    setCandidateIndex(0);
+  }, [poster, src, fallbackPoster]);
+
+  const currentPoster = candidateIndex < posterCandidates.length ? posterCandidates[candidateIndex] : fallbackPoster;
+
+  // Handle poster load failure by advancing to next candidate
+  const handlePosterError = () => {
+    if (candidateIndex < posterCandidates.length - 1) {
+      setCandidateIndex((prev) => prev + 1);
+    } else {
+      setPosterError(true);
+    }
+  };
 
   // Sync external activeVideoId state (Mutual exclusion: only 1 video plays at a time, Hero excluded)
   useEffect(() => {
@@ -79,7 +127,7 @@ export default function OptimizedVideoPlayer({
 
   // Continuous background autoPlay Optimization
   useEffect(() => {
-    if ((autoPlay || !customOverlayControls) && videoRef.current) {
+    if ((autoPlay || !customOverlayControls) && videoRef.current && inView) {
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
       setIsMuted(true);
@@ -108,7 +156,7 @@ export default function OptimizedVideoPlayer({
       };
       attemptPlay();
     }
-  }, [autoPlay, customOverlayControls, src]);
+  }, [autoPlay, customOverlayControls, src, inView]);
 
   if (!src) return null;
 
@@ -184,6 +232,7 @@ export default function OptimizedVideoPlayer({
     const isThisActive = id ? activeVideoId === id : false;
     return (
       <div 
+        ref={containerRef}
         className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer group"
         onClick={() => {
           if (id && onPlayRequest) {
@@ -201,15 +250,13 @@ export default function OptimizedVideoPlayer({
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-950 relative overflow-hidden">
-            {effectivePoster && (
+            {currentPoster && (
               <img 
-                src={effectivePoster} 
+                src={currentPoster} 
                 alt="Vista Previa" 
                 className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
                 referrerPolicy="no-referrer"
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = "none";
-                }}
+                onError={handlePosterError}
               />
             )}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
@@ -225,100 +272,117 @@ export default function OptimizedVideoPlayer({
     );
   }
 
-  // Standard or Google Drive Direct HTML5 Video (Sleek, Non-Intrusive)
+  // Optimized HTML5 Video Source (Cloudinary f_auto/q_auto or Google Drive direct)
   const videoSrc = driveConfig.isDrive
     ? `/api/video-stream?id=${driveConfig.fileId}`
+    : isCloudinary
+    ? getOptimizedCloudinaryVideoUrl(src, { width: isHero ? 1280 : 720 })
     : src;
 
   return (
     <div 
-      className={`relative w-full h-full overflow-hidden select-none bg-black flex items-center justify-center ${
+      ref={containerRef}
+      className={`relative w-full h-full overflow-hidden select-none bg-neutral-950 flex items-center justify-center ${
         customOverlayControls ? "group cursor-pointer" : "pointer-events-none"
       }`}
       onClick={customOverlayControls ? togglePlay : undefined}
     >
-      <video
-        ref={videoRef}
-        key={driveConfig.isDrive ? driveConfig.fileId || src : src}
-        src={videoSrc}
-        data-hero={isHero ? "true" : undefined}
-        playsInline={playsInline}
-        // @ts-ignore iOS Safari non-standard attribute
-        webkit-playsinline="true"
-        disablePictureInPicture
-        controlsList="nodownload nofullscreen noremoteplayback"
-        autoPlay={autoPlay}
-        preload={autoPlay ? "auto" : "metadata"}
-        referrerPolicy="no-referrer"
-        loop={loop}
-        muted={!customOverlayControls ? true : isMuted}
-        controls={false}
-        className={`${className} object-cover w-full h-full min-w-full min-h-full`}
-        poster={autoPlay ? undefined : effectivePoster}
-        onCanPlay={(e) => {
-          if (autoPlay || !customOverlayControls) {
-            e.currentTarget.muted = true;
-            e.currentTarget.volume = 0;
-            e.currentTarget.play().catch(() => {});
-          }
-        }}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={() => {
-          if (videoRef.current) {
-            videoRef.current.currentTime = 0;
-            videoRef.current.play().catch(() => {});
-          }
-        }}
-        onPlay={() => {
-          if (customOverlayControls) {
-            document.querySelectorAll("video").forEach((v) => {
-              if (v !== videoRef.current && v.getAttribute("data-hero") !== "true") {
-                v.pause();
-              }
-            });
-          }
-          setIsPlaying(true);
-          if (id && onPlayRequest && activeVideoId !== id) {
-            onPlayRequest(id);
-          }
-        }}
-        onPause={() => {
-          setIsPlaying(false);
-          if (isHero && videoRef.current && videoRef.current.paused) {
-            videoRef.current.play().catch(() => {});
-          }
-        }}
-        onError={() => {
-          if (driveConfig.isDrive) {
-            setVideoError(true);
-          }
-        }}
-      >
-        {driveConfig.isDrive && (
-          <>
-            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
-            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
-            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
-          </>
-        )}
-        Tu navegador no soporta reproducción de video HTML5.
-      </video>
-
-      {/* Poster / Thumbnail Overlay when not playing so video never appears pitch black (ONLY for interactive card players) */}
-      {!isPlaying && effectivePoster && customOverlayControls && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {/* Background Ambience / Poster Layer (Guarantees card is NEVER pitch black) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black pointer-events-none z-0">
+        {currentPoster && (
           <img
-            src={effectivePoster}
+            src={currentPoster}
             alt="Vista previa video"
-            className="w-full h-full object-cover brightness-[0.95] contrast-[1.05] group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full object-cover brightness-[0.9] contrast-[1.05] group-hover:scale-105 transition-all duration-700 ${
+              hasRenderedFrame && isPlaying ? "opacity-0" : "opacity-100"
+            }`}
             referrerPolicy="no-referrer"
-            onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = "none";
-            }}
+            onError={handlePosterError}
           />
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
-      )}
+        )}
+        <div className={`absolute inset-0 bg-black/25 transition-opacity duration-500 ${hasRenderedFrame && isPlaying ? "opacity-0" : "opacity-100"}`} />
+      </div>
+
+      {inView ? (
+        <video
+          ref={videoRef}
+          key={videoSrc}
+          src={videoSrc}
+          data-hero={isHero ? "true" : undefined}
+          playsInline={playsInline}
+          // @ts-ignore iOS Safari non-standard attribute
+          webkit-playsinline="true"
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
+          autoPlay={autoPlay}
+          preload={isHero || autoPlay ? "auto" : "metadata"}
+          referrerPolicy="no-referrer"
+          loop={loop}
+          muted={!customOverlayControls ? true : isMuted}
+          controls={false}
+          className={`${className} relative z-[1] object-cover w-full h-full min-w-full min-h-full transition-opacity duration-500 ${
+            hasRenderedFrame || isPlaying || autoPlay || isHero ? "opacity-100" : "opacity-0"
+          }`}
+          poster={currentPoster}
+          onLoadedData={() => {
+            setHasRenderedFrame(true);
+          }}
+          onCanPlay={(e) => {
+            setHasRenderedFrame(true);
+            if (autoPlay || !customOverlayControls) {
+              e.currentTarget.muted = true;
+              e.currentTarget.volume = 0;
+              e.currentTarget.play().catch(() => {});
+            }
+          }}
+          onTimeUpdate={(e) => {
+            if (!hasRenderedFrame && e.currentTarget.currentTime > 0) {
+              setHasRenderedFrame(true);
+            }
+            handleTimeUpdate();
+          }}
+          onEnded={() => {
+            if (videoRef.current) {
+              videoRef.current.currentTime = 0;
+              videoRef.current.play().catch(() => {});
+            }
+          }}
+          onPlay={() => {
+            setHasRenderedFrame(true);
+            if (customOverlayControls) {
+              document.querySelectorAll("video").forEach((v) => {
+                if (v !== videoRef.current && v.getAttribute("data-hero") !== "true") {
+                  v.pause();
+                }
+              });
+            }
+            setIsPlaying(true);
+            if (id && onPlayRequest && activeVideoId !== id) {
+              onPlayRequest(id);
+            }
+          }}
+          onPause={() => {
+            setIsPlaying(false);
+            if (isHero && videoRef.current && videoRef.current.paused) {
+              videoRef.current.play().catch(() => {});
+            }
+          }}
+          onError={() => {
+            if (driveConfig.isDrive) {
+              setVideoError(true);
+            }
+          }}
+        >
+          {driveConfig.isDrive && (
+            <>
+              <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
+              <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
+              <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
+            </>
+          )}
+          Tu navegador no soporta reproducción de video HTML5.
+        </video>
+      ) : null}
 
       {/* Modern, minimalist floating overlay with audio & playback controls */}
       {customOverlayControls && !controls && (

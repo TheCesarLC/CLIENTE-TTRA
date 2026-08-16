@@ -34,6 +34,7 @@ import {
   FlaskConical,
   Zap
 } from "lucide-react";
+import { getOrderStatusDetails, ORDER_SEMAFORO_LIST, normalizeOrderStatus } from "../lib/orderStatus";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -42,26 +43,13 @@ interface AdminPanelProps {
 // PDF Ticket Printer & Email Dispatch Helpers for Admin
 const printOrderPDF = (ord: Order, logoUrl?: string) => {
   const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "medium" }) : new Date().toLocaleString("es-MX");
-  const isPaid = ord.status === "PAGO_RECIBIDO" || (ord.status as string) === "COMPLETADO" || ord.status === "EMPACADO" || ord.status === "ENVIADO" || ord.status === "ENTREGADO";
-  const isCancelled = (ord.status as string) === "CANCELADO";
+  const statusInfo = getOrderStatusDetails(ord.status);
+  const isPaid = statusInfo.isPaidOrApproved;
+  const isCancelled = statusInfo.isCancelled;
 
-  const statusText = isPaid
-    ? "PAGO RECIBIDO / CONFIRMADO"
-    : isCancelled
-    ? "PAGO CANCELADO / NO EFECTUADO"
-    : "PAGO PENDIENTE DE VERIFICACIÓN";
-
-  const receiptTitle = isPaid
-    ? "COMPROBANTE OFICIAL DE PAGO RECIBIDO PDF"
-    : isCancelled
-    ? "COMPROBANTE DE ORDEN CANCELADA PDF"
-    : "COMPROBANTE DE ORDEN - PAGO PENDIENTE PDF";
-
-  const totalLabel = isPaid
-    ? "TOTAL PAGADO"
-    : isCancelled
-    ? "TOTAL CANCELADO"
-    : "TOTAL A PAGAR (PENDIENTE)";
+  const statusText = statusInfo.statusText;
+  const receiptTitle = statusInfo.receiptTitle;
+  const totalLabel = statusInfo.totalLabelUpper;
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -278,49 +266,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "approved">("all");
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
 
-  const SEMAFORO_STATUSES = [
-    {
-      key: "PENDIENTE_DE_REVISION",
-      label: "1: PENDIENTE DE REVISION",
-      shortLabel: "PENDIENTE DE REVISION",
-      activeClass: "bg-red-600 text-white border-red-400 shadow-lg shadow-red-950/80 ring-2 ring-red-500 font-black",
-      inactiveClass: "bg-black/80 text-red-400/80 border-red-900/50 hover:bg-red-950/40 hover:text-red-300 hover:border-red-700",
-      dotClass: "bg-red-500 shadow-red-500/80 shadow-sm"
-    },
-    {
-      key: "REVISADO",
-      label: "2: REVISADO",
-      shortLabel: "REVISADO",
-      activeClass: "bg-amber-500 text-black border-amber-300 shadow-lg shadow-amber-950/80 ring-2 ring-amber-400 font-black",
-      inactiveClass: "bg-black/80 text-amber-400/80 border-amber-900/50 hover:bg-amber-950/40 hover:text-amber-300 hover:border-amber-700",
-      dotClass: "bg-amber-400 shadow-amber-400/80 shadow-sm"
-    },
-    {
-      key: "ENVIADO",
-      label: "3: ENVIADO",
-      shortLabel: "ENVIADO",
-      activeClass: "bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-950/80 ring-2 ring-blue-500 font-black",
-      inactiveClass: "bg-black/80 text-blue-400/80 border-blue-900/50 hover:bg-blue-950/40 hover:text-blue-300 hover:border-blue-700",
-      dotClass: "bg-blue-400 shadow-blue-400/80 shadow-sm"
-    },
-    {
-      key: "FINALIZADO",
-      label: "4: FINALIZADO",
-      shortLabel: "FINALIZADO",
-      activeClass: "bg-emerald-500 text-black border-emerald-300 shadow-lg shadow-emerald-950/80 ring-2 ring-emerald-400 font-black",
-      inactiveClass: "bg-black/80 text-emerald-400/80 border-emerald-900/50 hover:bg-emerald-950/40 hover:text-emerald-300 hover:border-emerald-700",
-      dotClass: "bg-emerald-400 shadow-emerald-400/80 shadow-sm"
-    }
-  ];
-
-  const getNormalizedSemAforoKey = (rawStatus: string) => {
-    const s = (rawStatus || "").toUpperCase();
-    if (s === "REVISADO") return "REVISADO";
-    if (s === "ENVIADO") return "ENVIADO";
-    if (s === "FINALIZADO" || s === "ENTREGADO") return "FINALIZADO";
-    if (s === "PAGO_RECIBIDO" || s === "EMPACADO") return "REVISADO";
-    return "PENDIENTE_DE_REVISION";
-  };
+  const SEMAFORO_STATUSES = ORDER_SEMAFORO_LIST;
+  const getNormalizedSemAforoKey = (rawStatus: string) => normalizeOrderStatus(rawStatus);
   const [isAdminCustomStock, setIsAdminCustomStock] = useState(false);
   const [editingCode, setEditingCode] = useState<Partial<AuthenticCode> | null>(null);
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<Order | null>(null);
@@ -974,26 +921,28 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
-                  <span>Video del Hero (.mp4 URL o enlace de Google Drive)</span>
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                  <span>Video del Hero (Cloudinary, Google Drive o .mp4)</span>
+                  <span className="text-emerald-400 text-[9px] font-bold">Aceleración CDN Automática</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.heroVideo || ""}
-                  placeholder="https://drive.google.com/file/d/... o https://.../video.mp4"
+                  placeholder="https://res.cloudinary.com/... o https://drive.google.com/..."
                   onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
-                  <span>Video ONDGAS (.mp4 URL o enlace de Google Drive)</span>
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                  <span>Video ONDGAS (Cloudinary, Google Drive o .mp4)</span>
+                  <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo || ""}
-                  placeholder="https://drive.google.com/file/d/... o https://.../video.mp4"
+                  placeholder="https://res.cloudinary.com/... o https://drive.google.com/..."
                   onChange={(e) => updateSiteConfig({ experienceVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1002,15 +951,17 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
                   <span>Miniatura / Preview ONDGAS (URL de Imagen o Poster)</span>
-                  {siteConfig.experiencePoster && (
+                  {siteConfig.experiencePoster ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
+                  ) : (
+                    <span className="text-gray-500 text-[9px]">Autogenerado de Cloudinary / Foto Oficial</span>
                   )}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={siteConfig.experiencePoster || ""}
-                    placeholder="https://... (dejar vacío para usar foto oficial de gorra ONDGAS)"
+                    placeholder="https://... (dejar vacío para extraer fotograma automático)"
                     onChange={(e) => updateSiteConfig({ experiencePoster: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
@@ -1026,13 +977,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
-                  <span>Video 800 DÍAS (.mp4 URL o enlace de Google Drive)</span>
+                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                  <span>Video 800 DÍAS (Cloudinary, Google Drive o .mp4)</span>
+                  <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo2 || ""}
-                  placeholder="https://drive.google.com/file/d/... o https://.../video.mp4"
+                  placeholder="https://res.cloudinary.com/... o https://drive.google.com/..."
                   onChange={(e) => updateSiteConfig({ experienceVideo2: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1041,15 +993,17 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
                   <span>Miniatura / Preview 800 DÍAS (URL de Imagen o Poster)</span>
-                  {siteConfig.experiencePoster2 && (
+                  {siteConfig.experiencePoster2 ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
+                  ) : (
+                    <span className="text-gray-500 text-[9px]">Autogenerado de Cloudinary / Foto Oficial</span>
                   )}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={siteConfig.experiencePoster2 || ""}
-                    placeholder="https://... (dejar vacío para usar foto oficial de gorra 800 DÍAS)"
+                    placeholder="https://... (dejar vacío para extraer fotograma automático)"
                     onChange={(e) => updateSiteConfig({ experiencePoster2: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
@@ -1946,20 +1900,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="flex flex-col gap-2">
-                            <button
-                              onClick={() => setSelectedReceiptOrder(ord)}
-                              className="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 px-2.5 text-[10px] font-black tracking-wider uppercase rounded flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md"
-                            >
-                              <span>📄 Ver Recibo / Comprobante PDF</span>
-                            </button>
-                            <button
-                              onClick={() => printOrderPDF(ord, siteConfig.brandLogoUrl)}
-                              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black py-2 px-2.5 text-[10px] font-black tracking-wider uppercase rounded flex items-center justify-center gap-1 transition-all cursor-pointer"
-                            >
-                              <span>🖨️ Imprimir Ticket</span>
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => setSelectedReceiptOrder(ord)}
+                            className="w-full bg-purple-600 hover:bg-purple-500 text-white py-2.5 px-3 text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
+                          >
+                            <span>📄 Ver Recibo / Comprobante PDF</span>
+                          </button>
                         </div>
 
                         <div className="bg-neutral-900 p-2.5 rounded border border-neutral-800 flex items-center justify-between">

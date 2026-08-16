@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
 import { Order } from "../context/SiteContext";
-import { X, Printer, CheckCircle2, ShieldCheck, CreditCard, Truck, FileText, Clock, Image, Download } from "lucide-react";
+import { X, Printer, CheckCircle2, ShieldCheck, CreditCard, Truck, FileText, Clock, Image, Download, AlertCircle, PackageCheck, Send, CheckSquare } from "lucide-react";
 import html2canvas from "html2canvas";
+import { getOrderStatusDetails } from "../lib/orderStatus";
 
 interface ReceiptModalProps {
   order: Order | null;
@@ -15,8 +16,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
 
   if (!order) return null;
 
-  const isPaid = order.status === "PAGO_RECIBIDO" || order.status === "COMPLETADO" || order.status === "EMPACADO" || order.status === "ENVIADO" || order.status === "ENTREGADO";
-  const isCancelled = order.status === "CANCELADO";
+  const statusInfo = getOrderStatusDetails(order.status);
 
   const handlePrint = () => {
     window.print();
@@ -62,6 +62,54 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
   })() : "HOY";
 
   const safeItems = Array.isArray(order.items) ? order.items : [];
+
+  const renderStatusBadge = () => {
+    switch (statusInfo.key) {
+      case "REVISADO":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 print:bg-amber-50 print:border-amber-300 print:text-amber-800 rounded-full text-xs font-black uppercase tracking-wider">
+            <Clock size={14} />
+            <span>2: REVISADO (EN REVISIÓN)</span>
+          </div>
+        );
+      case "PAGADO":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 print:bg-emerald-50 print:border-emerald-300 print:text-emerald-800 rounded-full text-xs font-black uppercase tracking-wider">
+            <CheckCircle2 size={14} />
+            <span>3: PAGADO (PAGO APROBADO)</span>
+          </div>
+        );
+      case "ENVIADO":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 print:bg-blue-50 print:border-blue-300 print:text-blue-800 rounded-full text-xs font-black uppercase tracking-wider">
+            <Send size={14} />
+            <span>4: ENVIADO (EN CAMINO)</span>
+          </div>
+        );
+      case "FINALIZADO":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-400 print:bg-purple-50 print:border-purple-300 print:text-purple-900 rounded-full text-xs font-black uppercase tracking-wider">
+            <CheckSquare size={14} />
+            <span>5: FINALIZADO (ENTREGADO)</span>
+          </div>
+        );
+      case "CANCELADO":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 print:bg-red-50 print:border-red-300 print:text-red-800 rounded-full text-xs font-black uppercase tracking-wider">
+            <X size={14} />
+            <span>PAGO CANCELADO / NO EFECTUADO</span>
+          </div>
+        );
+      case "PENDIENTE_DE_REVISION":
+      default:
+        return (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 print:bg-red-50 print:border-red-300 print:text-red-800 rounded-full text-xs font-black uppercase tracking-wider">
+            <AlertCircle size={14} />
+            <span>1: PENDIENTE DE REVISIÓN</span>
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in print:p-0 print:bg-white print:static print:block">
@@ -123,22 +171,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
             </div>
 
             <div className="text-left sm:text-right space-y-1">
-              {isPaid ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 print:bg-emerald-50 print:border-emerald-300 print:text-emerald-800 rounded-full text-xs font-black uppercase tracking-wider">
-                  <CheckCircle2 size={14} />
-                  <span>PAGO APROBADO ({order.paymentMethod?.toLowerCase().includes("stripe") ? "STRIPE" : "RECIBIDO"})</span>
-                </div>
-              ) : isCancelled ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 print:bg-red-50 print:border-red-300 print:text-red-800 rounded-full text-xs font-black uppercase tracking-wider">
-                  <X size={14} />
-                  <span>PAGO CANCELADO / NO EFECTUADO</span>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 print:bg-amber-50 print:border-amber-300 print:text-amber-800 rounded-full text-xs font-black uppercase tracking-wider">
-                  <Clock size={14} />
-                  <span>PAGO PENDIENTE DE VERIFICACIÓN</span>
-                </div>
-              )}
+              {renderStatusBadge()}
               <p className="text-xs font-mono text-gray-400 print:text-gray-600 block pt-1">
                 Folio: <strong className="text-white print:text-black font-extrabold">{order.id}</strong>
               </p>
@@ -148,9 +181,33 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
             </div>
           </div>
 
-          {!isPaid && !isCancelled && (
+          {statusInfo.key === "PENDIENTE_DE_REVISION" && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-[11px] font-medium leading-relaxed print:bg-red-50 print:border-red-200 print:text-red-900">
+              <strong>⚠️ ESTADO DE PAGO: PENDIENTE DE REVISIÓN.</strong> Esta orden se encuentra en espera de validación bancaria.
+            </div>
+          )}
+
+          {statusInfo.key === "REVISADO" && (
             <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-[11px] font-medium leading-relaxed print:bg-amber-50 print:border-amber-200 print:text-amber-900">
-              <strong>⚠️ ESTADO DE PAGO: PENDIENTE.</strong> Esta orden se registró al direccionar a la pasarela de pago. El cobro definitivo aún no ha sido confirmado por Stripe o la entidad bancaria.
+              <strong>⏳ ESTADO DE ORDEN: EN REVISIÓN.</strong> El pedido ha sido recibido y está siendo revisado por el equipo de administración.
+            </div>
+          )}
+
+          {statusInfo.key === "PAGADO" && (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-[11px] font-medium leading-relaxed print:bg-emerald-50 print:border-emerald-200 print:text-emerald-900">
+              <strong>✅ PAGO APROBADO:</strong> Tu pago ha sido acreditado exitosamente y la orden está lista para preparación.
+            </div>
+          )}
+
+          {statusInfo.key === "ENVIADO" && (
+            <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-[11px] font-medium leading-relaxed print:bg-blue-50 print:border-blue-200 print:text-blue-900">
+              <strong>🚚 PEDIDO EN CAMINO:</strong> Tu paquete ha sido despachado a la paquetería correspondiente.
+            </div>
+          )}
+
+          {statusInfo.key === "FINALIZADO" && (
+            <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-300 text-[11px] font-medium leading-relaxed print:bg-purple-50 print:border-purple-200 print:text-purple-900">
+              <strong>⭐ COMPRA FINALIZADA:</strong> Paquete entregado satisfactoriamente. ¡Gracias por tu compra!
             </div>
           )}
 
@@ -247,15 +304,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
             </div>
             <div className="border-t border-neutral-800 print:border-gray-300 pt-2 flex justify-between text-sm font-black text-white print:text-black">
               <span className="uppercase tracking-wider">
-                {isPaid ? "Total Pagado:" : isCancelled ? "Total Cancelado (Sin Cobro):" : "Total a Pagar (Pendiente):"}
+                {statusInfo.totalLabel}
               </span>
-              <span className={`font-mono text-base font-extrabold ${
-                isPaid 
-                  ? "text-emerald-400 print:text-emerald-800" 
-                  : isCancelled 
-                  ? "text-red-400 print:text-red-800" 
-                  : "text-amber-400 print:text-amber-800"
-              }`}>
+              <span
+                className="font-mono text-base font-extrabold"
+                style={{ color: statusInfo.colorHex }}
+              >
                 ${(order.totalMXN || 0).toLocaleString()} MXN
               </span>
             </div>

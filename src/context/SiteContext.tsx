@@ -105,7 +105,18 @@ export interface Order {
   }[];
   totalMXN: number;
   totalUSD: number;
-  status: "PAGO_PENDIENTE" | "PAGO_RECIBIDO" | "EMPACADO" | "ENVIADO" | "ENTREGADO";
+  status:
+    | "PENDIENTE_DE_REVISION"
+    | "REVISADO"
+    | "PAGADO"
+    | "ENVIADO"
+    | "FINALIZADO"
+    | "PAGO_PENDIENTE"
+    | "PAGO_RECIBIDO"
+    | "EMPACADO"
+    | "ENTREGADO"
+    | "CANCELADO"
+    | string;
   shippingAddress: string;
   paymentMethod: string;
   trackingNumber: string;
@@ -208,7 +219,7 @@ const defaultSiteConfig: SiteConfig = {
   newsletterTitle: "REGÍSTRATE EN NUESTRA LISTA",
   newsletterDescription: "Sé el primero en recibir notificaciones de próximos lanzamientos de gorras y accesos prioritarios.",
   newsletterButtonText: "Suscribirme",
-  footerDescription: "Marca líder en gorras de colección No son simples gorras, son piezas de exclusividad.",
+  footerDescription: "Alta Moda y Diseño Premium. Gorras de Colección Exclusiva.",
   socialsTitle: "Síguenos en Redes",
   facebookUrl: "",
   youtubeUrl: "",
