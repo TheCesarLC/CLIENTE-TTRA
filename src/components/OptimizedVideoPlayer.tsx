@@ -36,7 +36,7 @@ export default function OptimizedVideoPlayer({
   controls = false,
   autoPlay = false,
   loop = true,
-  muted = true,
+  muted = false,
   playsInline = true,
   onClick,
   customOverlayControls = true,
@@ -44,11 +44,10 @@ export default function OptimizedVideoPlayer({
 }: OptimizedVideoPlayerProps) {
   const [videoError, setVideoError] = useState(false);
   const [posterError, setPosterError] = useState(false);
-  const [isMuted, setIsMuted] = useState(muted);
+  const [isMuted, setIsMuted] = useState(isHero || autoPlay ? true : muted);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasRenderedFrame, setHasRenderedFrame] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [inView, setInView] = useState(isHero || autoPlay);
   const [candidateIndex, setCandidateIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -114,7 +113,13 @@ export default function OptimizedVideoPlayer({
     if (id && activeVideoId !== undefined) {
       if (activeVideoId && activeVideoId === id) {
         if (videoRef.current && videoRef.current.paused) {
-          videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+          videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              setIsMuted(true);
+              videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+            }
+          });
         }
       } else {
         if (videoRef.current && !videoRef.current.paused) {
@@ -125,9 +130,9 @@ export default function OptimizedVideoPlayer({
     }
   }, [activeVideoId, id, isHero]);
 
-  // Continuous background autoPlay Optimization
+  // Continuous background autoPlay Optimization for Hero
   useEffect(() => {
-    if ((autoPlay || !customOverlayControls) && videoRef.current && inView) {
+    if ((autoPlay || isHero) && videoRef.current) {
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
       setIsMuted(true);
@@ -139,7 +144,6 @@ export default function OptimizedVideoPlayer({
             .play()
             .then(() => setIsPlaying(true))
             .catch(() => {
-              // User gesture fallback if iOS/browser policy blocks un-triggered autoplay
               const unlockAutoplay = () => {
                 if (videoRef.current) {
                   videoRef.current.muted = true;
@@ -156,7 +160,7 @@ export default function OptimizedVideoPlayer({
       };
       attemptPlay();
     }
-  }, [autoPlay, customOverlayControls, src, inView]);
+  }, [autoPlay, isHero, src]);
 
   if (!src) return null;
 
@@ -202,16 +206,33 @@ export default function OptimizedVideoPlayer({
             v.pause();
           }
         });
-        
-        videoRef.current
-          .play()
-          .then(() => {
-            setIsPlaying(true);
-            if (id && onPlayRequest) {
-              onPlayRequest(id);
-            }
-          })
-          .catch(() => {});
+
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+              if (id && onPlayRequest) {
+                onPlayRequest(id);
+              }
+            })
+            .catch(() => {
+              // Fallback to muted playback if autoplay restrictions trigger
+              if (videoRef.current) {
+                videoRef.current.muted = true;
+                setIsMuted(true);
+                videoRef.current
+                  .play()
+                  .then(() => {
+                    setIsPlaying(true);
+                    if (id && onPlayRequest) {
+                      onPlayRequest(id);
+                    }
+                  })
+                  .catch((err) => console.warn("Video playback error:", err));
+              }
+            });
+        }
       }
     }
   };
@@ -303,86 +324,84 @@ export default function OptimizedVideoPlayer({
         <div className={`absolute inset-0 bg-black/25 transition-opacity duration-500 ${hasRenderedFrame && isPlaying ? "opacity-0" : "opacity-100"}`} />
       </div>
 
-      {inView ? (
-        <video
-          ref={videoRef}
-          key={videoSrc}
-          src={videoSrc}
-          data-hero={isHero ? "true" : undefined}
-          playsInline={playsInline}
-          // @ts-ignore iOS Safari non-standard attribute
-          webkit-playsinline="true"
-          disablePictureInPicture
-          controlsList="nodownload nofullscreen noremoteplayback"
-          autoPlay={autoPlay}
-          preload={isHero || autoPlay ? "auto" : "metadata"}
-          referrerPolicy="no-referrer"
-          loop={loop}
-          muted={!customOverlayControls ? true : isMuted}
-          controls={false}
-          className={`${className} relative z-[1] object-cover w-full h-full min-w-full min-h-full transition-opacity duration-500 ${
-            hasRenderedFrame || isPlaying || autoPlay || isHero ? "opacity-100" : "opacity-0"
-          }`}
-          poster={currentPoster}
-          onLoadedData={() => {
+      <video
+        ref={videoRef}
+        key={videoSrc}
+        src={videoSrc}
+        data-hero={isHero ? "true" : undefined}
+        playsInline={playsInline}
+        // @ts-ignore iOS Safari non-standard attribute
+        webkit-playsinline="true"
+        disablePictureInPicture
+        controlsList="nodownload nofullscreen noremoteplayback"
+        autoPlay={autoPlay}
+        preload={isHero || autoPlay ? "auto" : "metadata"}
+        referrerPolicy="no-referrer"
+        loop={loop}
+        muted={!customOverlayControls ? true : isMuted}
+        controls={false}
+        className={`${className} relative z-[1] object-cover w-full h-full min-w-full min-h-full transition-opacity duration-500 ${
+          hasRenderedFrame || isPlaying || autoPlay || isHero ? "opacity-100" : "opacity-0"
+        }`}
+        poster={currentPoster}
+        onLoadedData={() => {
+          setHasRenderedFrame(true);
+        }}
+        onCanPlay={(e) => {
+          setHasRenderedFrame(true);
+          if (autoPlay || isHero) {
+            e.currentTarget.muted = true;
+            e.currentTarget.volume = 0;
+            e.currentTarget.play().catch(() => {});
+          }
+        }}
+        onTimeUpdate={(e) => {
+          if (!hasRenderedFrame && e.currentTarget.currentTime > 0) {
             setHasRenderedFrame(true);
-          }}
-          onCanPlay={(e) => {
-            setHasRenderedFrame(true);
-            if (autoPlay || !customOverlayControls) {
-              e.currentTarget.muted = true;
-              e.currentTarget.volume = 0;
-              e.currentTarget.play().catch(() => {});
-            }
-          }}
-          onTimeUpdate={(e) => {
-            if (!hasRenderedFrame && e.currentTarget.currentTime > 0) {
-              setHasRenderedFrame(true);
-            }
-            handleTimeUpdate();
-          }}
-          onEnded={() => {
-            if (videoRef.current) {
-              videoRef.current.currentTime = 0;
-              videoRef.current.play().catch(() => {});
-            }
-          }}
-          onPlay={() => {
-            setHasRenderedFrame(true);
-            if (customOverlayControls) {
-              document.querySelectorAll("video").forEach((v) => {
-                if (v !== videoRef.current && v.getAttribute("data-hero") !== "true") {
-                  v.pause();
-                }
-              });
-            }
-            setIsPlaying(true);
-            if (id && onPlayRequest && activeVideoId !== id) {
-              onPlayRequest(id);
-            }
-          }}
-          onPause={() => {
-            setIsPlaying(false);
-            if (isHero && videoRef.current && videoRef.current.paused) {
-              videoRef.current.play().catch(() => {});
-            }
-          }}
-          onError={() => {
-            if (driveConfig.isDrive) {
-              setVideoError(true);
-            }
-          }}
-        >
-          {driveConfig.isDrive && (
-            <>
-              <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
-              <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
-              <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
-            </>
-          )}
-          Tu navegador no soporta reproducción de video HTML5.
-        </video>
-      ) : null}
+          }
+          handleTimeUpdate();
+        }}
+        onEnded={() => {
+          if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().catch(() => {});
+          }
+        }}
+        onPlay={() => {
+          setHasRenderedFrame(true);
+          if (customOverlayControls) {
+            document.querySelectorAll("video").forEach((v) => {
+              if (v !== videoRef.current && v.getAttribute("data-hero") !== "true") {
+                v.pause();
+              }
+            });
+          }
+          setIsPlaying(true);
+          if (id && onPlayRequest && activeVideoId !== id) {
+            onPlayRequest(id);
+          }
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+          if (isHero && videoRef.current && videoRef.current.paused) {
+            videoRef.current.play().catch(() => {});
+          }
+        }}
+        onError={() => {
+          if (driveConfig.isDrive) {
+            setVideoError(true);
+          }
+        }}
+      >
+        {driveConfig.isDrive && (
+          <>
+            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
+            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
+            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
+          </>
+        )}
+        Tu navegador no soporta reproducción de video HTML5.
+      </video>
 
       {/* Modern, minimalist floating overlay with audio & playback controls */}
       {customOverlayControls && !controls && (
@@ -411,9 +430,17 @@ export default function OptimizedVideoPlayer({
           {/* Center Play / Pause Indicator */}
           {(!isPlaying || showTapIndicator) && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[0.5px] pointer-events-none transition-opacity duration-300">
-              <div className="w-13 h-13 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 active:scale-95 border border-emerald-400/40">
-                {isPlaying ? <Pause size={22} className="fill-black" /> : <Play size={22} className="ml-0.5 fill-black" />}
-              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
+                className="pointer-events-auto w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black flex items-center justify-center shadow-2xl transform transition-transform hover:scale-110 active:scale-95 border border-emerald-400/40 cursor-pointer"
+                aria-label={isPlaying ? "Pausar video" : "Reproducir video"}
+              >
+                {isPlaying ? <Pause size={24} className="fill-black" /> : <Play size={24} className="ml-1 fill-black" />}
+              </button>
             </div>
           )}
 

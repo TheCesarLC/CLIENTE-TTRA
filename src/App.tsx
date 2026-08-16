@@ -683,9 +683,10 @@ export default function App() {
               const ondgasVideoSrc = siteConfigToUse.experienceVideo &&
                 !siteConfigToUse.experienceVideo.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
-                !siteConfigToUse.experienceVideo.includes("41ebdb")
+                !siteConfigToUse.experienceVideo.includes("41ebdb") &&
+                !siteConfigToUse.experienceVideo.includes("mixkit.co")
                   ? siteConfigToUse.experienceVideo
-                  : "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4";
+                  : "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/sea_turtle.mp4";
 
               return (
                 <div className="flex flex-col items-center">
@@ -697,8 +698,8 @@ export default function App() {
                       src={ondgasVideoSrc}
                       playsInline
                       loop
-                      muted
-                      className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                      muted={false}
+                      className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
                       poster={
                         siteConfigToUse.experiencePoster &&
                         !siteConfigToUse.experiencePoster.includes("umbra.page") &&
@@ -724,9 +725,10 @@ export default function App() {
               const d800VideoSrc = siteConfigToUse.experienceVideo2 &&
                 !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
-                !siteConfigToUse.experienceVideo2.includes("41ebdb")
+                !siteConfigToUse.experienceVideo2.includes("41ebdb") &&
+                !siteConfigToUse.experienceVideo2.includes("mixkit.co")
                   ? siteConfigToUse.experienceVideo2
-                  : "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4";
+                  : "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/elephants.mp4";
 
               return (
                 <div className="flex flex-col items-center">
@@ -738,8 +740,8 @@ export default function App() {
                       src={d800VideoSrc}
                       playsInline
                       loop
-                      muted
-                      className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
+                      muted={false}
+                      className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
                       poster={
                         siteConfigToUse.experiencePoster2 &&
                         !siteConfigToUse.experiencePoster2.includes("umbra.page")

@@ -186,13 +186,13 @@ const defaultSiteConfig: SiteConfig = {
   accentColor: "#10b981", // Emerald 500
   backgroundColor: "#000000",
   bannerMessage: "",
-  headerLogo: "https://umbra.page/cdn/shop/files/Letras_Blancas.png",
+  headerLogo: "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png",
   footerText: "© 2026 ALTA COSTURA BAJO LAS SOMBRAS.",
   whatsappNumber: "+521123456789",
   instagramUrl: "https://instagram.com/",
   artistCredits: "",
-  experienceVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
-  experienceVideo2: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
+  experienceVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/sea_turtle.mp4",
+  experienceVideo2: "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/elephants.mp4",
   experiencePoster: "",
   experiencePoster2: "",
   heroVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
@@ -214,7 +214,7 @@ const defaultSiteConfig: SiteConfig = {
   policyShippingContent: "Realizamos envíos urgentes asegurados a todo México mediante DHL y FedEx Express. El tiempo promedio de entrega es de 1 a 2 días hábiles posteriores a la validación de la compra. Cada envío viaja en caja oficial rígida protectora.",
   policyContactName: "Información de Contacto",
   policyContactContent: "Soporte Oficial de Alta Costura. Correo: soporte@world-caps.com. Dirección fiscal corporativa: Alta Costura Urbana, Ciudad de México. Horario de atención NFC de lunes a viernes de 9 AM a 6 PM.",
-  logoUrl: "https://umbra.page/cdn/shop/files/Letras_Blancas.png",
+  logoUrl: "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png",
   newsletterBadge: "ÚNETE A NUESTRA FAMILIA",
   newsletterTitle: "REGÍSTRATE EN NUESTRA LISTA",
   newsletterDescription: "Sé el primero en recibir notificaciones de próximos lanzamientos de gorras y accesos prioritarios.",
@@ -276,8 +276,17 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         )) {
           parsed.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
-        if (parsed.experienceVideo && (parsed.experienceVideo.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo.includes("41ebdb") || parsed.experienceVideo.includes("8678b1b9"))) {
+        if (parsed.experienceVideo && (parsed.experienceVideo.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo.includes("41ebdb") || parsed.experienceVideo.includes("8678b1b9") || parsed.experienceVideo.includes("mixkit.co"))) {
           parsed.experienceVideo = "";
+        }
+        if (parsed.experienceVideo2 && (parsed.experienceVideo2.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo2.includes("41ebdb") || parsed.experienceVideo2.includes("8678b1b9") || parsed.experienceVideo2.includes("mixkit.co"))) {
+          parsed.experienceVideo2 = "";
+        }
+        if (parsed.headerLogo && (parsed.headerLogo.includes("umbra.page") || parsed.headerLogo.includes("Letras_Blancas"))) {
+          parsed.headerLogo = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
+        }
+        if (parsed.logoUrl && (parsed.logoUrl.includes("umbra.page") || parsed.logoUrl.includes("Letras_Blancas"))) {
+          parsed.logoUrl = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
         }
         if (parsed.experiencePoster && (parsed.experiencePoster.includes("8678b1b9") || parsed.experiencePoster.includes("41ebdb"))) {
           parsed.experiencePoster = "";
@@ -379,8 +388,17 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         )) {
           data.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
-        if (data.experienceVideo && (data.experienceVideo.includes("umbra.page/cdn/shop/videos") || data.experienceVideo.includes("41ebdb") || data.experienceVideo.includes("8678b1b9"))) {
+        if (data.experienceVideo && (data.experienceVideo.includes("umbra.page/cdn/shop/videos") || data.experienceVideo.includes("41ebdb") || data.experienceVideo.includes("8678b1b9") || data.experienceVideo.includes("mixkit.co"))) {
           data.experienceVideo = "";
+        }
+        if (data.experienceVideo2 && (data.experienceVideo2.includes("umbra.page/cdn/shop/videos") || data.experienceVideo2.includes("41ebdb") || data.experienceVideo2.includes("8678b1b9") || data.experienceVideo2.includes("mixkit.co"))) {
+          data.experienceVideo2 = "";
+        }
+        if (data.headerLogo && (data.headerLogo.includes("umbra.page") || data.headerLogo.includes("Letras_Blancas"))) {
+          data.headerLogo = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
+        }
+        if (data.logoUrl && (data.logoUrl.includes("umbra.page") || data.logoUrl.includes("Letras_Blancas"))) {
+          data.logoUrl = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
         }
         if (data.experiencePoster && (data.experiencePoster.includes("8678b1b9") || data.experiencePoster.includes("41ebdb"))) {
           data.experiencePoster = "";
