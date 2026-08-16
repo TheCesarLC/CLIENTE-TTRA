@@ -84,6 +84,9 @@ export interface SiteConfig {
   stripeSecretKey?: string;
   stripePublishableKey?: string;
   customBackendApiUrl?: string;
+  testCheckoutActive?: boolean;
+  testCheckoutProductId?: string;
+  testCheckoutAmountMXN?: number;
 }
 
 // Order record in Firestore
@@ -219,7 +222,10 @@ const defaultSiteConfig: SiteConfig = {
   mercadoPagoPublicKey: "",
   stripeSecretKey: "",
   stripePublishableKey: "",
-  customBackendApiUrl: ""
+  customBackendApiUrl: "",
+  testCheckoutActive: false,
+  testCheckoutProductId: "",
+  testCheckoutAmountMXN: 11
 };
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

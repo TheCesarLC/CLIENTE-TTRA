@@ -123,6 +123,12 @@ export interface StripeCheckoutParams {
   secretKey: string;
   items: StripeCheckoutItem[];
   origin?: string;
+  liveCatalog?: Array<{ id: string; name: string; priceMXN: number; images?: string[] }>;
+  testConfig?: {
+    active?: boolean;
+    productId?: string;
+    amountMXN?: number;
+  };
 }
 
 /**
@@ -135,8 +141,8 @@ export async function createStripeCheckoutSession(params: StripeCheckoutParams):
     throw new Error("No hay Clave Secreta de Stripe configurada.");
   }
 
-  // Strictly sanitize & enforce authentic prices against official catalog
-  const verifiedItems = sanitizeCheckoutItems(params.items);
+  // Strictly sanitize & enforce authentic prices against official catalog or test config
+  const verifiedItems = sanitizeCheckoutItems(params.items, params.liveCatalog, params.testConfig);
 
   const currentOrigin = params.origin || (typeof window !== "undefined" ? window.location.origin : "https://tetra-hats.com");
 

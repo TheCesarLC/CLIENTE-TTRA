@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { PRODUCTS } from "./data";
 import { Product, CartItem, GLOW_COLORS } from "./types";
 import { Sparkles, MessageSquare, ShieldCheck, Box, BadgeCheck, X, Settings2, Pencil, Video, Play, LogIn, LogOut, User, Image, Download, FileText, CheckCircle2, Clock } from "lucide-react";
@@ -64,7 +64,22 @@ export default function App() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   const siteConfigToUse = previewSiteConfig || siteConfig;
-  const activeProducts = previewProducts || (products && products.length > 0 ? products : PRODUCTS);
+  const baseCatalog = previewProducts || (products && products.length > 0 ? products : PRODUCTS);
+  const activeProducts = useMemo(() => {
+    if (!siteConfigToUse?.testCheckoutActive) return baseCatalog;
+    const targetId = siteConfigToUse.testCheckoutProductId;
+    const testAmount = Math.max(10, Number(siteConfigToUse.testCheckoutAmountMXN) || 11);
+    return baseCatalog.map((p, idx) => {
+      const isTarget = !targetId || targetId === "ALL" || targetId === p.id || (!targetId && idx === 0) || p.name.toLowerCase().includes(targetId.toLowerCase());
+      if (isTarget) {
+        return {
+          ...p,
+          priceMXN: testAmount,
+        };
+      }
+      return p;
+    });
+  }, [baseCatalog, siteConfigToUse?.testCheckoutActive, siteConfigToUse?.testCheckoutProductId, siteConfigToUse?.testCheckoutAmountMXN]);
 
   const [paymentStatusAlert, setPaymentStatusAlert] = useState<string | null>(null);
   const [completedReceiptOrder, setCompletedReceiptOrder] = useState<Order | null>(null);

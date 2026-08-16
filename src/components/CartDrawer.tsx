@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Trash2, Plus, Minus, Box, CheckCircle, CreditCard, Lock, AlertCircle, Download, Mail, Phone, User, MapPin } from "lucide-react";
-import { CartItem } from "../types";
+import { CartItem, Product } from "../types";
 import { useSite } from "../context/SiteContext";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 import { postApi } from "../lib/api";
@@ -54,7 +54,19 @@ export default function CartDrawer({
   const [lastCardDigits, setLastCardDigits] = useState("");
   const [lastTicketSummary, setLastTicketSummary] = useState<TicketSummary | null>(null);
 
-  const { currentUser, siteConfig, saveOrder, products, loginWithGoogle } = useSite();
+  const { currentUser, siteConfig, saveOrder, products, loginWithGoogle, isAdmin, updateSiteConfig } = useSite();
+
+  const getEffectiveItemPrice = (itemProduct: Product) => {
+    if (siteConfig?.testCheckoutActive) {
+      const targetId = siteConfig.testCheckoutProductId;
+      const testAmount = Math.max(10, Number(siteConfig.testCheckoutAmountMXN) || 11);
+      if (!targetId || targetId === "ALL" || targetId === itemProduct.id || itemProduct.name.toLowerCase().includes(targetId.toLowerCase())) {
+        return testAmount;
+      }
+    }
+    const liveProd = products?.find(p => p.id === itemProduct.id || p.name.toLowerCase() === itemProduct.name?.toLowerCase());
+    return typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (itemProduct?.priceMXN || 1499);
+  };
 
   // Auto-adjust cart items if real-time stock drops below cart item quantity
   useEffect(() => {
@@ -105,7 +117,7 @@ export default function CartDrawer({
         createdAt: new Date().toISOString(),
         items: cart.map(i => {
           const liveProd = products?.find(p => p.id === i.product.id || p.name.toLowerCase() === i.product.name?.toLowerCase());
-          const effectivePrice = typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (i.product?.priceMXN || 0);
+          const effectivePrice = getEffectiveItemPrice(i.product);
           return {
             productId: liveProd?.id || i.product.id,
             productName: liveProd?.name || i.product.name,
@@ -173,9 +185,15 @@ export default function CartDrawer({
         buyerEmail: buyerEmail.trim(),
         secretKey: siteConfig.stripeSecretKey || "",
         origin: window.location.origin,
+        liveCatalog: products,
+        testConfig: {
+          active: siteConfig.testCheckoutActive,
+          productId: siteConfig.testCheckoutProductId,
+          amountMXN: siteConfig.testCheckoutAmountMXN
+        },
         items: cart.map(i => {
           const liveProd = products?.find(p => p.id === i.product.id || p.name.toLowerCase() === i.product.name?.toLowerCase());
-          const effectivePrice = typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (i.product?.priceMXN || 0);
+          const effectivePrice = getEffectiveItemPrice(i.product);
           return {
             productId: liveProd?.id || i.product.id,
             name: liveProd?.name || i.product.name,
@@ -290,8 +308,7 @@ export default function CartDrawer({
 
   const getSubtotalMXN = () => {
     return cart.reduce((acc, item) => {
-      const liveProd = products?.find(p => p.id === item.product.id || p.name.toLowerCase() === item.product.name?.toLowerCase());
-      const effectivePrice = typeof liveProd?.priceMXN === "number" ? liveProd.priceMXN : (item.product?.priceMXN || 0);
+      const effectivePrice = getEffectiveItemPrice(item.product);
       return acc + effectivePrice * item.quantity;
     }, 0);
   };
@@ -740,7 +757,7 @@ export default function CartDrawer({
           productId: item.product.id,
           productName: item.product.name.toUpperCase(),
           quantity: item.quantity,
-          priceMXN: item.product.priceMXN,
+          priceMXN: getEffectiveItemPrice(item.product),
           image: item.product.images[0]
         })),
         totalMXN: subtotalMXN,
@@ -837,6 +854,26 @@ export default function CartDrawer({
                 <span className="text-[9px] font-mono text-emerald-400 shrink-0 font-extrabold">
                   RECIBOS AUTO-GUARDADOS
                 </span>
+              </div>
+            )}
+
+            {/* Test Mode Active Notice Banner */}
+            {siteConfig?.testCheckoutActive && (
+              <div className="w-full bg-amber-950/90 border-b border-amber-500/50 p-2.5 px-4 text-xs text-amber-200 flex items-center justify-between gap-2 shadow-lg">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                  <span className="text-[10px] font-mono truncate">
+                    <strong className="text-amber-300 uppercase">MODO PRUEBA ACTIVO:</strong> Cobro fijado en <strong>${siteConfig.testCheckoutAmountMXN || 11}.00 MXN</strong>
+                  </span>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => updateSiteConfig({ testCheckoutActive: false })}
+                    className="text-[9px] bg-amber-400 hover:bg-amber-300 text-black font-black px-2 py-0.5 rounded uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
+                  >
+                    Desactivar
+                  </button>
+                )}
               </div>
             )}
 
@@ -1084,7 +1121,13 @@ export default function CartDrawer({
                       ? liveProduct.stockQuantity
                       : (typeof item.product.stockQuantity === "number" ? item.product.stockQuantity : 10);
                     const isOutOfStock = liveProduct.outOfStock || availableStock <= 0;
-                    const priceToUse = typeof liveProduct.priceMXN === "number" ? liveProduct.priceMXN : item.product.priceMXN;
+                    const priceToUse = getEffectiveItemPrice(item.product);
+                    const isTestItemActive = !!siteConfig?.testCheckoutActive && (
+                      !siteConfig.testCheckoutProductId ||
+                      siteConfig.testCheckoutProductId === "ALL" ||
+                      siteConfig.testCheckoutProductId === item.product.id ||
+                      item.product.name.toLowerCase().includes(siteConfig.testCheckoutProductId.toLowerCase())
+                    );
 
                     return (
                       <div
@@ -1118,11 +1161,18 @@ export default function CartDrawer({
                                 <Trash2 size={13} />
                               </button>
                             </div>
-                            {liveProduct.badge && (
-                              <span className="inline-block px-1.5 py-0.5 text-[8px] bg-emerald-500/10 text-emerald-400 font-bold tracking-widest uppercase rounded mt-1">
-                                {liveProduct.badge}
-                              </span>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              {liveProduct.badge && (
+                                <span className="inline-block px-1.5 py-0.5 text-[8px] bg-emerald-500/10 text-emerald-400 font-bold tracking-widest uppercase rounded">
+                                  {liveProduct.badge}
+                                </span>
+                              )}
+                              {isTestItemActive && (
+                                <span className="inline-block px-1.5 py-0.5 text-[8px] bg-amber-400 text-black font-black tracking-widest uppercase rounded animate-pulse">
+                                  ⚡ PRUEBA: ${siteConfig.testCheckoutAmountMXN || 11} MXN
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Dropdown Quantity Selector with Realtime Stock Limit */}

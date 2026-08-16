@@ -29,7 +29,12 @@ export function sanitizeCheckoutItems(
     image?: string;
     [key: string]: any;
   }>,
-  liveCatalog?: Array<{ id: string; name: string; priceMXN: number; images?: string[] }>
+  liveCatalog?: Array<{ id: string; name: string; priceMXN: number; images?: string[] }>,
+  testConfig?: {
+    active?: boolean;
+    productId?: string;
+    amountMXN?: number;
+  }
 ): Array<{
   productId: string;
   name: string;
@@ -55,12 +60,25 @@ export function sanitizeCheckoutItems(
       p.name.toLowerCase() === targetName
     );
 
-    // Strictly enforce valid authoritative price (Stripe requires minimum $10.00 MXN / 1000 centavos)
-    let verifiedPrice = typeof item.priceMXN === "number" && item.priceMXN >= 10 ? item.priceMXN : 1499;
-    if (matchedProduct && typeof matchedProduct.priceMXN === "number" && matchedProduct.priceMXN >= 10) {
-      verifiedPrice = matchedProduct.priceMXN;
-    } else if (typeof item.priceMXN === "number" && item.priceMXN > 0) {
-      verifiedPrice = Math.max(10, item.priceMXN);
+    // Check if test mode is active for this product or all products
+    const isTestActive = !!testConfig?.active;
+    const isTestTarget = !testConfig?.productId || 
+      testConfig.productId === "ALL" || 
+      testConfig.productId === targetId || 
+      (matchedProduct && testConfig.productId === matchedProduct.id) ||
+      (matchedProduct && matchedProduct.name.toLowerCase().includes(testConfig.productId.toLowerCase()));
+
+    let verifiedPrice: number;
+    if (isTestActive && isTestTarget) {
+      verifiedPrice = Math.max(10, Number(testConfig?.amountMXN) || 11);
+    } else {
+      // Strictly enforce valid authoritative price (Stripe requires minimum $10.00 MXN / 1000 centavos)
+      verifiedPrice = typeof item.priceMXN === "number" && item.priceMXN >= 10 ? item.priceMXN : 1499;
+      if (matchedProduct && typeof matchedProduct.priceMXN === "number" && matchedProduct.priceMXN >= 10) {
+        verifiedPrice = matchedProduct.priceMXN;
+      } else if (typeof item.priceMXN === "number" && item.priceMXN > 0) {
+        verifiedPrice = Math.max(10, item.priceMXN);
+      }
     }
 
     return {

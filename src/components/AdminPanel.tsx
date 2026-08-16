@@ -30,7 +30,9 @@ import {
   CreditCard,
   DollarSign,
   Star,
-  MessageSquare
+  MessageSquare,
+  FlaskConical,
+  Zap
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -753,6 +755,163 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       <span>{isSavingStripeKey ? "GUARDANDO..." : "GUARDAR Y VERIFICAR CLAVE"}</span>
                     </button>
                   </div>
+                </div>
+              </div>
+
+              {/* APARTADO DE PRUEBA DE PAGO (TEST CHECKOUT) */}
+              <div className="md:col-span-2 p-5 bg-gradient-to-r from-amber-950/40 via-neutral-900 to-yellow-950/30 border border-amber-500/50 rounded-xl space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+                      <FlaskConical size={22} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                        <span>MODO DE PRUEBA DE PAGO (TEST CHECKOUT)</span>
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-black tracking-widest uppercase ${
+                          siteConfig.testCheckoutActive 
+                            ? "bg-amber-400 text-black animate-pulse" 
+                            : "bg-neutral-800 text-gray-400"
+                        }`}>
+                          {siteConfig.testCheckoutActive ? "⚡ MODO PRUEBA ACTIVO" : "INACTIVO / MODO NORMAL"}
+                        </span>
+                      </h4>
+                      <p className="text-xs text-amber-200/80 mt-0.5">
+                        Activa o desactiva este modo para realizar cobros reales de prueba con tarjeta por montos pequeños (ej. $11.00 MXN) en la gorra que elijas.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Interruptor Switch On/Off */}
+                  <div className="flex items-center gap-3 self-start sm:self-center bg-black/60 px-3 py-2 rounded-lg border border-amber-500/30">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                      {siteConfig.testCheckoutActive ? "ACTIVADO" : "DESACTIVADO"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newActive = !siteConfig.testCheckoutActive;
+                        updateSiteConfig({ 
+                          testCheckoutActive: newActive,
+                          testCheckoutAmountMXN: siteConfig.testCheckoutAmountMXN || 11,
+                          testCheckoutProductId: siteConfig.testCheckoutProductId || (products[0]?.id || "")
+                        });
+                        setSuccessMsg(newActive ? "⚡ Modo prueba de pago ACTIVADO ($" + (siteConfig.testCheckoutAmountMXN || 11) + " MXN)" : "Modo prueba de pago DESACTIVADO");
+                        setTimeout(() => setSuccessMsg(""), 3500);
+                      }}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        siteConfig.testCheckoutActive ? "bg-amber-400" : "bg-neutral-800"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
+                          siteConfig.testCheckoutActive ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  {/* Selector de Producto */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-amber-300 font-extrabold uppercase tracking-widest block">
+                      Gorra / Modelo para la Prueba
+                    </label>
+                    <select
+                      value={siteConfig.testCheckoutProductId || ""}
+                      onChange={(e) => {
+                        updateSiteConfig({ testCheckoutProductId: e.target.value });
+                        setSuccessMsg("Gorra de prueba actualizada");
+                        setTimeout(() => setSuccessMsg(""), 2500);
+                      }}
+                      className="w-full bg-black/90 border border-amber-500/40 rounded p-3 text-xs text-white focus:outline-none focus:border-amber-400 transition-colors uppercase font-bold cursor-pointer"
+                    >
+                      <option value="">-- Todas las Gorras / Primer Producto --</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (Precio regular: ${(p.priceMXN || 0).toLocaleString()} MXN)
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[9px] text-gray-400">
+                      Selecciona con cuál modelo se aplicará el monto de prueba durante el checkout.
+                    </p>
+                  </div>
+
+                  {/* Monto de Prueba */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-amber-300 font-extrabold uppercase tracking-widest block flex items-center justify-between">
+                      <span>Monto de Prueba (MXN)</span>
+                      <span className="text-[9px] text-amber-400/80 font-normal">Mínimo Stripe: $10.00 MXN</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-3 text-amber-400 font-mono font-bold text-xs">$</span>
+                        <input
+                          type="number"
+                          min="10"
+                          step="1"
+                          value={siteConfig.testCheckoutAmountMXN ?? 11}
+                          onChange={(e) => {
+                            const val = Math.max(10, Number(e.target.value) || 10);
+                            updateSiteConfig({ testCheckoutAmountMXN: val });
+                          }}
+                          className="w-full bg-black/90 border border-amber-500/40 rounded p-3 pl-7 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-400 transition-colors font-bold"
+                          placeholder="11"
+                        />
+                        <span className="absolute right-3 top-3 text-amber-400/70 font-mono font-bold text-xs">MXN</span>
+                      </div>
+                    </div>
+                    {/* Botones de montos rápidos */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="text-[9px] text-gray-400 uppercase font-extrabold mr-1 self-center">Presets rápidos:</span>
+                      {[11, 15, 20, 50, 100].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => {
+                            updateSiteConfig({ testCheckoutAmountMXN: amt });
+                            setSuccessMsg(`Monto fijado en $${amt} MXN`);
+                            setTimeout(() => setSuccessMsg(""), 2000);
+                          }}
+                          className={`px-2.5 py-1 rounded text-[10px] font-mono font-extrabold transition-all cursor-pointer ${
+                            (siteConfig.testCheckoutAmountMXN || 11) === amt
+                              ? "bg-amber-400 text-black shadow font-black scale-105"
+                              : "bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-neutral-700"
+                          }`}
+                        >
+                          ${amt} MXN
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resumen & Estado explicativo */}
+                <div className="p-3 bg-black/50 border border-amber-500/20 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-amber-200">
+                    <span className={`w-2 h-2 rounded-full ${siteConfig.testCheckoutActive ? 'bg-amber-400 animate-pulse' : 'bg-neutral-600'}`} />
+                    <span className="text-[11px] font-mono">
+                      {siteConfig.testCheckoutActive
+                        ? `⚡ MODO PRUEBA ACTIVO: ${products.find(p => p.id === siteConfig.testCheckoutProductId)?.name || "Gorra seleccionada"} se cobrará a $${siteConfig.testCheckoutAmountMXN || 11}.00 MXN en el checkout.`
+                        : `Modo Normal: Todas las gorras se cobran a su precio regular oficial.`}
+                    </span>
+                  </div>
+
+                  {siteConfig.testCheckoutActive && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSiteConfig({ testCheckoutActive: false });
+                        setSuccessMsg("Modo prueba DESACTIVADO");
+                        setTimeout(() => setSuccessMsg(""), 3000);
+                      }}
+                      className="px-3 py-1 bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 text-[10px] font-black uppercase tracking-wider rounded transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Desactivar Modo Prueba
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1580,7 +1739,16 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       </td>
                       <td className="p-4 font-mono text-[10px] text-gray-500">{p.id}</td>
                       <td className="p-4 font-black uppercase tracking-wider">{p.name}</td>
-                      <td className="p-4 font-bold text-gray-300">${(p.priceMXN || 0).toLocaleString()} MXN</td>
+                      <td className="p-4">
+                        <div className="font-bold text-gray-300 flex flex-col">
+                          <span>${(p.priceMXN || 0).toLocaleString()} MXN</span>
+                          {siteConfig.testCheckoutActive && (siteConfig.testCheckoutProductId === p.id || !siteConfig.testCheckoutProductId) && (
+                            <span className="mt-1 text-[9px] bg-amber-400 text-black px-1.5 py-0.5 rounded font-black tracking-wider uppercase inline-flex items-center gap-1 w-fit">
+                              ⚡ PRUEBA: ${siteConfig.testCheckoutAmountMXN || 11} MXN
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4 font-extrabold text-emerald-400 font-mono">📦 {p.stockQuantity ?? 10} pzas</td>
                       <td className="p-4">
                         {p.outOfStock ? (
