@@ -676,11 +676,11 @@ export default function App() {
           {/* Side-by-Side Vertical Videos Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto px-2">
             
-            {/* VIDEO 1 - ONDGAS */}
+            {/* VIDEO 1 - 800 DÍAS */}
             {(() => {
-              const ondgasProduct = activeProducts.find(p => p.name.toUpperCase().includes("ON DGAS") || p.name.toUpperCase().includes("ONDGAS")) || activeProducts[0];
-              const ondgasFallbackPoster = ondgasProduct?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
-              const ondgasVideoSrc = siteConfigToUse.experienceVideo &&
+              const d800Product = activeProducts.find(p => p.name.toUpperCase().includes("800 DIAS") || p.name.toUpperCase().includes("800 DÍAS")) || activeProducts[1] || activeProducts[0];
+              const d800FallbackPoster = d800Product?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const video1Src = siteConfigToUse.experienceVideo &&
                 !siteConfigToUse.experienceVideo.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
                 !siteConfigToUse.experienceVideo.includes("41ebdb") &&
@@ -692,10 +692,10 @@ export default function App() {
                 <div className="flex flex-col items-center">
                   <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]">
                     <OptimizedVideoPlayer
-                      id="ondgas"
+                      id="800dias"
                       activeVideoId={activeVideoId}
                       onPlayRequest={setActiveVideoId}
-                      src={ondgasVideoSrc}
+                      src={video1Src}
                       playsInline
                       loop
                       muted={false}
@@ -707,22 +707,22 @@ export default function App() {
                           ? siteConfigToUse.experiencePoster
                           : undefined
                       }
-                      fallbackPoster={ondgasFallbackPoster}
+                      fallbackPoster={d800FallbackPoster}
                     />
                   </div>
                   <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === 'ondgas' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
-                    ONDGAS
+                    <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === '800dias' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
+                    {siteConfigToUse.experienceVideoTitle1 || "800 DÍAS"}
                   </span>
                 </div>
               );
             })()}
 
-            {/* VIDEO 2 - 800 DIAS */}
+            {/* VIDEO 2 - ONDGAS */}
             {(() => {
-              const d800Product = activeProducts.find(p => p.name.toUpperCase().includes("800 DIAS") || p.name.toUpperCase().includes("800 DÍAS")) || activeProducts[1] || activeProducts[0];
-              const d800FallbackPoster = d800Product?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
-              const d800VideoSrc = siteConfigToUse.experienceVideo2 &&
+              const ondgasProduct = activeProducts.find(p => p.name.toUpperCase().includes("ON DGAS") || p.name.toUpperCase().includes("ONDGAS")) || activeProducts[0];
+              const ondgasFallbackPoster = ondgasProduct?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const video2Src = siteConfigToUse.experienceVideo2 &&
                 !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
                 !siteConfigToUse.experienceVideo2.includes("41ebdb") &&
@@ -734,10 +734,10 @@ export default function App() {
                 <div className="flex flex-col items-center">
                   <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]">
                     <OptimizedVideoPlayer
-                      id="800dias"
+                      id="ondgas"
                       activeVideoId={activeVideoId}
                       onPlayRequest={setActiveVideoId}
-                      src={d800VideoSrc}
+                      src={video2Src}
                       playsInline
                       loop
                       muted={false}
@@ -748,12 +748,12 @@ export default function App() {
                           ? siteConfigToUse.experiencePoster2
                           : undefined
                       }
-                      fallbackPoster={d800FallbackPoster}
+                      fallbackPoster={ondgasFallbackPoster}
                     />
                   </div>
                   <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === '800dias' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
-                    800 DÍAS
+                    <span className={`w-1.5 h-1.5 rounded-full ${activeVideoId === 'ondgas' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`}></span>
+                    {siteConfigToUse.experienceVideoTitle2 || "ONDGAS"}
                   </span>
                 </div>
               );
