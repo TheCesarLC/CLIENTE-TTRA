@@ -5,6 +5,7 @@ import { ProductImageManager } from "./ProductImageManager";
 import { ReceiptModal } from "./ReceiptModal";
 import { postApi } from "../lib/api";
 import { verifyStripeKey } from "../lib/stripeClient";
+import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 import { 
   X, 
   Settings, 
@@ -872,14 +873,107 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Logo Principal (Image URL)</label>
-                <input
-                  type="text"
-                  value={siteConfig.headerLogo}
-                  onChange={(e) => updateSiteConfig({ headerLogo: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
-                />
+              <div className="space-y-2 md:col-span-2 p-4 bg-neutral-900/60 rounded-lg border border-neutral-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
+                  <label className="text-xs text-white font-black uppercase tracking-widest flex items-center gap-2">
+                    <span>✨ Logotipos de la Marca (Google Drive o URL directa)</span>
+                  </label>
+                  <span className="text-[9px] text-emerald-400 font-mono font-bold">Compatible con Google Drive, PNG transparente y CDN</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Logo Central del Hero */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-gray-300 font-extrabold uppercase tracking-wider">
+                        1. Logo Central del Hero (Con Efecto Estrellas)
+                      </label>
+                      {siteConfig.logoUrl && (
+                        <span className="text-[9px] text-emerald-400 font-bold">Personalizado</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={siteConfig.logoUrl || ""}
+                        placeholder="Pega link de Google Drive o URL de imagen..."
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateSiteConfig({ logoUrl: val });
+                        }}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors font-mono text-gray-200"
+                      />
+                      {(siteConfig.logoUrl || siteConfig.headerLogo) && (
+                        <div className="w-10 h-10 bg-black/90 border border-neutral-700 rounded flex items-center justify-center p-1 overflow-hidden shrink-0">
+                          <img
+                            src={getOptimizedImageUrl(siteConfig.logoUrl || siteConfig.headerLogo, 100)}
+                            alt="Logo Central"
+                            className="max-h-full max-w-full object-contain"
+                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-gray-500">Este es el logo que aparece en el centro de la pantalla principal con el efecto galáctico de estrellas animadas.</p>
+                  </div>
+
+                  {/* Logo de la Barra Superior */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-gray-300 font-extrabold uppercase tracking-wider">
+                        2. Logo de la Barra Superior (Navbar)
+                      </label>
+                      {siteConfig.headerLogo && (
+                        <span className="text-[9px] text-emerald-400 font-bold">Personalizado</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={siteConfig.headerLogo || ""}
+                        placeholder="Pega link de Google Drive o URL de imagen..."
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateSiteConfig({ headerLogo: val });
+                        }}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors font-mono text-gray-200"
+                      />
+                      {(siteConfig.headerLogo || siteConfig.logoUrl) && (
+                        <div className="w-10 h-10 bg-black/90 border border-neutral-700 rounded flex items-center justify-center p-1 overflow-hidden shrink-0">
+                          <img
+                            src={getOptimizedImageUrl(siteConfig.headerLogo || siteConfig.logoUrl, 100)}
+                            alt="Logo Header"
+                            className="max-h-full max-w-full object-contain"
+                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-gray-500">Este es el logo compacto que permanece en la parte superior fija del sitio.</p>
+                  </div>
+                </div>
+
+                {/* Quick sync button */}
+                <div className="pt-2 flex items-center justify-end gap-2 border-t border-neutral-850">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const activeLogo = siteConfig.logoUrl || siteConfig.headerLogo || "";
+                      if (activeLogo) {
+                        updateSiteConfig({
+                          logoUrl: activeLogo,
+                          headerLogo: activeLogo,
+                          brandLogoUrl: activeLogo
+                        });
+                        setSuccessMsg("¡Logo sincronizado en todo el sitio!");
+                        setTimeout(() => setSuccessMsg(""), 3000);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-[10px] font-black uppercase tracking-wider rounded transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>🔄 Usar el mismo logo en ambos (Hero y Barra Superior)</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2">

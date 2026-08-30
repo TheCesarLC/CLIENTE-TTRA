@@ -161,11 +161,21 @@ export default function ProductModal({
               />
             )}
             <img
-              src={getOptimizedImageUrl(product.images?.[selectedImgIdx], 1000)}
+              src={getOptimizedImageUrl(product.images?.[selectedImgIdx] || product.images?.[0], 1000)}
               alt={product.name}
               loading="eager"
               decoding="async"
               onLoad={() => setMainImgLoaded(true)}
+              onError={(e) => {
+                setMainImgLoaded(true);
+                const target = e.currentTarget;
+                const fallback = (product.name.toUpperCase().includes("800") || product.name.toUpperCase().includes("DIAS")) 
+                  ? "https://umbra.page/cdn/shop/files/25.png" 
+                  : "https://umbra.page/cdn/shop/files/BUNDLEPACK.png";
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
               className={`max-w-full max-h-full object-contain transition-transform duration-300 ${
                 shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""
               }`}

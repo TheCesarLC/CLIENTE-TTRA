@@ -17,16 +17,31 @@ export function extractGoogleDriveId(url: string | null | undefined): string | n
   const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (idMatch && idMatch[1]) return idMatch[1];
 
-  // Pattern 3: lh3.googleusercontent.com/d/FILE_ID
+  // Pattern 3: /d/FILE_ID
   const lh3Match = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (lh3Match && lh3Match[1]) return lh3Match[1];
+
+  // Pattern 4: /folders/FILE_ID or /open?id=FILE_ID or /uc?id=FILE_ID
+  const openMatch = trimmed.match(/(?:open|uc|file|thumbnail)\?(?:[^&]*&)*id=([a-zA-Z0-9_-]+)/);
+  if (openMatch && openMatch[1]) return openMatch[1];
 
   return null;
 }
 
 export function isGoogleDriveUrl(url: string | null | undefined): boolean {
   if (!url || typeof url !== "string") return false;
-  return url.includes("drive.google.com") || url.includes("googleusercontent.com");
+  return (
+    url.includes("drive.google.com") ||
+    url.includes("googleusercontent.com") ||
+    url.includes("docs.google.com")
+  );
+}
+
+export function getDriveDirectImageUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== "string") return "";
+  const fileId = extractGoogleDriveId(url);
+  if (!fileId) return url;
+  return `https://lh3.googleusercontent.com/d/${fileId}`;
 }
 
 export function isCloudinaryUrl(url: string | null | undefined): boolean {
@@ -82,7 +97,7 @@ export function getOptimizedCloudinaryVideoUrl(
 
     const width = options?.width || 1280;
     const quality = options?.quality || "auto";
-    const transforms = `f_auto,q_${quality},vc_auto,w_${width},c_limit`;
+    const transforms = `f_mp4,q_${quality},w_${width},c_limit`;
 
     return `${before}/video/upload/${transforms}/${cleanPath}`;
   } catch {

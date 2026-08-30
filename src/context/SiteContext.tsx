@@ -186,7 +186,7 @@ const defaultSiteConfig: SiteConfig = {
   accentColor: "#10b981", // Emerald 500
   backgroundColor: "#000000",
   bannerMessage: "",
-  headerLogo: "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png",
+  headerLogo: "https://umbra.page/cdn/shop/files/Letras_Blancas.png",
   footerText: "© 2026 ALTA COSTURA BAJO LAS SOMBRAS.",
   whatsappNumber: "+521123456789",
   instagramUrl: "https://instagram.com/",
@@ -214,7 +214,7 @@ const defaultSiteConfig: SiteConfig = {
   policyShippingContent: "Realizamos envíos urgentes asegurados a todo México mediante DHL y FedEx Express. El tiempo promedio de entrega es de 1 a 2 días hábiles posteriores a la validación de la compra. Cada envío viaja en caja oficial rígida protectora.",
   policyContactName: "Información de Contacto",
   policyContactContent: "Soporte Oficial de Alta Costura. Correo: soporte@world-caps.com. Dirección fiscal corporativa: Alta Costura Urbana, Ciudad de México. Horario de atención NFC de lunes a viernes de 9 AM a 6 PM.",
-  logoUrl: "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png",
+  logoUrl: "https://umbra.page/cdn/shop/files/Letras_Blancas.png",
   newsletterBadge: "ÚNETE A NUESTRA FAMILIA",
   newsletterTitle: "REGÍSTRATE EN NUESTRA LISTA",
   newsletterDescription: "Sé el primero en recibir notificaciones de próximos lanzamientos de gorras y accesos prioritarios.",
@@ -282,11 +282,11 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.experienceVideo2 && (parsed.experienceVideo2.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo2.includes("41ebdb") || parsed.experienceVideo2.includes("8678b1b9") || parsed.experienceVideo2.includes("mixkit.co"))) {
           parsed.experienceVideo2 = "";
         }
-        if (parsed.headerLogo && (parsed.headerLogo.includes("umbra.page") || parsed.headerLogo.includes("Letras_Blancas"))) {
-          parsed.headerLogo = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
+        if (parsed.headerLogo && (parsed.headerLogo.includes("df3fh9wic") || !parsed.headerLogo)) {
+          parsed.headerLogo = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
         }
-        if (parsed.logoUrl && (parsed.logoUrl.includes("umbra.page") || parsed.logoUrl.includes("Letras_Blancas"))) {
-          parsed.logoUrl = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
+        if (parsed.logoUrl && (parsed.logoUrl.includes("df3fh9wic") || !parsed.logoUrl)) {
+          parsed.logoUrl = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
         }
         if (parsed.experiencePoster && (parsed.experiencePoster.includes("8678b1b9") || parsed.experiencePoster.includes("41ebdb"))) {
           parsed.experiencePoster = "";
@@ -301,7 +301,16 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return defaultSiteConfig;
     }
   });
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem("shop_saved_products");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return PRODUCTS;
+  });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
@@ -310,6 +319,15 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
 
   const clearAuthError = () => setAuthError(null);
+
+  // Safety fallback timer so the app ALWAYS loads immediately and never hangs on a black screen
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setAuthLoaded(true);
+      setConfigLoaded(true);
+    }, 500);
+    return () => clearTimeout(safetyTimer);
+  }, []);
 
   // Monitor Auth Changes
   useEffect(() => {
@@ -394,11 +412,11 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.experienceVideo2 && (data.experienceVideo2.includes("umbra.page/cdn/shop/videos") || data.experienceVideo2.includes("41ebdb") || data.experienceVideo2.includes("8678b1b9") || data.experienceVideo2.includes("mixkit.co"))) {
           data.experienceVideo2 = "";
         }
-        if (data.headerLogo && (data.headerLogo.includes("umbra.page") || data.headerLogo.includes("Letras_Blancas"))) {
-          data.headerLogo = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
+        if (data.headerLogo && (data.headerLogo.includes("df3fh9wic") || !data.headerLogo)) {
+          data.headerLogo = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
         }
-        if (data.logoUrl && (data.logoUrl.includes("umbra.page") || data.logoUrl.includes("Letras_Blancas"))) {
-          data.logoUrl = "https://res.cloudinary.com/df3fh9wic/image/upload/v1781540165/image_1_ajmjcl.png";
+        if (data.logoUrl && (data.logoUrl.includes("df3fh9wic") || !data.logoUrl)) {
+          data.logoUrl = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
         }
         if (data.experiencePoster && (data.experiencePoster.includes("8678b1b9") || data.experiencePoster.includes("41ebdb"))) {
           data.experiencePoster = "";
@@ -475,6 +493,12 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         querySnap.forEach((docSnap) => {
           if (!docSnap.id.startsWith("_")) {
             const data = docSnap.data() as Product;
+            const fallbackProd = PRODUCTS.find((p) => p.id === data.id || p.name.toUpperCase() === (data.name || "").toUpperCase());
+            if (!data.images || data.images.length === 0 || data.images.some(img => typeof img !== "string" || img.includes("df3fh9wic"))) {
+              if (fallbackProd) {
+                data.images = [...fallbackProd.images];
+              }
+            }
             prodList.push(data);
             if (data.name !== "ON DGAS" && data.name !== "800 DIAS") {
               hasOldProducts = true;
@@ -523,6 +547,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setProducts(prodList);
         localStorage.setItem("seeded_products", "true");
+        try {
+          localStorage.setItem("shop_saved_products", JSON.stringify(prodList));
+        } catch {}
       }
     }, (error) => {
       console.warn("Firestore products reading failed, falling back to local static PRODUCTS:", error);

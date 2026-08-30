@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Plus, Trash2, Image as ImageIcon, List, Layers } from "lucide-react";
+import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 
 interface ProductImageManagerProps {
   images: string[];
@@ -110,9 +111,10 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
               <div className="w-12 h-12 bg-neutral-900 border border-neutral-800 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                 {imgUrl && imgUrl.trim().length > 5 ? (
                   <img
-                    src={imgUrl}
+                    src={getOptimizedImageUrl(imgUrl, 200)}
                     alt={`Preview ${idx + 1}`}
                     className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = "none";
                     }}

@@ -18,8 +18,13 @@ export function getOptimizedImageUrl(
 ): string {
   if (!url || typeof url !== "string") return "";
 
-  const trimmed = url.trim();
+  let trimmed = url.trim();
   if (!trimmed) return "";
+
+  // Replace old broken cloudinary logo placeholder
+  if (trimmed.includes("df3fh9wic")) {
+    trimmed = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+  }
 
   // Check if it's a Cloudinary image URL
   if (isCloudinaryImageUrl(trimmed)) {
@@ -35,7 +40,8 @@ export function getOptimizedImageUrl(
   if (isGoogleDriveUrl(trimmed)) {
     const fileId = extractGoogleDriveId(trimmed);
     if (fileId) {
-      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${targetWidth}`;
+      // lh3.googleusercontent.com/d/FILE_ID serves direct image stream preserving original PNG alpha transparency
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
   }
 

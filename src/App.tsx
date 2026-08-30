@@ -264,21 +264,6 @@ export default function App() {
     });
   }, [activeProducts]);
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-[#000000] z-50 flex flex-col items-center justify-center select-none">
-        {/* Sleek premium loading ring */}
-        <div className="relative w-16 h-16 flex items-center justify-center mb-6">
-          <div className="absolute inset-0 border-2 border-neutral-900 rounded-full" />
-          <div className="absolute inset-0 border-2 border-t-[#10b981] rounded-full animate-spin" style={{ borderTopColor: siteConfigToUse.accentColor || "#10b981" }} />
-        </div>
-        <span className="text-[10px] text-zinc-400 font-extrabold tracking-[0.4em] uppercase animate-pulse">
-          {siteConfigToUse.heroBrandTitle || "TETRA HATS"}
-        </span>
-      </div>
-    );
-  }
-
   const handleAddToCart = (product: Product, quantityToAdd: number = 1) => {
     const liveProd = activeProducts.find((p) => p.id === product.id) || product;
     const realStock = typeof liveProd.stockQuantity === "number" ? liveProd.stockQuantity : 10;
@@ -569,7 +554,7 @@ export default function App() {
         {/* Hero content presentation */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center space-y-8 flex flex-col items-center">
           <CosmicLogo
-            src={getOptimizedImageUrl(siteConfigToUse.logoUrl || "https://umbra.page/cdn/shop/files/Letras_Blancas.png", 800)}
+            src={siteConfigToUse.logoUrl || siteConfigToUse.headerLogo || "https://umbra.page/cdn/shop/files/Letras_Blancas.png"}
             alt="Tetra Hats Logo"
             className="w-[85%] max-w-lg mb-2"
             glowColor={glowColor}

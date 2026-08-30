@@ -43,6 +43,7 @@ export default function OptimizedVideoPlayer({
   isHero = false,
 }: OptimizedVideoPlayerProps) {
   const [videoError, setVideoError] = useState(false);
+  const [usingFallbackSrc, setUsingFallbackSrc] = useState(false);
   const [posterError, setPosterError] = useState(false);
   const [isMuted, setIsMuted] = useState(isHero || autoPlay ? true : muted);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -293,8 +294,10 @@ export default function OptimizedVideoPlayer({
     );
   }
 
-  // Optimized HTML5 Video Source (Cloudinary f_auto/q_auto or Google Drive direct)
-  const videoSrc = driveConfig.isDrive
+  // Optimized HTML5 Video Source (Cloudinary f_mp4/q_auto or Google Drive direct or fallback)
+  const videoSrc = usingFallbackSrc
+    ? src
+    : driveConfig.isDrive
     ? `/api/video-stream?id=${driveConfig.fileId}`
     : isCloudinary
     ? getOptimizedCloudinaryVideoUrl(src, { width: isHero ? 1280 : 720 })
@@ -341,7 +344,7 @@ export default function OptimizedVideoPlayer({
         muted={!customOverlayControls ? true : isMuted}
         controls={false}
         className={`${className} relative z-[1] object-cover w-full h-full min-w-full min-h-full transition-opacity duration-500 ${
-          hasRenderedFrame || isPlaying || autoPlay || isHero ? "opacity-100" : "opacity-0"
+          hasRenderedFrame || isPlaying || autoPlay || isHero || !currentPoster ? "opacity-100" : "opacity-0"
         }`}
         poster={currentPoster}
         onLoadedData={() => {
@@ -390,6 +393,8 @@ export default function OptimizedVideoPlayer({
         onError={() => {
           if (driveConfig.isDrive) {
             setVideoError(true);
+          } else if (!usingFallbackSrc && src) {
+            setUsingFallbackSrc(true);
           }
         }}
       >

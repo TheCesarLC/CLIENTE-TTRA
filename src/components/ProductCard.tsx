@@ -192,11 +192,21 @@ export default function ProductCard({
 
         {/* Product Images with subtle smooth transition */}
         <img
-          src={getOptimizedImageUrl(product.images?.[activeImgIndex], 600)}
+          src={getOptimizedImageUrl(product.images?.[activeImgIndex] || product.images?.[0], 600)}
           alt={`${product.name} - Vista ${activeImgIndex + 1}`}
           loading="eager"
           decoding="async"
           onLoad={() => setImgLoaded(true)}
+          onError={(e) => {
+            setImgLoaded(true);
+            const target = e.currentTarget;
+            const fallback = (product.name.toUpperCase().includes("800") || product.name.toUpperCase().includes("DIAS")) 
+              ? "https://umbra.page/cdn/shop/files/25.png" 
+              : "https://umbra.page/cdn/shop/files/BUNDLEPACK.png";
+            if (target.src !== fallback) {
+              target.src = fallback;
+            }
+          }}
           className={`w-full h-full object-contain transition-all duration-300 ease-out select-none ${
             isHovered ? "scale-105" : "scale-100"
           } ${shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""}`}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 
 interface CosmicLogoProps {
   src: string;
@@ -42,16 +43,16 @@ export default function CosmicLogo({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 500, height: 500 });
+  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 500, height: 200 });
 
-  // Pre-load image to verify availability and dimensions
+  const rawSrc = src || "";
+  const directSrc = getOptimizedImageUrl(rawSrc, 1200) || "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+
+  // Pre-load image to extract intrinsic aspect ratio
   useEffect(() => {
     setImageLoaded(false);
-    setImageError(false);
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = src;
+    img.src = directSrc;
     img.onload = () => {
       setImageLoaded(true);
       if (img.naturalWidth && img.naturalHeight) {
@@ -62,10 +63,23 @@ export default function CosmicLogo({
       }
     };
     img.onerror = () => {
-      setImageError(true);
-      setImageLoaded(true);
+      // If error loading custom image, load fallback
+      const fallbackImg = new Image();
+      fallbackImg.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+      fallbackImg.onload = () => {
+        setImageLoaded(true);
+        if (fallbackImg.naturalWidth && fallbackImg.naturalHeight) {
+          setDimensions({
+            width: fallbackImg.naturalWidth,
+            height: fallbackImg.naturalHeight
+          });
+        }
+      };
+      fallbackImg.onerror = () => {
+        setImageLoaded(true);
+      };
     };
-  }, [src]);
+  }, [directSrc]);
 
   // Starry Animation Engine matching the site's exact StarryBackground
   useEffect(() => {
@@ -304,18 +318,6 @@ export default function CosmicLogo({
     };
   }, [glowColor, glowMode, imageLoaded]);
 
-  // If image fails, fallback to simple image
-  if (imageError) {
-    return (
-      <img
-        src={src}
-        alt={alt}
-        className={className}
-        referrerPolicy="no-referrer"
-      />
-    );
-  }
-
   return (
     <div
       ref={containerRef}
@@ -324,21 +326,27 @@ export default function CosmicLogo({
         aspectRatio: `${dimensions.width} / ${dimensions.height}`,
       }}
     >
-      {/* 1. Sleek, Subtle White Border Contour so the TH shape stays crisp over video */}
+      {/* 1. Sleek, Subtle White Border Contour so the logo shape stays crisp over video */}
       <img
-        src={src}
+        src={directSrc}
         alt={alt}
         className="w-full h-full object-contain pointer-events-none absolute inset-0 opacity-20 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] transition-opacity duration-500 group-hover/cosmic-logo:opacity-35"
         referrerPolicy="no-referrer"
         aria-hidden="true"
+        onError={(e) => {
+          const target = e.currentTarget;
+          if (!target.src.includes("Letras_Blancas.png")) {
+            target.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+          }
+        }}
       />
 
       {/* 2. The Animated Stars & Meteors Space Canvas Masked by Logo Shape */}
       <div
         className="w-full h-full relative z-10 transition-transform duration-700 group-hover/cosmic-logo:scale-[1.01]"
         style={{
-          WebkitMaskImage: `url("${src}")`,
-          maskImage: `url("${src}")`,
+          WebkitMaskImage: `url("${directSrc}")`,
+          maskImage: `url("${directSrc}")`,
           WebkitMaskSize: "contain",
           maskSize: "contain",
           WebkitMaskRepeat: "no-repeat",
@@ -355,11 +363,17 @@ export default function CosmicLogo({
 
       {/* 3. Pure White Subtle Outline Rim */}
       <img
-        src={src}
+        src={directSrc}
         alt={alt}
         className="w-full h-full object-contain pointer-events-none absolute inset-0 opacity-15 mix-blend-screen transition-opacity duration-500 group-hover/cosmic-logo:opacity-25"
         referrerPolicy="no-referrer"
         aria-hidden="true"
+        onError={(e) => {
+          const target = e.currentTarget;
+          if (!target.src.includes("Letras_Blancas.png")) {
+            target.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+          }
+        }}
       />
     </div>
   );

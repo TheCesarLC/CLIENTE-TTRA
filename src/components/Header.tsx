@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Menu, Search, User, ShoppingBag, Globe, Sparkles, X, ShieldAlert, LogIn, LogOut, Pencil } from "lucide-react";
 import { CartItem, GLOW_COLORS } from "../types";
 import { useSite, SiteConfig } from "../context/SiteContext";
+import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 
 interface HeaderProps {
   cart: CartItem[];
@@ -141,10 +142,16 @@ export default function Header({
               id="header-logo-button"
             >
               <img
-                src={siteConfig.headerLogo || null}
+                src={getOptimizedImageUrl(siteConfig.headerLogo || siteConfig.logoUrl || "https://umbra.page/cdn/shop/files/Letras_Blancas.png", 400)}
                 alt="Logo"
                 className="h-7 md:h-9 object-contain"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.includes("Letras_Blancas.png")) {
+                    target.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+                  }
+                }}
               />
             </button>
             {isAdmin && visualEditMode && onVisualEdit && (
