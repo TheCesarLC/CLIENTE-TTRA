@@ -391,6 +391,20 @@ export default function App() {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center space-y-4 select-none">
+        <div className="relative flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-neutral-800 border-t-emerald-500 animate-spin" />
+        </div>
+        <div className="text-center space-y-1">
+          <span className="text-sm font-black tracking-[0.3em] uppercase text-white">TETRA HATS</span>
+          <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Cargando colección exclusiva...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-white selection:text-black transition-all duration-[600ms] relative bg-black"
@@ -554,7 +568,7 @@ export default function App() {
         {/* Hero content presentation */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center space-y-8 flex flex-col items-center">
           <CosmicLogo
-            src={siteConfigToUse.logoUrl || siteConfigToUse.headerLogo || "https://umbra.page/cdn/shop/files/Letras_Blancas.png"}
+            src={siteConfigToUse.logoUrl || siteConfigToUse.headerLogo || ""}
             alt="Tetra Hats Logo"
             className="w-[85%] max-w-lg mb-2"
             glowColor={glowColor}

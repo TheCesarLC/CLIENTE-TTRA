@@ -138,21 +138,21 @@ export default function Header({
           <div className="flex-1 flex justify-center lg:absolute lg:left-1/2 lg:-translate-x-1/2 relative items-center group/logo-header">
             <button
               onClick={() => scrollToSection("inicio")}
-              className="flex items-center gap-2 cursor-pointer focus:outline-none"
+              className="flex items-center gap-2 cursor-pointer focus:outline-none group"
               id="header-logo-button"
             >
-              <img
-                src={getOptimizedImageUrl(siteConfig.headerLogo || siteConfig.logoUrl || "https://umbra.page/cdn/shop/files/Letras_Blancas.png", 400)}
-                alt="Logo"
-                className="h-7 md:h-9 object-contain"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.includes("Letras_Blancas.png")) {
-                    target.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
-                  }
-                }}
-              />
+              {(siteConfig.headerLogo || siteConfig.logoUrl) ? (
+                <img
+                  src={getOptimizedImageUrl(siteConfig.headerLogo || siteConfig.logoUrl, 400)}
+                  alt="TETRA HATS"
+                  className="h-7 md:h-9 object-contain transition-transform group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="text-lg md:text-xl font-black tracking-[0.25em] uppercase text-white group-hover:text-emerald-400 transition-colors">
+                  TETRA HATS
+                </span>
+              )}
             </button>
             {isAdmin && visualEditMode && onVisualEdit && (
               <button

@@ -7,12 +7,7 @@ export const PRODUCTS: Product[] = [
     priceMXN: 1499,
     originalPriceMXN: 1600,
     stockQuantity: 15,
-    images: [
-      "https://umbra.page/cdn/shop/files/BUNDLEPACK.png",
-      "https://umbra.page/cdn/shop/files/5.png",
-      "https://umbra.page/cdn/shop/files/6_84edbf45-9055-44a6-a5a5-cadb6b56b4fb.png",
-      "https://umbra.page/cdn/shop/files/4.png"
-    ],
+    images: [],
     description: "Gorra de colección premium 'ON DGAS'. Diseñada para la máxima distinción urbana, destaca por sus costuras reforzadas, acabados de gamuza italiana de exportación y un diseño totalmente exclusivo. Incluye caja de colección premium, pines coleccionables y tarjeta holográfica de autenticidad.",
     outOfStock: false,
     category: "NIGHTMARES",
@@ -32,12 +27,7 @@ export const PRODUCTS: Product[] = [
     priceMXN: 1499,
     originalPriceMXN: 1600,
     stockQuantity: 10,
-    images: [
-      "https://umbra.page/cdn/shop/files/25.png",
-      "https://umbra.page/cdn/shop/files/16.png",
-      "https://umbra.page/cdn/shop/files/15.png",
-      "https://umbra.page/cdn/shop/files/10.png"
-    ],
+    images: [],
     description: "Edición exclusiva '800 DIAS'. Una pieza con alma propia que encarna el sigilo y la noche eterna. Confeccionada con paneles estructurados rígidos de primera clase para una perfecta forma permanente, materiales suaves al tacto y acabados de terciopelo premium.",
     outOfStock: false,
     category: "SHADOWS IN THE DARKNESS",

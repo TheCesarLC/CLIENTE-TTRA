@@ -21,9 +21,9 @@ export function getOptimizedImageUrl(
   let trimmed = url.trim();
   if (!trimmed) return "";
 
-  // Replace old broken cloudinary logo placeholder
+  // Clean broken placeholder patterns
   if (trimmed.includes("df3fh9wic")) {
-    trimmed = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+    return "";
   }
 
   // Check if it's a Cloudinary image URL

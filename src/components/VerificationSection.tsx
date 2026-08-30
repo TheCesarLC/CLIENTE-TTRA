@@ -76,16 +76,8 @@ export default function VerificationSection() {
       id="verification"
       className="relative bg-black text-white py-16 md:py-24 border-t border-neutral-900 overflow-hidden"
     >
-      {/* Background cover image matching umbra verification */}
-      <div className="absolute inset-0 z-0 opacity-15">
-        <img
-          src="https://umbra.page/cdn/shop/files/1112.png"
-          alt="Verification Background"
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-      </div>
+      {/* Background ambient dark glow */}
+      <div className="absolute inset-0 z-0 opacity-40 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-neutral-900/50 via-black to-black pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         {/* Left Information Panel */}

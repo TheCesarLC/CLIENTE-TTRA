@@ -107,16 +107,8 @@ export default function Reviews() {
       id="reviews"
       className="relative bg-black text-white py-16 md:py-24 border-t border-neutral-900"
     >
-      {/* Background with subtle stars pattern or dark cover */}
-      <div className="absolute inset-0 z-0 opacity-15">
-        <img
-          src="https://umbra.page/cdn/shop/files/fondo_para_seccion_de_judge.jpg"
-          alt="Reviews Background"
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black" />
-      </div>
+      {/* Background ambient dark gradient */}
+      <div className="absolute inset-0 z-0 opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/60 via-black to-black pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10 text-left space-y-12">
         

@@ -33,6 +33,8 @@ interface Meteor {
   delay: number;
 }
 
+const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="500" height="120"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" letter-spacing="8" fill="white">TETRA HATS</text><text x="50%" y="85%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="11" letter-spacing="6" fill="%2310b981">EXCLUSIVE COLLECTION</text></svg>`;
+
 export default function CosmicLogo({
   src,
   alt = "Tetra Hats Logo",
@@ -43,10 +45,12 @@ export default function CosmicLogo({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 500, height: 200 });
+  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 500, height: 120 });
 
   const rawSrc = src || "";
-  const directSrc = getOptimizedImageUrl(rawSrc, 1200) || "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+  const directSrc = (rawSrc && !rawSrc.includes("umbra.page")) 
+    ? (getOptimizedImageUrl(rawSrc, 1200) || DEFAULT_BRAND_LOGO) 
+    : DEFAULT_BRAND_LOGO;
 
   // Pre-load image to extract intrinsic aspect ratio
   useEffect(() => {
@@ -63,9 +67,9 @@ export default function CosmicLogo({
       }
     };
     img.onerror = () => {
-      // If error loading custom image, load fallback
+      // If error loading custom image, load default vector logo
       const fallbackImg = new Image();
-      fallbackImg.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+      fallbackImg.src = DEFAULT_BRAND_LOGO;
       fallbackImg.onload = () => {
         setImageLoaded(true);
         if (fallbackImg.naturalWidth && fallbackImg.naturalHeight) {
@@ -335,8 +339,8 @@ export default function CosmicLogo({
         aria-hidden="true"
         onError={(e) => {
           const target = e.currentTarget;
-          if (!target.src.includes("Letras_Blancas.png")) {
-            target.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+          if (target.src !== DEFAULT_BRAND_LOGO) {
+            target.src = DEFAULT_BRAND_LOGO;
           }
         }}
       />
@@ -370,8 +374,8 @@ export default function CosmicLogo({
         aria-hidden="true"
         onError={(e) => {
           const target = e.currentTarget;
-          if (!target.src.includes("Letras_Blancas.png")) {
-            target.src = "https://umbra.page/cdn/shop/files/Letras_Blancas.png";
+          if (target.src !== DEFAULT_BRAND_LOGO) {
+            target.src = DEFAULT_BRAND_LOGO;
           }
         }}
       />

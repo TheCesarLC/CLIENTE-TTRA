@@ -31,18 +31,8 @@ export default function OfficialDistributors({
       id="distributors"
       className="relative bg-black text-white py-16 md:py-24 border-t border-neutral-900"
     >
-      {/* Background with UYJYUJUYJ-100 picture */}
-      <div className="absolute inset-0 z-0 opacity-20">
-        <img
-          src={getOptimizedImageUrl("https://umbra.page/cdn/shop/files/UYJYUJUYJ-100.jpg", 1200)}
-          alt="Distributor Background"
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-black" />
-      </div>
+      {/* Background ambient dark gradient */}
+      <div className="absolute inset-0 z-0 opacity-40 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900/40 via-black to-black pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10 flex flex-col items-center text-center space-y-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold tracking-widest text-gray-300 uppercase relative">

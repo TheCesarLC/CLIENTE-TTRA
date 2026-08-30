@@ -160,27 +160,29 @@ export default function ProductModal({
                 }}
               />
             )}
-            <img
-              src={getOptimizedImageUrl(product.images?.[selectedImgIdx] || product.images?.[0], 1000)}
-              alt={product.name}
-              loading="eager"
-              decoding="async"
-              onLoad={() => setMainImgLoaded(true)}
-              onError={(e) => {
-                setMainImgLoaded(true);
-                const target = e.currentTarget;
-                const fallback = (product.name.toUpperCase().includes("800") || product.name.toUpperCase().includes("DIAS")) 
-                  ? "https://umbra.page/cdn/shop/files/25.png" 
-                  : "https://umbra.page/cdn/shop/files/BUNDLEPACK.png";
-                if (target.src !== fallback) {
-                  target.src = fallback;
-                }
-              }}
-              className={`max-w-full max-h-full object-contain transition-transform duration-300 ${
-                shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""
-              }`}
-              referrerPolicy="no-referrer"
-            />
+            {product.images && product.images.length > 0 && product.images[selectedImgIdx] ? (
+              <img
+                src={getOptimizedImageUrl(product.images[selectedImgIdx] || product.images[0], 1000)}
+                alt={product.name}
+                loading="eager"
+                decoding="async"
+                onLoad={() => setMainImgLoaded(true)}
+                onError={() => {
+                  setMainImgLoaded(true);
+                }}
+                className={`max-w-full max-h-full object-contain transition-transform duration-300 ${
+                  shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""
+                }`}
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-full h-64 flex flex-col items-center justify-center text-center p-6 bg-neutral-900/50 rounded-xl">
+                <span className="text-3xl font-black tracking-widest text-neutral-600 uppercase">
+                  {product.name ? product.name.substring(0, 3).toUpperCase() : "TH"}
+                </span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-widest mt-2">Fotografía en preparación</span>
+              </div>
+            )}
 
             {/* Navigation Chevron Toggles on Mobile / Desktop */}
             {product.images.length > 1 && (

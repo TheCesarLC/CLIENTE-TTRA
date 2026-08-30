@@ -191,27 +191,29 @@ export default function ProductCard({
         )}
 
         {/* Product Images with subtle smooth transition */}
-        <img
-          src={getOptimizedImageUrl(product.images?.[activeImgIndex] || product.images?.[0], 600)}
-          alt={`${product.name} - Vista ${activeImgIndex + 1}`}
-          loading="eager"
-          decoding="async"
-          onLoad={() => setImgLoaded(true)}
-          onError={(e) => {
-            setImgLoaded(true);
-            const target = e.currentTarget;
-            const fallback = (product.name.toUpperCase().includes("800") || product.name.toUpperCase().includes("DIAS")) 
-              ? "https://umbra.page/cdn/shop/files/25.png" 
-              : "https://umbra.page/cdn/shop/files/BUNDLEPACK.png";
-            if (target.src !== fallback) {
-              target.src = fallback;
-            }
-          }}
-          className={`w-full h-full object-contain transition-all duration-300 ease-out select-none ${
-            isHovered ? "scale-105" : "scale-100"
-          } ${shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""}`}
-          referrerPolicy="no-referrer"
-        />
+        {product.images && product.images.length > 0 && product.images[activeImgIndex] ? (
+          <img
+            src={getOptimizedImageUrl(product.images[activeImgIndex] || product.images[0], 600)}
+            alt={`${product.name} - Vista ${activeImgIndex + 1}`}
+            loading="eager"
+            decoding="async"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => {
+              setImgLoaded(true);
+            }}
+            className={`w-full h-full object-contain transition-all duration-300 ease-out select-none ${
+              isHovered ? "scale-105" : "scale-100"
+            } ${shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""}`}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-neutral-900/40 rounded">
+            <span className="text-2xl font-black tracking-widest text-neutral-600 uppercase">
+              {product.name ? product.name.substring(0, 3).toUpperCase() : "TH"}
+            </span>
+            <span className="text-[9px] text-neutral-500 uppercase tracking-wider mt-1">Colección Exclusiva</span>
+          </div>
+        )}
 
         {/* Slideshow Arrow Toggles - Always visible on mobile, visible on hover for desktop */}
         {product.images.length > 1 && (
