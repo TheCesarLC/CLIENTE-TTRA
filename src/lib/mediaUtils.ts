@@ -1,8 +1,7 @@
 /**
- * Google Drive, Cloudinary & Multimedia Optimization Utilities
- * Allows seamless embedding, ultra-fast streaming and compression of multimedia
- * by extracting File IDs and converting them to direct high-speed CDN streams,
- * dynamic transformations (f_auto, q_auto, vc_auto) and instant posters.
+ * Multimedia & CDN Optimization Utilities (ImageKit.io, Cloudinary & Google Drive)
+ * Allows seamless embedding, ultra-fast global CDN streaming, dynamic transformations 
+ * (f-auto, q-auto, w-xxx, ik-thumbnail) and instant posters.
  */
 
 export function extractGoogleDriveId(url: string | null | undefined): string | null {
@@ -44,6 +43,153 @@ export function getDriveDirectImageUrl(url: string | null | undefined): string {
   return `https://lh3.googleusercontent.com/d/${fileId}`;
 }
 
+// ----------------------------------------------------
+// ImageKit.io Support & Optimization Engine
+// ----------------------------------------------------
+
+export function isImageKitUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  return trimmed.includes("ik.imagekit.io") || trimmed.includes("imagekit.io");
+}
+
+export function isImageKitVideoUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  if (!isImageKitUrl(url)) return false;
+  const trimmed = url.trim();
+  return (
+    /\.(mp4|mov|webm|mkv|avi|m4v)(\?.*)?$/i.test(trimmed) ||
+    trimmed.includes("/ik-video/") ||
+    trimmed.includes("f-mp4") ||
+    trimmed.includes("f-webm")
+  );
+}
+
+export function isImageKitImageUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  if (!isImageKitUrl(url)) return false;
+  return !isImageKitVideoUrl(url);
+}
+
+/**
+ * Optimizes an ImageKit.io image with automatic format selection (WebP/AVIF),
+ * intelligent compression (q-80) and responsive width constraint.
+ */
+export function getOptimizedImageKitImageUrl(
+  url: string,
+  targetWidth: number = 600
+): string {
+  if (!url || !isImageKitImageUrl(url)) return url;
+
+  try {
+    const trimmed = url.trim();
+    const urlObj = new URL(trimmed);
+
+    // If URL already has path transformation (e.g. /tr:w-300,q-80/), clean and replace
+    const pathSegments = urlObj.pathname.split("/");
+    const trIndex = pathSegments.findIndex((seg) => seg.startsWith("tr:"));
+
+    if (trIndex !== -1) {
+      // Replace existing path transformation with optimal targetWidth
+      pathSegments[trIndex] = `tr:w-${targetWidth},f-auto,q-80`;
+      urlObj.pathname = pathSegments.join("/");
+      // Remove conflicting query transformation
+      urlObj.searchParams.delete("tr");
+      return urlObj.toString();
+    }
+
+    // Otherwise use universal query-based transformation
+    urlObj.searchParams.set("tr", `w-${targetWidth},f-auto,q-80`);
+    return urlObj.toString();
+  } catch {
+    // Fallback simple query append
+    const clean = url.trim();
+    return clean.includes("?") 
+      ? `${clean}&tr=w-${targetWidth},f-auto,q-80` 
+      : `${clean}?tr=w-${targetWidth},f-auto,q-80`;
+  }
+}
+
+/**
+ * Optimizes an ImageKit.io video URL with width bounding and fast web streaming.
+ * Uses standard ImageKit transformations (w-xxx) or returns clean stream URL.
+ */
+export function getOptimizedImageKitVideoUrl(
+  url: string,
+  options?: { width?: number; quality?: string; isHero?: boolean }
+): string {
+  if (!url || typeof url !== "string" || !isImageKitUrl(url)) return url;
+
+  try {
+    const trimmed = url.trim();
+    const width = options?.width || (options?.isHero ? 720 : 480);
+
+    const urlObj = new URL(trimmed);
+
+    const pathSegments = urlObj.pathname.split("/");
+    const trIndex = pathSegments.findIndex((seg) => seg.startsWith("tr:"));
+
+    if (trIndex !== -1) {
+      pathSegments[trIndex] = `tr:w-${width}`;
+      urlObj.pathname = pathSegments.join("/");
+      urlObj.searchParams.delete("tr");
+      return urlObj.toString();
+    }
+
+    urlObj.searchParams.set("tr", `w-${width}`);
+    return urlObj.toString();
+  } catch {
+    const width = options?.isHero ? 720 : 480;
+    const clean = url.trim();
+    return clean.includes("?") 
+      ? `${clean}&tr=w-${width}` 
+      : `${clean}?tr=w-${width}`;
+  }
+}
+
+/**
+ * Extracts an instant lightweight snapshot poster (.jpg) from an ImageKit video URL.
+ * ImageKit supports appending `/ik-thumbnail.jpg` to video URLs for real-time frame extraction (~15KB).
+ */
+export function getOptimizedImageKitPosterUrl(
+  url: string,
+  targetWidth: number = 600,
+  startOffset: string = "1"
+): string {
+  if (!url || typeof url !== "string" || !isImageKitUrl(url)) return "";
+
+  try {
+    const trimmed = url.trim();
+    const urlObj = new URL(trimmed);
+
+    // If it's already an image, optimize it directly as poster
+    if (!isImageKitVideoUrl(trimmed)) {
+      return getOptimizedImageKitImageUrl(trimmed, targetWidth);
+    }
+
+    // Clean any prior thumbnail paths or transformations
+    let pathname = urlObj.pathname;
+    const pathSegments = pathname.split("/").filter((s) => !s.startsWith("tr:"));
+    pathname = pathSegments.join("/");
+
+    // Append /ik-thumbnail.jpg if not present
+    if (!pathname.endsWith("/ik-thumbnail.jpg")) {
+      pathname = `${pathname}/ik-thumbnail.jpg`;
+    }
+
+    urlObj.pathname = pathname;
+    urlObj.searchParams.set("tr", `w-${targetWidth}`);
+
+    return urlObj.toString();
+  } catch {
+    return "";
+  }
+}
+
+// ----------------------------------------------------
+// Cloudinary Support & Optimization Engine
+// ----------------------------------------------------
+
 export function isCloudinaryUrl(url: string | null | undefined): boolean {
   if (!url || typeof url !== "string") return false;
   return url.includes("res.cloudinary.com") || url.includes("cloudinary.com");
@@ -66,12 +212,11 @@ export function isCloudinaryImageUrl(url: string | null | undefined): boolean {
 }
 
 /**
- * Optimizes a Cloudinary video URL by injecting f_auto, q_auto:eco, vc_auto and max dimension limit
- * This reduces video file transfer size by 70%-90% and enables instant streaming.
+ * Optimizes a Cloudinary video URL by injecting f_mp4, q_auto:low/eco, w_xxx, c_limit for instant streaming
  */
 export function getOptimizedCloudinaryVideoUrl(
   url: string,
-  options?: { width?: number; quality?: string }
+  options?: { width?: number; quality?: string; isHero?: boolean }
 ): string {
   if (!url || typeof url !== "string" || !isCloudinaryUrl(url)) return url;
 
@@ -95,9 +240,9 @@ export function getOptimizedCloudinaryVideoUrl(
       cleanPath = parts.slice(1).join("/");
     }
 
-    const width = options?.width || 1280;
+    const width = options?.width || (options?.isHero ? 720 : 480);
     const quality = options?.quality || "auto";
-    const transforms = `f_mp4,q_${quality},w_${width},c_limit`;
+    const transforms = `q_${quality},w_${width},c_limit`;
 
     return `${before}/video/upload/${transforms}/${cleanPath}`;
   } catch {
@@ -107,7 +252,6 @@ export function getOptimizedCloudinaryVideoUrl(
 
 /**
  * Generates an instant ~20KB lightweight frame snapshot poster (.jpg) from a Cloudinary video URL
- * Cloudinary can extract content-aware frame (so_auto) or offset frame (so_1.0) and output as an instant .jpg
  */
 export function getOptimizedCloudinaryPosterUrl(
   url: string,
@@ -197,14 +341,13 @@ export function getDriveMediaConfig(url: string | null | undefined): DriveMediaC
   return {
     isDrive: true,
     fileId,
-    // High-speed CDN stream for HTML5 <video> and <img>
+    // High-speed direct stream
     directUrl: `https://lh3.googleusercontent.com/d/${fileId}=m22`,
-    // Download / direct stream fallback
+    // Download fallback
     streamUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
-    // Embedded Google Drive preview player for iframe fallback
+    // Embedded preview player
     embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,
-    // Fast CDN Thumbnail for posters / images
+    // Fast thumbnail
     thumbnailUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`
   };
 }
-

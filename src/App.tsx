@@ -513,7 +513,6 @@ export default function App() {
               !siteConfigToUse.heroVideo.includes("41ebdb")
                 ? siteConfigToUse.heroVideo
                 : null) ||
-              siteConfigToUse.experienceVideo ||
               "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4"
             }
             playsInline
@@ -526,7 +525,7 @@ export default function App() {
               siteConfigToUse.heroPoster &&
               !siteConfigToUse.heroPoster.includes("umbra.page") &&
               !siteConfigToUse.heroPoster.includes("8678b1b9")
-                ? siteConfigToUse.heroPoster
+                ? getOptimizedImageUrl(siteConfigToUse.heroPoster, 1280)
                 : undefined
             }
           />
@@ -678,7 +677,8 @@ export default function App() {
             {/* VIDEO 1 - 800 DÍAS */}
             {(() => {
               const d800Product = activeProducts.find(p => p.name.toUpperCase().includes("800 DIAS") || p.name.toUpperCase().includes("800 DÍAS")) || activeProducts[1] || activeProducts[0];
-              const d800FallbackPoster = d800Product?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const rawPoster = d800Product?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const d800FallbackPoster = getOptimizedImageUrl(rawPoster, 600);
               const video1Src = siteConfigToUse.experienceVideo &&
                 !siteConfigToUse.experienceVideo.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
@@ -703,7 +703,7 @@ export default function App() {
                         siteConfigToUse.experiencePoster &&
                         !siteConfigToUse.experiencePoster.includes("umbra.page") &&
                         !siteConfigToUse.experiencePoster.includes("8678b1b9")
-                          ? siteConfigToUse.experiencePoster
+                          ? getOptimizedImageUrl(siteConfigToUse.experiencePoster, 600)
                           : undefined
                       }
                       fallbackPoster={d800FallbackPoster}
@@ -720,7 +720,8 @@ export default function App() {
             {/* VIDEO 2 - ONDGAS */}
             {(() => {
               const ondgasProduct = activeProducts.find(p => p.name.toUpperCase().includes("ON DGAS") || p.name.toUpperCase().includes("ONDGAS")) || activeProducts[0];
-              const ondgasFallbackPoster = ondgasProduct?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const rawPoster2 = ondgasProduct?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
+              const ondgasFallbackPoster = getOptimizedImageUrl(rawPoster2, 600);
               const video2Src = siteConfigToUse.experienceVideo2 &&
                 !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
@@ -744,7 +745,7 @@ export default function App() {
                       poster={
                         siteConfigToUse.experiencePoster2 &&
                         !siteConfigToUse.experiencePoster2.includes("umbra.page")
-                          ? siteConfigToUse.experiencePoster2
+                          ? getOptimizedImageUrl(siteConfigToUse.experiencePoster2, 600)
                           : undefined
                       }
                       fallbackPoster={ondgasFallbackPoster}

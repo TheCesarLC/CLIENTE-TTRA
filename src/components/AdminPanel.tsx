@@ -1017,13 +1017,13 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video del Hero (Cloudinary, Google Drive o .mp4)</span>
+                  <span>Video del Hero (ImageKit.io, Cloudinary o .mp4)</span>
                   <span className="text-emerald-400 text-[9px] font-bold">Aceleración CDN Automática</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.heroVideo || ""}
-                  placeholder="https://res.cloudinary.com/... o https://drive.google.com/..."
+                  placeholder="https://ik.imagekit.io/... o https://res.cloudinary.com/..."
                   onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1031,13 +1031,13 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video ONDGAS (Cloudinary, Google Drive o .mp4)</span>
+                  <span>Video ONDGAS (ImageKit.io, Cloudinary o .mp4)</span>
                   <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo || ""}
-                  placeholder="https://res.cloudinary.com/... o https://drive.google.com/..."
+                  placeholder="https://ik.imagekit.io/... o https://res.cloudinary.com/..."
                   onChange={(e) => updateSiteConfig({ experienceVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1049,7 +1049,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   {siteConfig.experiencePoster ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
                   ) : (
-                    <span className="text-gray-500 text-[9px]">Autogenerado de Cloudinary / Foto Oficial</span>
+                    <span className="text-gray-500 text-[9px]">Autogenerado (ImageKit / Cloudinary)</span>
                   )}
                 </label>
                 <div className="flex gap-2">
@@ -1073,13 +1073,13 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video 800 DÍAS (Cloudinary, Google Drive o .mp4)</span>
+                  <span>Video 800 DÍAS (ImageKit.io, Cloudinary o .mp4)</span>
                   <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo2 || ""}
-                  placeholder="https://res.cloudinary.com/... o https://drive.google.com/..."
+                  placeholder="https://ik.imagekit.io/... o https://res.cloudinary.com/..."
                   onChange={(e) => updateSiteConfig({ experienceVideo2: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1091,7 +1091,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   {siteConfig.experiencePoster2 ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
                   ) : (
-                    <span className="text-gray-500 text-[9px]">Autogenerado de Cloudinary / Foto Oficial</span>
+                    <span className="text-gray-500 text-[9px]">Autogenerado (ImageKit / Cloudinary)</span>
                   )}
                 </label>
                 <div className="flex gap-2">

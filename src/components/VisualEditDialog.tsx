@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Type, Image as ImageIcon, Video, Palette, Link, Eye, Check, AlertCircle, HardDrive } from "lucide-react";
+import { X, Save, Type, Image as ImageIcon, Video, Palette, Link, Eye, Check, AlertCircle, HardDrive, Zap } from "lucide-react";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
-import { isGoogleDriveUrl } from "../lib/mediaUtils";
+import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl } from "../lib/mediaUtils";
 import OptimizedVideoPlayer from "./OptimizedVideoPlayer";
 
 interface VisualEditDialogProps {
@@ -181,15 +181,29 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="Ejemplo: https://drive.google.com/file/d/... o https://.../imagen.jpg"
+                    placeholder="Ejemplo: https://ik.imagekit.io/... o https://.../imagen.png"
                     required
                   />
                 </div>
+
+                {isImageKitUrl(value) && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
+                    <Zap size={13} className="text-emerald-400 flex-shrink-0" />
+                    <span>ImageKit.io detectado: WebP/AVIF y CDN global activados automáticamente</span>
+                  </div>
+                )}
 
                 {isGoogleDriveUrl(value) && (
                   <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] uppercase font-bold tracking-wider">
                     <HardDrive size={13} className="text-blue-400 flex-shrink-0" />
                     <span>Enlace de Google Drive detectado y optimizado automáticamente</span>
+                  </div>
+                )}
+
+                {isCloudinaryUrl(value) && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded text-purple-400 text-[10px] uppercase font-bold tracking-wider">
+                    <Zap size={13} className="text-purple-400 flex-shrink-0" />
+                    <span>Cloudinary detectado: f_auto y q_auto activados</span>
                   </div>
                 )}
 
@@ -222,14 +236,28 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="Ejemplo: https://drive.google.com/file/d/1ZEao13N6.../view o .mp4"
+                    placeholder="Ejemplo: https://ik.imagekit.io/... o https://res.cloudinary.com/... o .mp4"
                     required
                   />
                 </div>
 
-                {isGoogleDriveUrl(value) && (
+                {isImageKitUrl(value) && (
                   <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
-                    <HardDrive size={13} className="text-emerald-400 flex-shrink-0" />
+                    <Zap size={13} className="text-emerald-400 flex-shrink-0" />
+                    <span>Video de ImageKit.io detectado. Aceleración CDN y extracción de póster activada.</span>
+                  </div>
+                )}
+
+                {isCloudinaryUrl(value) && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded text-purple-400 text-[10px] uppercase font-bold tracking-wider">
+                    <Zap size={13} className="text-purple-400 flex-shrink-0" />
+                    <span>Video de Cloudinary detectado. Optimización f_mp4/q_auto y extracción de fotograma activada.</span>
+                  </div>
+                )}
+
+                {isGoogleDriveUrl(value) && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] uppercase font-bold tracking-wider">
+                    <HardDrive size={13} className="text-blue-400 flex-shrink-0" />
                     <span>Video de Google Drive detectado. Reproductores y CDN sincronizados.</span>
                   </div>
                 )}

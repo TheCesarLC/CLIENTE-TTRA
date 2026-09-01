@@ -278,10 +278,16 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           parsed.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
         if (parsed.experienceVideo && (parsed.experienceVideo.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo.includes("41ebdb") || parsed.experienceVideo.includes("8678b1b9") || parsed.experienceVideo.includes("mixkit.co"))) {
-          parsed.experienceVideo = "";
+          parsed.experienceVideo = defaultSiteConfig.experienceVideo;
+        }
+        if (!parsed.experienceVideo || !parsed.experienceVideo.trim()) {
+          parsed.experienceVideo = defaultSiteConfig.experienceVideo;
         }
         if (parsed.experienceVideo2 && (parsed.experienceVideo2.includes("umbra.page/cdn/shop/videos") || parsed.experienceVideo2.includes("41ebdb") || parsed.experienceVideo2.includes("8678b1b9") || parsed.experienceVideo2.includes("mixkit.co"))) {
-          parsed.experienceVideo2 = "";
+          parsed.experienceVideo2 = defaultSiteConfig.experienceVideo2;
+        }
+        if (!parsed.experienceVideo2 || !parsed.experienceVideo2.trim()) {
+          parsed.experienceVideo2 = defaultSiteConfig.experienceVideo2;
         }
         if (parsed.headerLogo && (parsed.headerLogo.includes("df3fh9wic") || parsed.headerLogo.includes("umbra.page"))) {
           parsed.headerLogo = "";
@@ -293,7 +299,10 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           parsed.experiencePoster = "";
         }
         if (parsed.heroVideo && (parsed.heroVideo.includes("umbra.page/cdn/shop/videos") || parsed.heroVideo.includes("41ebdb") || parsed.heroVideo.includes("8678b1b9"))) {
-          parsed.heroVideo = "";
+          parsed.heroVideo = defaultSiteConfig.heroVideo;
+        }
+        if (!parsed.heroVideo || !parsed.heroVideo.trim()) {
+          parsed.heroVideo = defaultSiteConfig.heroVideo;
         }
         return { ...defaultSiteConfig, ...parsed };
       }
@@ -409,10 +418,16 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data.experienceSubtitle = "Colección Limitada. No son simples gorras, son piezas de exclusividad.";
         }
         if (data.experienceVideo && (data.experienceVideo.includes("umbra.page/cdn/shop/videos") || data.experienceVideo.includes("41ebdb") || data.experienceVideo.includes("8678b1b9") || data.experienceVideo.includes("mixkit.co"))) {
-          data.experienceVideo = "";
+          data.experienceVideo = defaultSiteConfig.experienceVideo;
+        }
+        if (!data.experienceVideo || !data.experienceVideo.trim()) {
+          data.experienceVideo = defaultSiteConfig.experienceVideo;
         }
         if (data.experienceVideo2 && (data.experienceVideo2.includes("umbra.page/cdn/shop/videos") || data.experienceVideo2.includes("41ebdb") || data.experienceVideo2.includes("8678b1b9") || data.experienceVideo2.includes("mixkit.co"))) {
-          data.experienceVideo2 = "";
+          data.experienceVideo2 = defaultSiteConfig.experienceVideo2;
+        }
+        if (!data.experienceVideo2 || !data.experienceVideo2.trim()) {
+          data.experienceVideo2 = defaultSiteConfig.experienceVideo2;
         }
         if (data.headerLogo && (data.headerLogo.includes("df3fh9wic") || data.headerLogo.includes("umbra.page"))) {
           data.headerLogo = "";
@@ -424,7 +439,10 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data.experiencePoster = "";
         }
         if (data.heroVideo && (data.heroVideo.includes("umbra.page/cdn/shop/videos") || data.heroVideo.includes("41ebdb") || data.heroVideo.includes("8678b1b9"))) {
-          data.heroVideo = "";
+          data.heroVideo = defaultSiteConfig.heroVideo;
+        }
+        if (!data.heroVideo || !data.heroVideo.trim()) {
+          data.heroVideo = defaultSiteConfig.heroVideo;
         }
         setSiteConfig({ ...defaultSiteConfig, ...data } as SiteConfig);
         try {

@@ -4,12 +4,17 @@ import {
   isCloudinaryImageUrl, 
   isCloudinaryVideoUrl,
   getOptimizedCloudinaryImageUrl,
-  getOptimizedCloudinaryPosterUrl 
+  getOptimizedCloudinaryPosterUrl,
+  isImageKitImageUrl,
+  isImageKitVideoUrl,
+  getOptimizedImageKitImageUrl,
+  getOptimizedImageKitPosterUrl
 } from "./mediaUtils";
 
 /**
- * Image Optimizer Utility for TETRA HATS & Umbra CDN / Cloudinary
- * Converts heavy raw PNG images, Google Drive links, and Cloudinary media into ultra-fast compressed CDN thumbnails
+ * Image Optimizer Utility for TETRA HATS
+ * Converts heavy raw PNG images, ImageKit.io media, Cloudinary media, and Google Drive links
+ * into ultra-fast compressed, auto-formatted (WebP/AVIF) CDN thumbnails.
  */
 
 export function getOptimizedImageUrl(
@@ -26,17 +31,27 @@ export function getOptimizedImageUrl(
     return "";
   }
 
-  // Check if it's a Cloudinary image URL
+  // 1. Check if it's an ImageKit.io image URL
+  if (isImageKitImageUrl(trimmed)) {
+    return getOptimizedImageKitImageUrl(trimmed, targetWidth);
+  }
+
+  // 2. Check if it's an ImageKit.io video URL being used as an image (generate dynamic /ik-thumbnail.jpg)
+  if (isImageKitVideoUrl(trimmed)) {
+    return getOptimizedImageKitPosterUrl(trimmed, targetWidth, "1");
+  }
+
+  // 3. Check if it's a Cloudinary image URL
   if (isCloudinaryImageUrl(trimmed)) {
     return getOptimizedCloudinaryImageUrl(trimmed, targetWidth);
   }
 
-  // Check if it's a Cloudinary video URL being used as an image (convert to instant frame 0 thumbnail)
+  // 4. Check if it's a Cloudinary video URL being used as an image (convert to instant frame thumbnail)
   if (isCloudinaryVideoUrl(trimmed)) {
     return getOptimizedCloudinaryPosterUrl(trimmed, targetWidth);
   }
 
-  // Check if it's a Google Drive link
+  // 5. Check if it's a Google Drive link
   if (isGoogleDriveUrl(trimmed)) {
     const fileId = extractGoogleDriveId(trimmed);
     if (fileId) {
@@ -45,7 +60,7 @@ export function getOptimizedImageUrl(
     }
   }
 
-  // Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
+  // 6. Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
   if (
     trimmed.includes("cdn/shop") ||
     trimmed.includes("umbra.page") ||
@@ -86,4 +101,3 @@ export function preloadImages(urls: string[], width: number = 600): void {
     }
   });
 }
-
