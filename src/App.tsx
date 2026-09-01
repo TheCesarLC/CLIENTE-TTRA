@@ -499,11 +499,11 @@ export default function App() {
         </div>
       )}
 
-      {/* Hero Loop section */}
-      <section id="inicio" className="relative h-[95vh] w-full flex items-center justify-center overflow-hidden pt-20" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
+      {/* Hero Loop section - Full-screen expansive background */}
+      <section id="inicio" className="relative min-h-[100svh] w-full flex flex-col items-center justify-center pt-20 pb-12 sm:pt-24 sm:pb-16 px-4 overflow-hidden" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
         
-        {/* Absolute Background Videos / Fallback posters */}
-        <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center pointer-events-none">
+        {/* Absolute Background Videos / Fallback posters - Full viewport expansion */}
+        <div className="absolute inset-0 z-0 overflow-hidden w-full h-full pointer-events-none">
           <OptimizedVideoPlayer
             isHero
             src={
@@ -521,7 +521,7 @@ export default function App() {
             loop
             muted
             customOverlayControls={false}
-            className="w-full h-full object-cover min-w-full min-h-full scale-[1.08] brightness-[0.5] saturate-[0.85] contrast-[1.1]"
+            className="w-full h-full object-cover min-w-full min-h-full scale-105 brightness-[0.65] saturate-[0.95] contrast-[1.05]"
             poster={
               siteConfigToUse.heroPoster &&
               !siteConfigToUse.heroPoster.includes("umbra.page") &&
@@ -530,9 +530,9 @@ export default function App() {
                 : undefined
             }
           />
-          {/* Black Vignette Overlays for deep aesthetic mystery */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/85 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80 pointer-events-none" />
+          {/* Balanced Vignette Overlays for deep aesthetic without shrinking the background */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-black/60 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none" />
         </div>
 
         {/* Floating Hero Visual Config controls for Admin */}
@@ -566,25 +566,25 @@ export default function App() {
         )}
 
         {/* Hero content presentation */}
-        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center space-y-8 flex flex-col items-center">
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-5 sm:space-y-6 flex flex-col items-center justify-center my-auto">
           <CosmicLogo
             src={siteConfigToUse.logoUrl || siteConfigToUse.headerLogo || ""}
             alt="Tetra Hats Logo"
-            className="w-[85%] max-w-lg mb-2"
+            className="w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl mb-0.5 sm:mb-1"
             glowColor={glowColor}
             glowMode={glowMode}
           />
 
-          <p className="text-gray-300 text-[11px] sm:text-xs md:text-sm font-semibold tracking-[0.4em] uppercase max-w-xl leading-relaxed relative flex items-center justify-center gap-2 flex-wrap">
+          <p className="text-gray-300 text-xs sm:text-sm md:text-base font-semibold tracking-[0.25em] sm:tracking-[0.38em] uppercase max-w-2xl sm:max-w-3xl leading-relaxed relative flex items-center justify-center gap-2 flex-wrap">
             <span>{siteConfigToUse.heroSubtitle || `${siteConfigToUse.heroTitle1 || "Alta Moda y Diseño Premium."} ${siteConfigToUse.heroTitle2 || "Gorras de Colección Exclusiva con Autenticidad NFC Integrada."}`}</span>
             {renderEditButton("Subtítulo de Hero", "heroSubtitle", "textarea")}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4 z-10 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 pt-1 sm:pt-2 z-10 justify-center">
             <div className="relative flex items-center gap-1 flex-wrap justify-center">
               <button
                 onClick={() => scrollToSection("catalog")}
-                className="px-8 py-4 bg-white text-black text-xs font-black tracking-[0.25em] uppercase hover:bg-neutral-200 transition-all rounded shadow-xl flex items-center justify-center gap-2 group cursor-pointer"
+                className="px-9 py-4 bg-white text-black text-xs sm:text-sm font-black tracking-[0.25em] uppercase hover:bg-neutral-200 transition-all rounded shadow-2xl flex items-center justify-center gap-2 group cursor-pointer"
               >
                 <span>{siteConfigToUse.heroButton1Text || "Ver Catálogo"}</span>
               </button>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, ShoppingBag, ShieldCheck, Box, ChevronLeft, ChevronRight } from "lucide-react";
 import { Product } from "../types";
 import { getOptimizedImageUrl, preloadImages } from "../lib/imageOptimizer";
+import { TransparentProductImage } from "./TransparentProductImage";
 
 interface ProductModalProps {
   product: Product | null;
@@ -161,19 +162,17 @@ export default function ProductModal({
               />
             )}
             {product.images && product.images.length > 0 && product.images[selectedImgIdx] ? (
-              <img
-                src={getOptimizedImageUrl(product.images[selectedImgIdx] || product.images[0], 1000)}
+              <TransparentProductImage
+                src={product.images[selectedImgIdx] || product.images[0]}
                 alt={product.name}
+                widthOptimization={1000}
                 loading="eager"
-                decoding="async"
                 onLoad={() => setMainImgLoaded(true)}
                 onError={() => {
                   setMainImgLoaded(true);
                 }}
-                className={`max-w-full max-h-full object-contain transition-transform duration-300 ${
-                  shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""
-                }`}
-                referrerPolicy="no-referrer"
+                shouldGlow={shouldGlow}
+                className="max-w-full max-h-full object-contain transition-transform duration-300"
               />
             ) : (
               <div className="w-full h-64 flex flex-col items-center justify-center text-center p-6 bg-neutral-900/50 rounded-xl">
@@ -231,13 +230,12 @@ export default function ProductModal({
                       : undefined
                   }
                 >
-                  <img
-                    src={getOptimizedImageUrl(img, 150)}
+                  <TransparentProductImage
+                    src={img}
                     alt={`${product.name} miniatura ${idx + 1}`}
+                    widthOptimization={150}
                     loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-contain"
                   />
                 </button>
               ))}

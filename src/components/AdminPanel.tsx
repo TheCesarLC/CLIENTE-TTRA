@@ -6,6 +6,7 @@ import { ReceiptModal } from "./ReceiptModal";
 import { postApi } from "../lib/api";
 import { verifyStripeKey } from "../lib/stripeClient";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { TransparentProductImage } from "./TransparentProductImage";
 import { 
   X, 
   Settings, 
@@ -1768,11 +1769,15 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   {products.map((p) => (
                     <tr key={p.id} className="hover:bg-neutral-900/30 transition-colors">
                       <td className="p-4">
-                        <img 
-                          src={p.images?.[0] || null} 
-                          alt={p.name} 
-                          className="h-10 w-10 object-cover rounded bg-black border border-neutral-800"
-                        />
+                        <div className="h-10 w-10 rounded bg-neutral-950/60 border border-neutral-800 p-0.5 flex items-center justify-center overflow-hidden">
+                          <TransparentProductImage 
+                            src={p.images?.[0] || ""} 
+                            alt={p.name} 
+                            widthOptimization={100}
+                            loading="lazy"
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
                       </td>
                       <td className="p-4 font-mono text-[10px] text-gray-500">{p.id}</td>
                       <td className="p-4 font-black uppercase tracking-wider">{p.name}</td>
@@ -1926,8 +1931,18 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                               const itemPrice = typeof item.priceMXN === "number" ? item.priceMXN : 0;
                               const itemQty = typeof item.quantity === "number" ? item.quantity : 1;
                               return (
-                                <div key={idx} className="flex gap-2 pt-2 first:pt-0">
-                                  {item.image && <img src={item.image} className="w-8 h-8 rounded border border-neutral-800 bg-black object-cover" />}
+                                <div key={idx} className="flex gap-2 pt-2 first:pt-0 items-center">
+                                  {item.image && (
+                                    <div className="w-8 h-8 rounded border border-neutral-800 bg-neutral-950/60 p-0.5 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                      <TransparentProductImage
+                                        src={item.image}
+                                        alt={item.productName || "Gorra"}
+                                        widthOptimization={80}
+                                        loading="lazy"
+                                        className="w-full h-full object-contain"
+                                      />
+                                    </div>
+                                  )}
                                   <div className="min-w-0">
                                     <p className="font-bold uppercase truncate">{item.productName || "Gorra TETRA"}</p>
                                     <p className="text-[10px] text-gray-500 uppercase">{itemQty} pza(s) — (${itemPrice.toLocaleString()} MXN)</p>

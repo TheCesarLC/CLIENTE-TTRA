@@ -55,6 +55,20 @@ export default function Header({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const [logoImgError, setLogoImgError] = useState(false);
+
+  useEffect(() => {
+    setLogoImgError(false);
+  }, [siteConfig.headerLogo, siteConfig.logoUrl]);
+
+  const rawLogoSrc = siteConfig.headerLogo || siteConfig.logoUrl;
+  const hasValidLogo = Boolean(
+    rawLogoSrc && 
+    rawLogoSrc.trim() !== "" && 
+    !rawLogoSrc.includes("umbra.page") && 
+    !logoImgError
+  );
+
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const currencies: { code: "MXN" | "USD" | "CAD"; label: string; flag: string }[] = [
@@ -141,12 +155,13 @@ export default function Header({
               className="flex items-center gap-2 cursor-pointer focus:outline-none group"
               id="header-logo-button"
             >
-              {(siteConfig.headerLogo || siteConfig.logoUrl) ? (
+              {hasValidLogo ? (
                 <img
-                  src={getOptimizedImageUrl(siteConfig.headerLogo || siteConfig.logoUrl, 400)}
+                  src={getOptimizedImageUrl(rawLogoSrc!, 400)}
                   alt="TETRA HATS"
                   className="h-7 md:h-9 object-contain transition-transform group-hover:scale-105"
                   referrerPolicy="no-referrer"
+                  onError={() => setLogoImgError(true)}
                 />
               ) : (
                 <span className="text-lg md:text-xl font-black tracking-[0.25em] uppercase text-white group-hover:text-emerald-400 transition-colors">

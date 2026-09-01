@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, ShoppingBag, ZoomIn, Ban, Pencil, Trash2 } from "lucide-react";
 import { Product } from "../types";
 import { getOptimizedImageUrl, preloadImages } from "../lib/imageOptimizer";
+import { TransparentProductImage } from "./TransparentProductImage";
 
 interface ProductCardProps {
   key?: any;
@@ -190,21 +191,21 @@ export default function ProductCard({
           />
         )}
 
-        {/* Product Images with subtle smooth transition */}
+        {/* Product Images with subtle smooth transition & auto-transparent background */}
         {product.images && product.images.length > 0 && product.images[activeImgIndex] ? (
-          <img
-            src={getOptimizedImageUrl(product.images[activeImgIndex] || product.images[0], 600)}
+          <TransparentProductImage
+            src={product.images[activeImgIndex] || product.images[0]}
             alt={`${product.name} - Vista ${activeImgIndex + 1}`}
+            widthOptimization={600}
             loading="eager"
-            decoding="async"
             onLoad={() => setImgLoaded(true)}
             onError={() => {
               setImgLoaded(true);
             }}
+            shouldGlow={shouldGlow}
             className={`w-full h-full object-contain transition-all duration-300 ease-out select-none ${
               isHovered ? "scale-105" : "scale-100"
-            } ${shouldGlow ? "brightness-[1.15] contrast-[1.1] saturate-[1.2]" : ""}`}
-            referrerPolicy="no-referrer"
+            }`}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-neutral-900/40 rounded">

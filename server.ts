@@ -102,6 +102,43 @@ app.get("/api/video-stream", async (req, res) => {
   }
 });
 
+// Image proxy to guarantee CORS support for transparent background processing
+app.get("/api/proxy-image", async (req, res) => {
+  const imageUrl = req.query.url as string;
+  if (!imageUrl) return res.status(400).send("Missing image url");
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+
+  try {
+    const fetchRes = await fetch(imageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+      }
+    });
+
+    if (!fetchRes.ok) {
+      return res.status(fetchRes.status).send("Failed to fetch upstream image");
+    }
+
+    const contentType = fetchRes.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", contentType);
+
+    if (req.method === "HEAD" || !fetchRes.body) {
+      return res.end();
+    }
+
+    Readable.fromWeb(fetchRes.body as any).pipe(res);
+  } catch (err) {
+    console.error("Image proxy error:", err);
+    if (!res.headersSent) {
+      res.status(500).send("Error proxying image");
+    }
+  }
+});
+
 // Stripe Verification Endpoint
 app.post("/api/stripe/verify-keys", async (req, res) => {
   try {

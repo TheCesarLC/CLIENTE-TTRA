@@ -4,6 +4,7 @@ import { X, Trash2, Plus, Minus, Box, CheckCircle, CreditCard, Lock, AlertCircle
 import { CartItem, Product } from "../types";
 import { useSite } from "../context/SiteContext";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { TransparentProductImage } from "./TransparentProductImage";
 import { postApi } from "../lib/api";
 import { createStripeCheckoutSession } from "../lib/stripeClient";
 import { getOrderStatusDetails } from "../lib/orderStatus";
@@ -1200,14 +1201,13 @@ export default function CartDrawer({
                         className="flex gap-4 p-3 bg-neutral-900/30 border border-neutral-900 rounded-lg hover:border-neutral-800 transition-all duration-300"
                       >
                         {/* Product Thumbnail */}
-                        <div className="w-20 h-20 bg-neutral-950 flex-shrink-0 border border-neutral-900 rounded overflow-hidden flex items-center justify-center">
-                          <img
-                            src={getOptimizedImageUrl(liveProduct.images?.[0] || item.product.images?.[0], 200)}
+                        <div className="w-20 h-20 bg-neutral-950/50 flex-shrink-0 border border-neutral-900 rounded overflow-hidden flex items-center justify-center p-1">
+                          <TransparentProductImage
+                            src={liveProduct.images?.[0] || item.product.images?.[0]}
                             alt={liveProduct.name || item.product.name}
+                            widthOptimization={200}
                             loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-contain"
                           />
                         </div>
 

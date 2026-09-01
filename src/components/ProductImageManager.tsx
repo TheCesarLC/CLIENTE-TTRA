@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Image as ImageIcon, List, Layers } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, List, Layers, Sparkles, Wand2 } from "lucide-react";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { TransparentProductImage } from "./TransparentProductImage";
+import { removeWhiteBackground } from "../lib/transparentBg";
 
 interface ProductImageManagerProps {
   images: string[];
@@ -12,6 +14,7 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
   onChange,
 }) => {
   const [mode, setMode] = useState<"list" | "text">("list");
+  const [isProcessingBg, setIsProcessingBg] = useState(false);
   // Keep local text state for text mode so commas or newlines don't jump/break during editing
   const [rawText, setRawText] = useState<string>(() => 
     Array.isArray(images) ? images.filter(Boolean).join("\n") : ""
@@ -59,15 +62,31 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
     setMode(newMode);
   };
 
+  const handleRemoveWhiteBgFromIndex = async (index: number) => {
+    const targetUrl = currentImages[index];
+    if (!targetUrl || !targetUrl.trim()) return;
+    try {
+      setIsProcessingBg(true);
+      const transparentDataUrl = await removeWhiteBackground(targetUrl);
+      if (transparentDataUrl && transparentDataUrl !== targetUrl) {
+        handleSingleImageChange(index, transparentDataUrl);
+      }
+    } catch (err) {
+      console.warn("Error removing background:", err);
+    } finally {
+      setIsProcessingBg(false);
+    }
+  };
+
   return (
     <div className="space-y-3 bg-neutral-900/60 border border-neutral-800 p-4 rounded-lg text-left">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-2.5">
         <div>
           <label className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block">
-            Galería e Imágenes del Producto
+            Galería e Imágenes del Producto (Fondo Transparente)
           </label>
           <p className="text-[10px] text-gray-400 font-medium">
-            Agrega las URLs de las imágenes. La primera será la portada principal.
+            Agrega las URLs de las imágenes. El sistema elimina fondos blancos automáticamente para integrarse con el tema oscuro.
           </p>
         </div>
 
@@ -108,16 +127,14 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
               className="flex items-center gap-3 bg-black/80 border border-neutral-800 p-2 rounded-lg"
             >
               {/* Thumbnail preview */}
-              <div className="w-12 h-12 bg-neutral-900 border border-neutral-800 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="w-12 h-12 bg-neutral-950 border border-neutral-800 rounded flex-shrink-0 flex items-center justify-center overflow-hidden p-0.5">
                 {imgUrl && imgUrl.trim().length > 5 ? (
-                  <img
-                    src={getOptimizedImageUrl(imgUrl, 200)}
+                  <TransparentProductImage
+                    src={imgUrl}
                     alt={`Preview ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = "none";
-                    }}
+                    widthOptimization={100}
+                    loading="lazy"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <ImageIcon size={18} className="text-neutral-600" />
@@ -130,6 +147,18 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
                   <span>
                     {idx === 0 ? "★ Imagen 1 (Portada Principal)" : `Imagen ${idx + 1}`}
                   </span>
+                  {imgUrl && imgUrl.trim().length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveWhiteBgFromIndex(idx)}
+                      disabled={isProcessingBg}
+                      className="text-[9px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+                      title="Quitar fondo blanco a esta imagen"
+                    >
+                      <Wand2 size={10} />
+                      <span>{isProcessingBg ? "Limpiando..." : "Quitar fondo blanco"}</span>
+                    </button>
+                  )}
                 </div>
                 <input
                   type="url"
