@@ -513,7 +513,7 @@ export default function App() {
               !siteConfigToUse.heroVideo.includes("41ebdb")
                 ? siteConfigToUse.heroVideo
                 : null) ||
-              "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4"
+              "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig"
             }
             playsInline
             autoPlay
@@ -685,7 +685,7 @@ export default function App() {
                 !siteConfigToUse.experienceVideo.includes("41ebdb") &&
                 !siteConfigToUse.experienceVideo.includes("mixkit.co")
                   ? siteConfigToUse.experienceVideo
-                  : "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/sea_turtle.mp4";
+                  : "https://ik.imagekit.io/mvp0bxdrv/800%20DIAS/Clave%20Ali%CC%81%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?tr=orig";
 
               return (
                 <div className="flex flex-col items-center">
@@ -729,7 +729,7 @@ export default function App() {
                 !siteConfigToUse.experienceVideo2.includes("41ebdb") &&
                 !siteConfigToUse.experienceVideo2.includes("mixkit.co")
                   ? siteConfigToUse.experienceVideo2
-                  : "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/elephants.mp4";
+                  : "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig";
 
               return (
                 <div className="flex flex-col items-center">

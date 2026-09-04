@@ -179,6 +179,15 @@ interface SiteContextType {
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
+const normalizeVideoUrl = (url?: string, fallback: string = ""): string => {
+  if (!url || typeof url !== "string" || !url.trim()) return fallback;
+  const trimmed = url.trim();
+  if (trimmed.includes("ik.imagekit.io") && !trimmed.includes("tr=orig")) {
+    return trimmed.includes("?") ? `${trimmed}&tr=orig` : `${trimmed}?tr=orig`;
+  }
+  return trimmed;
+};
+
 const defaultSiteConfig: SiteConfig = {
   heroTitle1: "PREMIUM CAPS",
   heroTitle2: "COLECCIÓN",
@@ -191,11 +200,11 @@ const defaultSiteConfig: SiteConfig = {
   whatsappNumber: "+521123456789",
   instagramUrl: "https://instagram.com/",
   artistCredits: "",
-  experienceVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/sea_turtle.mp4",
-  experienceVideo2: "https://res.cloudinary.com/demo/video/upload/q_auto,w_720/elephants.mp4",
+  experienceVideo: "https://ik.imagekit.io/mvp0bxdrv/800%20DIAS/Clave%20Ali%CC%81%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?tr=orig",
+  experienceVideo2: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
   experiencePoster: "",
   experiencePoster2: "",
-  heroVideo: "https://res.cloudinary.com/demo/video/upload/q_auto,f_auto/v1682352857/cld-sample-video.mp4",
+  heroVideo: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
   showGlow: true,
   glowIntensity: "0.15",
   experienceTitle: "DETALLES EXCLUSIVOS AL DETALLE",
@@ -304,6 +313,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!parsed.heroVideo || !parsed.heroVideo.trim()) {
           parsed.heroVideo = defaultSiteConfig.heroVideo;
         }
+        parsed.heroVideo = normalizeVideoUrl(parsed.heroVideo, defaultSiteConfig.heroVideo);
+        parsed.experienceVideo = normalizeVideoUrl(parsed.experienceVideo, defaultSiteConfig.experienceVideo);
+        parsed.experienceVideo2 = normalizeVideoUrl(parsed.experienceVideo2, defaultSiteConfig.experienceVideo2);
         return { ...defaultSiteConfig, ...parsed };
       }
       return defaultSiteConfig;
@@ -444,6 +456,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!data.heroVideo || !data.heroVideo.trim()) {
           data.heroVideo = defaultSiteConfig.heroVideo;
         }
+        data.heroVideo = normalizeVideoUrl(data.heroVideo, defaultSiteConfig.heroVideo);
+        data.experienceVideo = normalizeVideoUrl(data.experienceVideo, defaultSiteConfig.experienceVideo);
+        data.experienceVideo2 = normalizeVideoUrl(data.experienceVideo2, defaultSiteConfig.experienceVideo2);
         setSiteConfig({ ...defaultSiteConfig, ...data } as SiteConfig);
         try {
           localStorage.setItem("shop_site_config", JSON.stringify(data));
@@ -815,9 +830,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Realtime update operations
   const updateSiteConfig = async (newConfig: Partial<SiteConfig>) => {
+    const sanitized = { ...newConfig };
+    if (sanitized.heroVideo) sanitized.heroVideo = normalizeVideoUrl(sanitized.heroVideo);
+    if (sanitized.experienceVideo) sanitized.experienceVideo = normalizeVideoUrl(sanitized.experienceVideo);
+    if (sanitized.experienceVideo2) sanitized.experienceVideo2 = normalizeVideoUrl(sanitized.experienceVideo2);
+
     const path = "site_configs";
     setSiteConfig((prev) => {
-      const updated = { ...prev, ...newConfig };
+      const updated = { ...prev, ...sanitized };
       try {
         localStorage.setItem("shop_site_config", JSON.stringify(updated));
       } catch (err) {
@@ -828,7 +848,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const docRef = doc(db, path, "global");
-      await setDoc(docRef, cleanDocData(newConfig), { merge: true });
+      await setDoc(docRef, cleanDocData(sanitized), { merge: true });
     } catch (e) {
       console.warn("Config update in Firestore failed. Switched value locally.", e);
     }

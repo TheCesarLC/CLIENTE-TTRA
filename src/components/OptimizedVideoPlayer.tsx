@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
   getDriveMediaConfig, 
   isCloudinaryVideoUrl, 
@@ -55,15 +55,18 @@ export default function OptimizedVideoPlayer({
   const [hasRenderedFrame, setHasRenderedFrame] = useState(false);
   const [progress, setProgress] = useState(0);
   const [candidateIndex, setCandidateIndex] = useState(0);
+  const [showTapIndicator, setShowTapIndicator] = useState(false);
+  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const driveConfig = getDriveMediaConfig(src);
-  const isCloudinary = isCloudinaryVideoUrl(src);
-  const isImageKit = isImageKitVideoUrl(src);
+  const driveConfig = useMemo(() => getDriveMediaConfig(src), [src]);
+  const isCloudinary = useMemo(() => isCloudinaryVideoUrl(src), [src]);
+  const isImageKit = useMemo(() => isImageKitVideoUrl(src), [src]);
 
   // Build ordered list of candidate poster URLs to test sequentially
-  const posterCandidates: string[] = React.useMemo(() => {
+  const posterCandidates: string[] = useMemo(() => {
     const list: string[] = [];
 
     // 1. Explicit poster prop passed from parent/admin config
@@ -71,28 +74,18 @@ export default function OptimizedVideoPlayer({
       list.push(poster.trim());
     }
 
-    // 2. ImageKit, Google drive thumbnail or Cloudinary dynamic frame snapshots
+    // 2. Google drive thumbnail or Cloudinary dynamic frame snapshots
     if (isImageKit) {
-      // Dynamic 1-second offset poster frame via ImageKit /ik-thumbnail.jpg
-      const ikPoster1 = getOptimizedImageKitPosterUrl(src, isHero ? 960 : 480, "1");
-      if (ikPoster1) list.push(ikPoster1);
-
-      const ikPoster0 = getOptimizedImageKitPosterUrl(src, isHero ? 960 : 480, "0");
-      if (ikPoster0 && ikPoster0 !== ikPoster1) list.push(ikPoster0);
+      const ikPoster = getOptimizedImageKitPosterUrl(src, isHero ? 960 : 480);
+      if (ikPoster) list.push(ikPoster);
     } else if (driveConfig.isDrive && driveConfig.fileId) {
       if (driveConfig.thumbnailUrl) list.push(driveConfig.thumbnailUrl);
     } else if (isCloudinary) {
-      // Content-aware snapshot (avoids black initial frames)
       const autoPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 960 : 480, "auto");
       if (autoPoster) list.push(autoPoster);
 
-      // Offset snapshot at 1.0 second
       const offsetPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 960 : 480, "1.0");
       if (offsetPoster && offsetPoster !== autoPoster) list.push(offsetPoster);
-
-      // Frame 0 snapshot
-      const frame0Poster = getOptimizedCloudinaryPosterUrl(src, isHero ? 960 : 480, "0");
-      if (frame0Poster && !list.includes(frame0Poster)) list.push(frame0Poster);
     } else if (src && src.includes("cloudinary.com") && /\.(mp4|mov|webm)(\?.*)?$/i.test(src)) {
       list.push(src.replace(/\.(mp4|mov|webm)(\?.*)?$/i, ".jpg$2"));
     }
@@ -108,9 +101,12 @@ export default function OptimizedVideoPlayer({
   // Reset candidate index when inputs change
   useEffect(() => {
     setCandidateIndex(0);
+    setPosterError(false);
   }, [poster, src, fallbackPoster]);
 
-  const currentPoster = candidateIndex < posterCandidates.length ? posterCandidates[candidateIndex] : fallbackPoster;
+  const currentPoster = !posterError && candidateIndex < posterCandidates.length 
+    ? posterCandidates[candidateIndex] 
+    : fallbackPoster;
 
   // Handle poster load failure by advancing to next candidate
   const handlePosterError = () => {
@@ -144,42 +140,58 @@ export default function OptimizedVideoPlayer({
     }
   }, [activeVideoId, id, isHero]);
 
-  // Continuous background autoPlay Optimization for Hero
+  // Compute optimized video source
+  const videoSrc = useMemo(() => {
+    if (!src) return "";
+    if (usingFallbackSrc) return src;
+    if (isImageKit) return getOptimizedImageKitVideoUrl(src, { width: isHero ? 720 : 480, isHero });
+    if (driveConfig.isDrive) return `/api/video-stream?id=${driveConfig.fileId}`;
+    if (isCloudinary) return getOptimizedCloudinaryVideoUrl(src, { width: isHero ? 720 : 480, isHero });
+    return src;
+  }, [src, usingFallbackSrc, isImageKit, isHero, driveConfig, isCloudinary]);
+
+  // Autoplay and playback initialization for Hero or autoPlay videos
   useEffect(() => {
-    if ((autoPlay || isHero) && videoRef.current) {
-      videoRef.current.muted = true;
-      videoRef.current.volume = 0;
-      setIsMuted(true);
-      const attemptPlay = () => {
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.volume = 0;
-          videoRef.current
-            .play()
-            .then(() => setIsPlaying(true))
-            .catch(() => {
-              const unlockAutoplay = () => {
-                if (videoRef.current) {
-                  videoRef.current.muted = true;
-                  videoRef.current.volume = 0;
-                  videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-                }
-                window.removeEventListener("touchstart", unlockAutoplay);
-                window.removeEventListener("click", unlockAutoplay);
-              };
-              window.addEventListener("touchstart", unlockAutoplay, { once: true });
-              window.addEventListener("click", unlockAutoplay, { once: true });
-            });
-        }
-      };
-      attemptPlay();
+    const video = videoRef.current;
+    if (!video || !videoSrc) return;
+
+    if (isHero || autoPlay) {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
+      video.setAttribute("muted", "");
+      
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setHasRenderedFrame(true);
+          })
+          .catch(() => {
+            // Autoplay restricted by browser: unlock on first touch or click
+            const unlockHandler = () => {
+              if (videoRef.current) {
+                videoRef.current.muted = true;
+                videoRef.current.defaultMuted = true;
+                videoRef.current.play().then(() => {
+                  setIsPlaying(true);
+                  setHasRenderedFrame(true);
+                }).catch(() => {});
+              }
+              window.removeEventListener("touchstart", unlockHandler);
+              window.removeEventListener("click", unlockHandler);
+              window.removeEventListener("scroll", unlockHandler);
+            };
+            window.addEventListener("touchstart", unlockHandler, { once: true });
+            window.addEventListener("click", unlockHandler, { once: true });
+            window.addEventListener("scroll", unlockHandler, { once: true });
+          });
+      }
     }
-  }, [autoPlay, isHero, src]);
-
-  if (!src) return null;
-
-  const [showTapIndicator, setShowTapIndicator] = useState(false);
-  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  }, [videoSrc, isHero, autoPlay]);
 
   const toggleMute = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -262,6 +274,9 @@ export default function OptimizedVideoPlayer({
     }
   };
 
+  // If no source provided at all, render nothing
+  if (!src) return null;
+
   // If Google Drive link failed to stream directly in HTML5 video, render clean iframe as fallback
   if (driveConfig.isDrive && videoError) {
     const isThisActive = id ? activeVideoId === id : false;
@@ -307,59 +322,6 @@ export default function OptimizedVideoPlayer({
     );
   }
 
-  // Optimized HTML5 Video Source (ImageKit, Cloudinary f_mp4/q_auto or Google Drive direct or fallback)
-  const videoSrc = usingFallbackSrc
-    ? src
-    : isImageKit
-    ? getOptimizedImageKitVideoUrl(src, { width: isHero ? 720 : 480, isHero })
-    : driveConfig.isDrive
-    ? `/api/video-stream?id=${driveConfig.fileId}`
-    : isCloudinary
-    ? getOptimizedCloudinaryVideoUrl(src, { width: isHero ? 720 : 480, isHero })
-    : src;
-
-  // Ensure DOM element attributes are properly configured for mobile/desktop browsers
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isHero || autoPlay) {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      video.setAttribute("playsinline", "");
-      video.setAttribute("webkit-playsinline", "");
-      video.setAttribute("muted", "");
-      
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            setHasRenderedFrame(true);
-          })
-          .catch(() => {
-            const unlockHandler = () => {
-              if (videoRef.current) {
-                videoRef.current.muted = true;
-                videoRef.current.defaultMuted = true;
-                videoRef.current.play().then(() => {
-                  setIsPlaying(true);
-                  setHasRenderedFrame(true);
-                }).catch(() => {});
-              }
-              window.removeEventListener("touchstart", unlockHandler);
-              window.removeEventListener("click", unlockHandler);
-              window.removeEventListener("scroll", unlockHandler);
-            };
-            window.addEventListener("touchstart", unlockHandler, { once: true });
-            window.addEventListener("click", unlockHandler, { once: true });
-            window.addEventListener("scroll", unlockHandler, { once: true });
-          });
-      }
-    }
-  }, [videoSrc, isHero, autoPlay]);
-
   return (
     <div 
       ref={containerRef}
@@ -387,7 +349,6 @@ export default function OptimizedVideoPlayer({
 
       <video
         ref={videoRef}
-        key={videoSrc}
         src={videoSrc}
         data-hero={isHero ? "true" : undefined}
         playsInline={playsInline}
@@ -412,6 +373,10 @@ export default function OptimizedVideoPlayer({
             e.currentTarget.defaultMuted = true;
             e.currentTarget.play().then(() => setIsPlaying(true)).catch(() => {});
           }
+        }}
+        onPlaying={() => {
+          setHasRenderedFrame(true);
+          setIsPlaying(true);
         }}
         onTimeUpdate={(e) => {
           if (!hasRenderedFrame && e.currentTarget.currentTime > 0) {
@@ -448,23 +413,11 @@ export default function OptimizedVideoPlayer({
         onError={() => {
           if (driveConfig.isDrive) {
             setVideoError(true);
-          } else if (!usingFallbackSrc && src && videoSrc !== src) {
+          } else if (!usingFallbackSrc && src) {
             setUsingFallbackSrc(true);
           }
         }}
       >
-        {driveConfig.isDrive ? (
-          <>
-            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m22`} type="video/mp4" />
-            <source src={`https://lh3.googleusercontent.com/d/${driveConfig.fileId}=m18`} type="video/mp4" />
-            <source src={`https://drive.google.com/uc?export=download&id=${driveConfig.fileId}`} type="video/mp4" />
-          </>
-        ) : (
-          <>
-            <source src={videoSrc} type="video/mp4" />
-            {videoSrc !== src && <source src={src} type="video/mp4" />}
-          </>
-        )}
         Tu navegador no soporta reproducción de video HTML5.
       </video>
 
@@ -575,4 +528,3 @@ export default function OptimizedVideoPlayer({
     </div>
   );
 }
-

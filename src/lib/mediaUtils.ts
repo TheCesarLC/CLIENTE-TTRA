@@ -111,8 +111,11 @@ export function getOptimizedImageKitImageUrl(
 }
 
 /**
- * Optimizes an ImageKit.io video URL with width bounding and fast web streaming.
- * Uses standard ImageKit transformations (w-xxx) or returns clean stream URL.
+ * Optimizes an ImageKit.io video URL with fast web streaming.
+ * In ImageKit, transforming videos (e.g., tr:w-xxx) consumes transformation credits.
+ * When limits are exceeded, ImageKit returns HTTP 403 (ELIMIT).
+ * Using tr=orig delivers the original MP4 video directly via CloudFront CDN
+ * with HTTP 200 OK, full HTTP byte-range seeking, and zero transformation quota penalties.
  */
 export function getOptimizedImageKitVideoUrl(
   url: string,
@@ -122,34 +125,31 @@ export function getOptimizedImageKitVideoUrl(
 
   try {
     const trimmed = url.trim();
-    const width = options?.width || (options?.isHero ? 720 : 480);
-
     const urlObj = new URL(trimmed);
 
-    const pathSegments = urlObj.pathname.split("/");
-    const trIndex = pathSegments.findIndex((seg) => seg.startsWith("tr:"));
+    // Clean any prior path-based transformations (e.g. /tr:w-720/)
+    const pathSegments = urlObj.pathname.split("/").filter((seg) => !seg.startsWith("tr:"));
+    urlObj.pathname = pathSegments.join("/");
 
-    if (trIndex !== -1) {
-      pathSegments[trIndex] = `tr:w-${width}`;
-      urlObj.pathname = pathSegments.join("/");
-      urlObj.searchParams.delete("tr");
-      return urlObj.toString();
-    }
+    // Clean any conflicting transformation query parameter
+    urlObj.searchParams.delete("tr");
 
-    urlObj.searchParams.set("tr", `w-${width}`);
+    // Deliver original MP4 file directly via CDN (status 200 OK, no 403 ELIMIT)
+    urlObj.searchParams.set("tr", "orig");
     return urlObj.toString();
   } catch {
-    const width = options?.isHero ? 720 : 480;
     const clean = url.trim();
     return clean.includes("?") 
-      ? `${clean}&tr=w-${width}` 
-      : `${clean}?tr=w-${width}`;
+      ? `${clean}&tr=orig` 
+      : `${clean}?tr=orig`;
   }
 }
 
 /**
- * Extracts an instant lightweight snapshot poster (.jpg) from an ImageKit video URL.
- * ImageKit supports appending `/ik-thumbnail.jpg` to video URLs for real-time frame extraction (~15KB).
+ * Extracts poster for ImageKit assets.
+ * For videos, /ik-thumbnail.jpg requires video transformation credits and returns 403 ELIMIT
+ * when account limits are reached. Therefore, we return empty string for videos so the player
+ * immediately uses the high-res product photo as the reliable poster.
  */
 export function getOptimizedImageKitPosterUrl(
   url: string,
@@ -160,27 +160,14 @@ export function getOptimizedImageKitPosterUrl(
 
   try {
     const trimmed = url.trim();
-    const urlObj = new URL(trimmed);
 
     // If it's already an image, optimize it directly as poster
     if (!isImageKitVideoUrl(trimmed)) {
       return getOptimizedImageKitImageUrl(trimmed, targetWidth);
     }
 
-    // Clean any prior thumbnail paths or transformations
-    let pathname = urlObj.pathname;
-    const pathSegments = pathname.split("/").filter((s) => !s.startsWith("tr:"));
-    pathname = pathSegments.join("/");
-
-    // Append /ik-thumbnail.jpg if not present
-    if (!pathname.endsWith("/ik-thumbnail.jpg")) {
-      pathname = `${pathname}/ik-thumbnail.jpg`;
-    }
-
-    urlObj.pathname = pathname;
-    urlObj.searchParams.set("tr", `w-${targetWidth}`);
-
-    return urlObj.toString();
+    // For videos, return empty string so fallbackPoster (product image) is used cleanly
+    return "";
   } catch {
     return "";
   }
