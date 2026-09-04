@@ -159,12 +159,12 @@ export default function Header({
                 <img
                   src={getOptimizedImageUrl(rawLogoSrc!, 400)}
                   alt="TETRA HATS"
-                  className="h-7 md:h-9 object-contain transition-transform group-hover:scale-105"
+                  className="h-9 md:h-12 object-contain transition-transform group-hover:scale-105"
                   referrerPolicy="no-referrer"
                   onError={() => setLogoImgError(true)}
                 />
               ) : (
-                <span className="text-lg md:text-xl font-black tracking-[0.25em] uppercase text-white group-hover:text-emerald-400 transition-colors">
+                <span className="text-xl md:text-2xl font-black tracking-[0.28em] uppercase text-white group-hover:text-emerald-400 transition-colors">
                   TETRA HATS
                 </span>
               )}

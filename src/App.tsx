@@ -499,10 +499,10 @@ export default function App() {
         </div>
       )}
 
-      {/* Hero Loop section - Full-screen expansive background */}
-      <section id="inicio" className="relative min-h-[100svh] w-full flex flex-col items-center justify-center pt-20 pb-12 sm:pt-24 sm:pb-16 px-4 overflow-hidden" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
+      {/* Hero Loop section - Elegant, tightly framed hero presentation */}
+      <section id="inicio" className="relative w-full flex flex-col items-center justify-start pt-20 sm:pt-24 lg:pt-24 pb-8 sm:pb-12 px-4 overflow-hidden" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
         
-        {/* Absolute Background Videos / Fallback posters - Full viewport expansion */}
+        {/* Absolute Background Videos / Fallback posters */}
         <div className="absolute inset-0 z-0 overflow-hidden w-full h-full pointer-events-none">
           <OptimizedVideoPlayer
             isHero
@@ -529,9 +529,9 @@ export default function App() {
                 : undefined
             }
           />
-          {/* Balanced Vignette Overlays for deep aesthetic without shrinking the background */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-black/60 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none" />
+          {/* Balanced Vignette Overlays - subtle and refined without heavy vertical framing */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/45 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/25 pointer-events-none" />
         </div>
 
         {/* Floating Hero Visual Config controls for Admin */}
@@ -564,12 +564,12 @@ export default function App() {
           </div>
         )}
 
-        {/* Hero content presentation */}
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-5 sm:space-y-6 flex flex-col items-center justify-center my-auto">
+        {/* Hero content presentation - positioned directly under top menu */}
+        <div className="relative z-10 w-full max-w-6xl xl:max-w-7xl mx-auto px-2 sm:px-4 text-center space-y-3 sm:space-y-4 flex flex-col items-center justify-start py-1 sm:py-2">
           <CosmicLogo
             src={siteConfigToUse.logoUrl || siteConfigToUse.headerLogo || ""}
             alt="Tetra Hats Logo"
-            className="w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl mb-0.5 sm:mb-1"
+            className="w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl mb-0.5 sm:mb-1"
             glowColor={glowColor}
             glowMode={glowMode}
           />
@@ -689,7 +689,7 @@ export default function App() {
 
               return (
                 <div className="flex flex-col items-center">
-                  <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                  <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-white/20 bg-transparent overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.4)] relative group transition-all duration-300 hover:border-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]">
                     <OptimizedVideoPlayer
                       id="800dias"
                       activeVideoId={activeVideoId}
@@ -698,6 +698,7 @@ export default function App() {
                       playsInline
                       loop
                       muted={false}
+                      transparentBg={true}
                       className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
                       poster={
                         siteConfigToUse.experiencePoster &&
@@ -732,7 +733,7 @@ export default function App() {
 
               return (
                 <div className="flex flex-col items-center">
-                  <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-neutral-800 bg-neutral-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative group transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                  <div className="w-full max-w-[320px] sm:max-w-none aspect-[9/16] rounded-2xl border border-white/20 bg-transparent overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.4)] relative group transition-all duration-300 hover:border-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]">
                     <OptimizedVideoPlayer
                       id="ondgas"
                       activeVideoId={activeVideoId}
@@ -741,6 +742,7 @@ export default function App() {
                       playsInline
                       loop
                       muted={false}
+                      transparentBg={true}
                       className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
                       poster={
                         siteConfigToUse.experiencePoster2 &&

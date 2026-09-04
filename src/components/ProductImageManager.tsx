@@ -83,10 +83,10 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-2.5">
         <div>
           <label className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block">
-            Galería e Imágenes del Producto (Fondo Transparente)
+            Galería e Imágenes del Producto (Fondo Transparente Automático)
           </label>
           <p className="text-[10px] text-gray-400 font-medium">
-            Agrega las URLs de las imágenes. El sistema elimina fondos blancos automáticamente para integrarse con el tema oscuro.
+            Agrega las URLs de las imágenes. El sistema elimina fondos negros o blancos automáticamente para que las gorras queden completamente transparentes.
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
               className="flex items-center gap-3 bg-black/80 border border-neutral-800 p-2 rounded-lg"
             >
               {/* Thumbnail preview */}
-              <div className="w-12 h-12 bg-neutral-950 border border-neutral-800 rounded flex-shrink-0 flex items-center justify-center overflow-hidden p-0.5">
+              <div className="w-12 h-12 bg-transparent border border-neutral-700 rounded flex-shrink-0 flex items-center justify-center overflow-hidden p-0.5">
                 {imgUrl && imgUrl.trim().length > 5 ? (
                   <TransparentProductImage
                     src={imgUrl}
@@ -153,10 +153,10 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
                       onClick={() => handleRemoveWhiteBgFromIndex(idx)}
                       disabled={isProcessingBg}
                       className="text-[9px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
-                      title="Quitar fondo blanco a esta imagen"
+                      title="Quitar fondo negro o blanco a esta imagen"
                     >
                       <Wand2 size={10} />
-                      <span>{isProcessingBg ? "Limpiando..." : "Quitar fondo blanco"}</span>
+                      <span>{isProcessingBg ? "Limpiando..." : "Quitar fondo negro/blanco"}</span>
                     </button>
                   )}
                 </div>

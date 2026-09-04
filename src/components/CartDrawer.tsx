@@ -1198,10 +1198,10 @@ export default function CartDrawer({
                     return (
                       <div
                         key={item.product.id}
-                        className="flex gap-4 p-3 bg-neutral-900/30 border border-neutral-900 rounded-lg hover:border-neutral-800 transition-all duration-300"
+                        className="flex gap-4 p-3 bg-white/[0.03] border border-white/10 rounded-lg hover:border-white/20 transition-all duration-300"
                       >
                         {/* Product Thumbnail */}
-                        <div className="w-20 h-20 bg-neutral-950/50 flex-shrink-0 border border-neutral-900 rounded overflow-hidden flex items-center justify-center p-1">
+                        <div className="w-20 h-20 bg-transparent flex-shrink-0 border border-white/15 rounded overflow-hidden flex items-center justify-center p-1">
                           <TransparentProductImage
                             src={liveProduct.images?.[0] || item.product.images?.[0]}
                             alt={liveProduct.name || item.product.name}

@@ -26,6 +26,7 @@ interface OptimizedVideoPlayerProps {
   onClick?: () => void;
   customOverlayControls?: boolean;
   isHero?: boolean;
+  transparentBg?: boolean;
 }
 
 export default function OptimizedVideoPlayer({
@@ -44,6 +45,7 @@ export default function OptimizedVideoPlayer({
   onClick,
   customOverlayControls = true,
   isHero = false,
+  transparentBg = false,
 }: OptimizedVideoPlayerProps) {
   const [videoError, setVideoError] = useState(false);
   const [usingFallbackSrc, setUsingFallbackSrc] = useState(false);
@@ -361,13 +363,13 @@ export default function OptimizedVideoPlayer({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden select-none bg-neutral-950 flex items-center justify-center ${
+      className={`relative w-full h-full overflow-hidden select-none ${transparentBg ? "bg-transparent" : "bg-neutral-950"} flex items-center justify-center ${
         customOverlayControls ? "group cursor-pointer" : "pointer-events-none"
       }`}
       onClick={customOverlayControls ? togglePlay : undefined}
     >
-      {/* Background Ambience / Poster Layer (Guarantees card is NEVER pitch black) */}
-      <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black pointer-events-none z-0">
+      {/* Background Ambience / Poster Layer */}
+      <div className={`absolute inset-0 ${transparentBg ? "bg-transparent" : "bg-gradient-to-br from-neutral-900 via-neutral-950 to-black"} pointer-events-none z-0`}>
         {currentPoster && (
           <img
             src={currentPoster}
@@ -378,7 +380,9 @@ export default function OptimizedVideoPlayer({
             onError={handlePosterError}
           />
         )}
-        <div className={`absolute inset-0 bg-black/25 transition-opacity duration-500 ${hasRenderedFrame && isPlaying ? "opacity-0" : "opacity-100"}`} />
+        {!transparentBg && (
+          <div className={`absolute inset-0 bg-black/25 transition-opacity duration-500 ${hasRenderedFrame && isPlaying ? "opacity-0" : "opacity-100"}`} />
+        )}
       </div>
 
       <video

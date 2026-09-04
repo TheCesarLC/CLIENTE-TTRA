@@ -153,12 +153,22 @@ export default function ProductCard({
   const glowsInDark = product.badge === "Glow in the Dark";
   const shouldGlow = glowMode && glowsInDark;
 
+  // Transparent window check for 800 DIAS and ON DGAS
+  const isTargetTransparent = Boolean(
+    product?.name && (
+      product.name.toUpperCase().includes("800 DIAS") ||
+      product.name.toUpperCase().includes("800 DÍAS") ||
+      product.name.toUpperCase().includes("ON DGAS") ||
+      product.name.toUpperCase().includes("ONDGAS")
+    )
+  );
+
   return (
     <div
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative flex flex-col justify-between bg-black/10 hover:bg-black/20 backdrop-blur-[2px] border border-white/15 hover:border-white/30 rounded-xl overflow-hidden transition-all duration-500 cursor-pointer shadow-lg hover:shadow-2xl"
+      className="group relative flex flex-col justify-between bg-transparent hover:bg-white/[0.04] backdrop-blur-none border border-white/20 hover:border-white/40 shadow-none hover:shadow-[0_0_25px_rgba(255,255,255,0.06)] rounded-xl overflow-hidden transition-all duration-500 cursor-pointer"
       style={{
         boxShadow: shouldGlow
           ? `0 0 35px rgba(${rgb}, 0.75), 0 0 15px rgba(${rgb}, 0.45), inset 0 0 20px rgba(${rgb}, 0.3)`
@@ -176,7 +186,7 @@ export default function ProductCard({
         
         {/* Skeleton Shimmer when image is loading */}
         {!imgLoaded && (
-          <div className="absolute inset-0 bg-black/20 animate-pulse flex items-center justify-center z-0">
+          <div className="absolute inset-0 bg-transparent animate-pulse flex items-center justify-center z-0">
             <div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
           </div>
         )}
@@ -208,11 +218,11 @@ export default function ProductCard({
             }`}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-neutral-900/40 rounded">
-            <span className="text-2xl font-black tracking-widest text-neutral-600 uppercase">
+          <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-transparent border border-white/10 rounded">
+            <span className="text-2xl font-black tracking-widest text-neutral-400 uppercase">
               {product.name ? product.name.substring(0, 3).toUpperCase() : "TH"}
             </span>
-            <span className="text-[9px] text-neutral-500 uppercase tracking-wider mt-1">Colección Exclusiva</span>
+            <span className="text-[9px] text-neutral-400 uppercase tracking-wider mt-1">Colección Exclusiva</span>
           </div>
         )}
 

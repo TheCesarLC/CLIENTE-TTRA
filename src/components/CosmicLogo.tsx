@@ -109,25 +109,25 @@ export default function CosmicLogo({
 
     const initCosmos = (w: number, h: number) => {
       stars = [];
-      const starCount = Math.max(110, Math.floor((w * h) / 750));
+      const starCount = Math.max(220, Math.floor((w * h) / 450));
 
       for (let i = 0; i < starCount; i++) {
         const layerRand = Math.random();
         let layer = 0;
-        let radius = Math.random() * 1.1 + 0.5;
+        let radius = Math.random() * 1.3 + 0.6;
         let parallaxSpeed = 0.22;
 
         if (layerRand > 0.55 && layerRand <= 0.85) {
           layer = 1;
-          radius = Math.random() * 1.6 + 1.0;
+          radius = Math.random() * 2.0 + 1.2;
           parallaxSpeed = 0.52;
         } else if (layerRand > 0.85) {
           layer = 2;
-          radius = Math.random() * 2.4 + 1.4;
+          radius = Math.random() * 3.2 + 1.8;
           parallaxSpeed = 0.95;
         }
 
-        const hasFlare = (layer === 2 || radius > 1.8) && Math.random() < 0.45;
+        const hasFlare = (layer === 2 || radius > 2.2) && Math.random() < 0.5;
 
         stars.push({
           x: Math.random() * w,
@@ -146,9 +146,10 @@ export default function CosmicLogo({
 
       meteors = [
         createMeteor(w, h, 0),
-        createMeteor(w, h, 70),
-        createMeteor(w, h, 140),
-        createMeteor(w, h, 210)
+        createMeteor(w, h, 60),
+        createMeteor(w, h, 120),
+        createMeteor(w, h, 180),
+        createMeteor(w, h, 240)
       ];
     };
 
@@ -208,97 +209,165 @@ export default function CosmicLogo({
       context.textAlign = "center";
       context.textBaseline = "middle";
 
-      const centerY = h * 0.52;
-      const emblemSize = Math.max(26, Math.min(48, h * 0.23));
-      const emblemY = centerY - h * 0.31;
+      // Detect letterSpacing support in canvas
+      let hasNativeLetterSpacing = false;
+      try {
+        if ("letterSpacing" in context) {
+          hasNativeLetterSpacing = true;
+        }
+      } catch {
+        hasNativeLetterSpacing = false;
+      }
 
-      // 1. Geometric TH Crown Emblem
+      const text = hasNativeLetterSpacing ? "TETRA HATS" : "T E T R A   H A T S";
+      const subText = hasNativeLetterSpacing ? "EXCLUSIVE COLLECTION" : "E X C L U S I V E   C O L L E C T I O N";
+
+      // 2X Expanded Scale Typography
+      let baseFontSize = Math.max(90, Math.min(180, Math.round(w * 0.13)));
+      context.font = `900 ${baseFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      if (hasNativeLetterSpacing) {
+        (context as any).letterSpacing = `${Math.round(baseFontSize * 0.22)}px`;
+      }
+      
+      const measuredWidth = context.measureText(text).width;
+      if (measuredWidth > w * 0.95) {
+        baseFontSize = Math.floor(baseFontSize * ((w * 0.95) / measuredWidth));
+        context.font = `900 ${baseFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+        if (hasNativeLetterSpacing) {
+          (context as any).letterSpacing = `${Math.round(baseFontSize * 0.22)}px`;
+        }
+      }
+
+      // 2X Expanded Crown Emblem: Majestic, bold & grand scale
+      const emblemSize = Math.max(120, Math.min(240, Math.round(baseFontSize * 1.35)));
+      const emblemBoxH = emblemSize * 1.3;
+
+      // 2X Expanded Subtitle
+      let subFontSize = Math.max(22, Math.min(42, Math.round(baseFontSize * 0.24)));
+      context.font = `800 ${subFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      if (hasNativeLetterSpacing) {
+        (context as any).letterSpacing = `${Math.round(subFontSize * 0.22)}px`;
+      }
+      const subMeasuredWidth = context.measureText(subText).width;
+      if (subMeasuredWidth > w * 0.90) {
+        subFontSize = Math.floor(subFontSize * ((w * 0.90) / subMeasuredWidth));
+        context.font = `800 ${subFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+        if (hasNativeLetterSpacing) {
+          (context as any).letterSpacing = `${Math.round(subFontSize * 0.22)}px`;
+        }
+      }
+
+      // Proportional, tight gaps between elements (no wasted vertical frames)
+      const gap1 = Math.max(14, Math.round(baseFontSize * 0.14));
+      const gap2 = Math.max(14, Math.round(baseFontSize * 0.16));
+      const textBoxH = baseFontSize * 0.85;
+      const subBoxH = subFontSize * 0.85;
+      const totalLockupH = emblemBoxH + gap1 + textBoxH + gap2 + subBoxH;
+
+      // Center the 2X lockup neatly inside available canvas height
+      const startY = Math.max(10, (h - totalLockupH) / 2);
+      const emblemY = startY + (emblemBoxH / 2);
+      const textY = startY + emblemBoxH + gap1 + (textBoxH / 2);
+      const subY = startY + emblemBoxH + gap1 + textBoxH + gap2 + (subBoxH / 2);
+
+      // 1. Geometric TH Crown Emblem (2X Grand Scale Luxury Design)
       context.save();
       context.translate(w / 2, emblemY);
 
       if (isOutline) {
-        context.strokeStyle = "rgba(255, 255, 255, 0.95)";
-        context.lineWidth = 2.0;
+        context.strokeStyle = "rgba(255, 255, 255, 0.98)";
+        context.lineWidth = 5.2;
         context.beginPath();
-        context.roundRect(-emblemSize * 0.65, -emblemSize * 0.65, emblemSize * 1.3, emblemSize * 1.3, 10);
+        context.roundRect(-emblemSize * 0.65, -emblemSize * 0.65, emblemSize * 1.3, emblemSize * 1.3, 24);
+        context.stroke();
+
+        // Elegant geometric crown crest inner outline
+        context.lineWidth = 4.0;
+        context.strokeStyle = glowColor || "#10b981";
+        context.beginPath();
+        const cw = emblemSize * 0.45;
+        const ch = emblemSize * 0.32;
+        context.moveTo(-cw, ch * 0.4);
+        context.lineTo(-cw * 0.6, -ch);
+        context.lineTo(0, -ch * 0.2);
+        context.lineTo(cw * 0.6, -ch);
+        context.lineTo(cw, ch * 0.4);
+        context.closePath();
         context.stroke();
       } else {
         context.fillStyle = "#FFFFFF";
         context.beginPath();
-        context.roundRect(-emblemSize * 0.65, -emblemSize * 0.65, emblemSize * 1.3, emblemSize * 1.3, 10);
+        context.roundRect(-emblemSize * 0.65, -emblemSize * 0.65, emblemSize * 1.3, emblemSize * 1.3, 24);
+        context.fill();
+
+        // Inverted crown crest cutout
+        context.fillStyle = "#000000";
+        context.beginPath();
+        const cw = emblemSize * 0.45;
+        const ch = emblemSize * 0.32;
+        context.moveTo(-cw, ch * 0.4);
+        context.lineTo(-cw * 0.6, -ch);
+        context.lineTo(0, -ch * 0.2);
+        context.lineTo(cw * 0.6, -ch);
+        context.lineTo(cw, ch * 0.4);
+        context.closePath();
         context.fill();
       }
       context.restore();
 
-      // 2. Main Title "TETRA HATS" - Majestic Grand Scale perfectly fitted
-      const text = "T E T R A   H A T S";
-      let baseFontSize = Math.max(28, Math.min(84, w * 0.082));
+      // 2. Main Title "TETRA HATS" - 2X Bold Scale Font
       context.font = `900 ${baseFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
-      
-      const measuredWidth = context.measureText(text).width;
-      if (measuredWidth > w * 0.86) {
-        baseFontSize = Math.floor(baseFontSize * ((w * 0.86) / measuredWidth));
-        context.font = `900 ${baseFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      if (hasNativeLetterSpacing) {
+        (context as any).letterSpacing = `${Math.round(baseFontSize * 0.22)}px`;
       }
-
-      const textY = centerY + h * 0.06;
-
       if (isOutline) {
         context.strokeStyle = "rgba(255, 255, 255, 0.98)";
-        context.lineWidth = Math.max(1.5, baseFontSize * 0.032);
+        context.lineWidth = Math.max(4.0, baseFontSize * 0.045);
         context.strokeText(text, w / 2, textY);
       } else {
         context.fillStyle = "#FFFFFF";
         context.fillText(text, w / 2, textY);
       }
 
-      // 3. Subtitle "EXCLUSIVE COLLECTION"
-      const subText = "E X C L U S I V E   C O L L E C T I O N";
-      let subFontSize = Math.max(10, Math.min(17, baseFontSize * 0.22));
+      // 3. Subtitle "EXCLUSIVE COLLECTION" - 2X Bold Scale
       context.font = `800 ${subFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
-      
-      const subMeasuredWidth = context.measureText(subText).width;
-      if (subMeasuredWidth > w * 0.72) {
-        subFontSize = Math.floor(subFontSize * ((w * 0.72) / subMeasuredWidth));
-        context.font = `800 ${subFontSize}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      if (hasNativeLetterSpacing) {
+        (context as any).letterSpacing = `${Math.round(subFontSize * 0.22)}px`;
       }
-
-      const subY = centerY + h * 0.37;
-
       if (isOutline) {
         context.strokeStyle = glowColor || "#10b981";
-        context.lineWidth = 1.4;
+        context.lineWidth = 3.2;
         context.strokeText(subText, w / 2, subY);
 
         // Accent divider lines
         const subMetrics = context.measureText(subText);
-        const lineLen = Math.max(24, w * 0.11);
+        const lineLen = Math.max(50, Math.min(140, w * 0.12));
         const lineY = subY;
 
-        context.strokeStyle = "rgba(255, 255, 255, 0.65)";
-        context.lineWidth = 1.6;
+        context.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        context.lineWidth = 3.5;
 
         // Left line
         context.beginPath();
-        context.moveTo(w / 2 - subMetrics.width / 2 - lineLen - 14, lineY);
-        context.lineTo(w / 2 - subMetrics.width / 2 - 14, lineY);
+        context.moveTo(w / 2 - subMetrics.width / 2 - lineLen - 24, lineY);
+        context.lineTo(w / 2 - subMetrics.width / 2 - 24, lineY);
         context.stroke();
 
         // Right line
         context.beginPath();
-        context.moveTo(w / 2 + subMetrics.width / 2 + 14, lineY);
-        context.lineTo(w / 2 + subMetrics.width / 2 + lineLen + 14, lineY);
+        context.moveTo(w / 2 + subMetrics.width / 2 + 24, lineY);
+        context.lineTo(w / 2 + subMetrics.width / 2 + lineLen + 24, lineY);
         context.stroke();
       } else {
         context.fillStyle = "#FFFFFF";
         context.fillText(subText, w / 2, subY);
 
         const subMetrics = context.measureText(subText);
-        const lineLen = Math.max(24, w * 0.11);
+        const lineLen = Math.max(50, Math.min(140, w * 0.12));
         const lineY = subY;
 
-        context.fillRect(w / 2 - subMetrics.width / 2 - lineLen - 14, lineY - 1.5, lineLen, 3);
-        context.fillRect(w / 2 + subMetrics.width / 2 + 14, lineY - 1.5, lineLen, 3);
+        context.fillRect(w / 2 - subMetrics.width / 2 - lineLen - 24, lineY - 3, lineLen, 6);
+        context.fillRect(w / 2 + subMetrics.width / 2 + 24, lineY - 3, lineLen, 6);
       }
     };
 
@@ -458,8 +527,23 @@ export default function CosmicLogo({
       dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       cssWidth = Math.max(280, roundedWidth);
-      // Balanced aspect ratio ~ 3.3:1
-      cssHeight = Math.max(120, Math.min(270, Math.round(cssWidth * 0.28)));
+      
+      if (customImage && customImage.complete && customImage.naturalWidth > 0) {
+        const aspect = customImage.naturalWidth / customImage.naturalHeight;
+        cssHeight = Math.max(240, Math.min(650, Math.round(cssWidth / aspect)));
+      } else {
+        // Grand Scale 2X lockup height matching expanded crown emblem and typography
+        const estBaseFont = Math.max(90, Math.min(180, Math.round(cssWidth * 0.13)));
+        const estEmblemSize = Math.max(120, Math.min(240, Math.round(estBaseFont * 1.35)));
+        const estEmblemBoxH = estEmblemSize * 1.3;
+        const estTextBoxH = estBaseFont * 0.85;
+        const estSubFont = Math.max(22, Math.min(42, Math.round(estBaseFont * 0.24)));
+        const estSubBoxH = estSubFont * 0.85;
+        const estGap1 = Math.max(14, Math.round(estBaseFont * 0.14));
+        const estGap2 = Math.max(14, Math.round(estBaseFont * 0.16));
+        const estTotalH = estEmblemBoxH + estGap1 + estTextBoxH + estGap2 + estSubBoxH;
+        cssHeight = Math.max(240, Math.round(estTotalH + 24));
+      }
 
       canvas.width = Math.round(cssWidth * dpr);
       canvas.height = Math.round(cssHeight * dpr);
@@ -481,9 +565,9 @@ export default function CosmicLogo({
         if (container.clientWidth > 0) return container.clientWidth;
       }
       if (typeof window !== "undefined") {
-        return Math.min(window.innerWidth - 32, 900);
+        return Math.min(window.innerWidth - 24, 1400);
       }
-      return 600;
+      return 1100;
     };
 
     updateDimensions(getInitialWidth());
@@ -519,13 +603,12 @@ export default function CosmicLogo({
       ref={containerRef}
       className={`relative w-full max-w-full flex items-center justify-center select-none group/cosmic-logo transition-transform duration-500 hover:scale-[1.01] ${className}`}
       id="hero-cosmic-logo"
-      style={{ minHeight: "120px" }}
     >
       {/* Outer ambient glow halo when glowMode is on or hovered */}
       <div 
-        className="absolute inset-0 pointer-events-none rounded-full blur-3xl opacity-40 transition-opacity duration-700 group-hover/cosmic-logo:opacity-75"
+        className="absolute inset-0 pointer-events-none rounded-full blur-3xl opacity-50 transition-opacity duration-700 group-hover/cosmic-logo:opacity-85"
         style={{
-          background: `radial-gradient(ellipse at center, ${glowColor}50 0%, rgba(255,255,255,0.15) 45%, transparent 75%)`
+          background: `radial-gradient(ellipse at center, ${glowColor}60 0%, rgba(255,255,255,0.2) 40%, transparent 75%)`
         }}
         aria-hidden="true"
       />
@@ -533,7 +616,7 @@ export default function CosmicLogo({
       {/* Main Cosmic Canvas Rendering with smooth transition */}
       <canvas
         ref={canvasRef}
-        className={`relative z-10 block max-w-full h-auto drop-shadow-[0_8px_36px_rgba(0,0,0,0.9)] filter transition-opacity duration-500 ease-out ${
+        className={`relative z-10 block max-w-full h-auto drop-shadow-[0_12px_48px_rgba(0,0,0,0.95)] filter transition-opacity duration-500 ease-out ${
           isRendered ? "opacity-100" : "opacity-0"
         }`}
         aria-label={alt}

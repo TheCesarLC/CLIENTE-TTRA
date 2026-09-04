@@ -1,13 +1,12 @@
-// Utility to automatically detect and remove white / light backgrounds from product images
-// Preserves internal white logos, text, and embroidery by only flood-filling from outer boundaries.
+// Utility to automatically detect and remove black, dark, white, or light solid backgrounds from product images
+// Preserves internal graphics, text, and embroidery by flood-filling from outer boundaries inward with anti-aliasing.
 
 const transparentCache = new Map<string, string>();
 const pendingPromises = new Map<string, Promise<string>>();
 
 interface RemoveBgOptions {
-  threshold?: number; // Brightness threshold (0-255), default 220
-  colorTolerance?: number; // Max difference between R, G, B channels (neutral color check), default 35
-  feather?: number; // Softness radius around edges, default 2
+  threshold?: number; // Custom threshold if specified
+  colorTolerance?: number;
 }
 
 /**
@@ -17,23 +16,44 @@ function isLightBackgroundPixel(
   r: number,
   g: number,
   b: number,
-  threshold: number,
-  colorTolerance: number
+  threshold: number = 205,
+  colorTolerance: number = 40
 ): boolean {
-  // Check if pixel is sufficiently bright
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   if (brightness < threshold) return false;
-
-  // Check if it's neutral (not saturated bright yellow/cyan/etc)
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   return (max - min) <= colorTolerance;
 }
 
 /**
- * Removes solid white/off-white background starting from the edges using BFS Flood Fill
+ * Checks if a pixel is black or dark neutral background
+ */
+function isDarkBackgroundPixel(
+  r: number,
+  g: number,
+  b: number,
+  threshold: number = 42,
+  colorTolerance: number = 32
+): boolean {
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  if (brightness > threshold) return false;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  return (max - min) <= colorTolerance;
+}
+
+/**
+ * Removes solid black/dark or white/light background starting from the edges using BFS Flood Fill
  */
 export async function removeWhiteBackground(
+  imageUrl: string,
+  options: RemoveBgOptions = {}
+): Promise<string> {
+  return removeBackground(imageUrl, options);
+}
+
+export async function removeBackground(
   imageUrl: string,
   options: RemoveBgOptions = {}
 ): Promise<string> {
@@ -53,13 +73,238 @@ export async function removeWhiteBackground(
   }
 
   const {
-    threshold = 210,
-    colorTolerance = 40,
+    threshold,
+    colorTolerance = 35,
   } = options;
+
+  const processCanvasData = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number
+  ): string | null => {
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    // Sample 16 points along the outer perimeter (corners, midpoints, quarter points)
+    const samplePoints = [
+      [0, 0],
+      [w - 1, 0],
+      [0, h - 1],
+      [w - 1, h - 1],
+      [Math.floor(w / 2), 0],
+      [Math.floor(w / 2), h - 1],
+      [0, Math.floor(h / 2)],
+      [w - 1, Math.floor(h / 2)],
+      [Math.floor(w / 4), 0],
+      [Math.floor((3 * w) / 4), 0],
+      [Math.floor(w / 4), h - 1],
+      [Math.floor((3 * w) / 4), h - 1],
+      [0, Math.floor(h / 4)],
+      [0, Math.floor((3 * h) / 4)],
+      [w - 1, Math.floor(h / 4)],
+      [w - 1, Math.floor((3 * h) / 4)],
+    ];
+
+    let darkBorderCount = 0;
+    let lightBorderCount = 0;
+    let transparentCount = 0;
+    let sumDarkR = 0, sumDarkG = 0, sumDarkB = 0;
+    let sumLightR = 0, sumLightG = 0, sumLightB = 0;
+
+    for (const [cx, cy] of samplePoints) {
+      const idx = (cy * w + cx) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const a = data[idx + 3];
+
+      if (a < 35) {
+        transparentCount++;
+        continue;
+      }
+
+      if (isDarkBackgroundPixel(r, g, b, 50, colorTolerance + 10)) {
+        darkBorderCount++;
+        sumDarkR += r;
+        sumDarkG += g;
+        sumDarkB += b;
+      } else if (isLightBackgroundPixel(r, g, b, 190, colorTolerance + 15)) {
+        lightBorderCount++;
+        sumLightR += r;
+        sumLightG += g;
+        sumLightB += b;
+      }
+    }
+
+    // If image is already largely transparent, don't modify
+    if (transparentCount >= 8) {
+      return null;
+    }
+
+    // Determine background type
+    const isDarkBg = darkBorderCount >= 4 || (darkBorderCount >= 2 && lightBorderCount === 0);
+    const isLightBg = !isDarkBg && (lightBorderCount >= 4 || (lightBorderCount >= 2 && darkBorderCount === 0));
+
+    if (!isDarkBg && !isLightBg) {
+      // Neither solid black nor solid white detected on outer edges
+      return null;
+    }
+
+    const avgR = isDarkBg 
+      ? (darkBorderCount > 0 ? sumDarkR / darkBorderCount : 0)
+      : (lightBorderCount > 0 ? sumLightR / lightBorderCount : 255);
+    const avgG = isDarkBg 
+      ? (darkBorderCount > 0 ? sumDarkG / darkBorderCount : 0)
+      : (lightBorderCount > 0 ? sumLightG / lightBorderCount : 255);
+    const avgB = isDarkBg 
+      ? (darkBorderCount > 0 ? sumDarkB / darkBorderCount : 0)
+      : (lightBorderCount > 0 ? sumLightB / lightBorderCount : 255);
+
+    const darkThreshold = threshold ?? 45;
+    const lightThreshold = threshold ?? 205;
+
+    // Flood Fill BFS starting from all 4 borders inward
+    const totalPixels = w * h;
+    const visited = new Uint8Array(totalPixels);
+    const queue: number[] = [];
+
+    // Add all perimeter pixels to initial queue
+    for (let x = 0; x < w; x++) {
+      queue.push(x); // Top edge: 0 * w + x
+      queue.push((h - 1) * w + x); // Bottom edge
+      visited[x] = 1;
+      visited[(h - 1) * w + x] = 1;
+    }
+    for (let y = 1; y < h - 1; y++) {
+      queue.push(y * w); // Left edge
+      queue.push(y * w + (w - 1)); // Right edge
+      visited[y * w] = 1;
+      visited[y * w + (w - 1)] = 1;
+    }
+
+    let head = 0;
+    const bgIndices: number[] = [];
+
+    const isMatchBg = (r: number, g: number, b: number, a: number): boolean => {
+      if (a < 35) return true;
+      if (isDarkBg) {
+        if (isDarkBackgroundPixel(r, g, b, darkThreshold, colorTolerance)) return true;
+        const diff = Math.max(Math.abs(r - avgR), Math.abs(g - avgG), Math.abs(b - avgB));
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return diff <= 35 && brightness <= darkThreshold + 12;
+      } else {
+        if (isLightBackgroundPixel(r, g, b, lightThreshold, colorTolerance)) return true;
+        const diff = Math.max(Math.abs(r - avgR), Math.abs(g - avgG), Math.abs(b - avgB));
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return diff <= 40 && brightness >= lightThreshold - 15;
+      }
+    };
+
+    while (head < queue.length) {
+      const pIdx = queue[head++];
+      const px = pIdx % w;
+      const py = Math.floor(pIdx / w);
+      const dIdx = pIdx * 4;
+
+      const r = data[dIdx];
+      const g = data[dIdx + 1];
+      const b = data[dIdx + 2];
+      const a = data[dIdx + 3];
+
+      if (isMatchBg(r, g, b, a)) {
+        bgIndices.push(pIdx);
+
+        // Check 4 adjacent neighbors
+        if (px > 0 && visited[pIdx - 1] === 0) {
+          visited[pIdx - 1] = 1;
+          queue.push(pIdx - 1);
+        }
+        if (px < w - 1 && visited[pIdx + 1] === 0) {
+          visited[pIdx + 1] = 1;
+          queue.push(pIdx + 1);
+        }
+        if (py > 0 && visited[pIdx - w] === 0) {
+          visited[pIdx - w] = 1;
+          queue.push(pIdx - w);
+        }
+        if (py < h - 1 && visited[pIdx + w] === 0) {
+          visited[pIdx + w] = 1;
+          queue.push(pIdx + w);
+        }
+      }
+    }
+
+    // Apply transparency and smooth anti-aliased edge feathering
+    for (const pIdx of bgIndices) {
+      const dIdx = pIdx * 4;
+      const r = data[dIdx];
+      const g = data[dIdx + 1];
+      const b = data[dIdx + 2];
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+      if (isDarkBg) {
+        if (brightness <= 15) {
+          data[dIdx + 3] = 0; // Pure black background -> 100% transparent
+        } else {
+          // Smooth edge feathering for dark transitions
+          const factor = Math.max(0, Math.min(1, (brightness - 15) / 28));
+          data[dIdx + 3] = Math.round(factor * 255);
+        }
+      } else {
+        if (brightness >= lightThreshold + 10) {
+          data[dIdx + 3] = 0; // Pure white background -> 100% transparent
+        } else {
+          // Smooth edge feathering for light transitions
+          const factor = Math.max(0, Math.min(1, (lightThreshold + 10 - brightness) / 25));
+          data[dIdx + 3] = Math.round(factor * 255);
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return ctx.canvas.toDataURL("image/png");
+  };
 
   const promise = new Promise<string>((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
+
+    const tryProxyFallback = () => {
+      if (!trimmed.startsWith("data:") && !trimmed.startsWith("/api/proxy-image")) {
+        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(trimmed)}`;
+        const proxyImg = new Image();
+        proxyImg.crossOrigin = "anonymous";
+        proxyImg.onload = () => {
+          try {
+            const pW = proxyImg.naturalWidth || proxyImg.width;
+            const pH = proxyImg.naturalHeight || proxyImg.height;
+            const pCanvas = document.createElement("canvas");
+            pCanvas.width = pW;
+            pCanvas.height = pH;
+            const pCtx = pCanvas.getContext("2d", { willReadFrequently: true });
+            if (pCtx) {
+              pCtx.drawImage(proxyImg, 0, 0, pW, pH);
+              const processed = processCanvasData(pCtx, pW, pH);
+              if (processed) {
+                transparentCache.set(trimmed, processed);
+                resolve(processed);
+                return;
+              }
+            }
+          } catch {}
+          transparentCache.set(trimmed, trimmed);
+          resolve(trimmed);
+        };
+        proxyImg.onerror = () => {
+          transparentCache.set(trimmed, trimmed);
+          resolve(trimmed);
+        };
+        proxyImg.src = proxyUrl;
+        return;
+      }
+      transparentCache.set(trimmed, trimmed);
+      resolve(trimmed);
+    };
 
     img.onload = () => {
       try {
@@ -96,212 +341,27 @@ export async function removeWhiteBackground(
         }
 
         ctx.drawImage(img, 0, 0, targetW, targetH);
-        const imgData = ctx.getImageData(0, 0, targetW, targetH);
-        const data = imgData.data;
+        const resultDataUrl = processCanvasData(ctx, targetW, targetH);
 
-        // Sample 4 corners to verify if image actually has a light background
-        const cornerCoords = [
-          [0, 0],
-          [targetW - 1, 0],
-          [0, targetH - 1],
-          [targetW - 1, targetH - 1],
-          [Math.floor(targetW / 2), 0],
-          [Math.floor(targetW / 2), targetH - 1],
-          [0, Math.floor(targetH / 2)],
-          [targetW - 1, Math.floor(targetH / 2)],
-        ];
-
-        let lightBorderSampleCount = 0;
-        for (const [cx, cy] of cornerCoords) {
-          const idx = (cy * targetW + cx) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-          const a = data[idx + 3];
-
-          // If already transparent, or light colored
-          if (a < 50 || isLightBackgroundPixel(r, g, b, threshold - 15, colorTolerance + 10)) {
-            lightBorderSampleCount++;
-          }
-        }
-
-        // If corners are mostly dark or not white background, don't alter the image
-        if (lightBorderSampleCount < 3) {
-          transparentCache.set(trimmed, trimmed);
-          resolve(trimmed);
+        if (resultDataUrl) {
+          transparentCache.set(trimmed, resultDataUrl);
+          resolve(resultDataUrl);
           return;
         }
 
-        // Flood Fill BFS starting from all 4 borders
-        const totalPixels = targetW * targetH;
-        const visited = new Uint8Array(totalPixels);
-        const queue: number[] = [];
-
-        // Add all 4 outer border pixels to queue
-        for (let x = 0; x < targetW; x++) {
-          queue.push(0 * targetW + x); // Top edge
-          queue.push((targetH - 1) * targetW + x); // Bottom edge
-          visited[0 * targetW + x] = 1;
-          visited[(targetH - 1) * targetW + x] = 1;
-        }
-        for (let y = 1; y < targetH - 1; y++) {
-          queue.push(y * targetW + 0); // Left edge
-          queue.push(y * targetW + (targetW - 1)); // Right edge
-          visited[y * targetW + 0] = 1;
-          visited[y * targetW + (targetW - 1)] = 1;
-        }
-
-        let head = 0;
-        const bgIndices: number[] = [];
-
-        while (head < queue.length) {
-          const pIdx = queue[head++];
-          const px = pIdx % targetW;
-          const py = Math.floor(pIdx / targetW);
-          const dIdx = pIdx * 4;
-
-          const r = data[dIdx];
-          const g = data[dIdx + 1];
-          const b = data[dIdx + 2];
-          const a = data[dIdx + 3];
-
-          // If transparent already or matches light background
-          if (a === 0 || isLightBackgroundPixel(r, g, b, threshold, colorTolerance)) {
-            bgIndices.push(pIdx);
-
-            // Check 4 neighbors
-            const neighbors = [
-              px > 0 ? pIdx - 1 : -1,
-              px < targetW - 1 ? pIdx + 1 : -1,
-              py > 0 ? pIdx - targetW : -1,
-              py < targetH - 1 ? pIdx + targetW : -1,
-            ];
-
-            for (const nIdx of neighbors) {
-              if (nIdx !== -1 && visited[nIdx] === 0) {
-                visited[nIdx] = 1;
-                queue.push(nIdx);
-              }
-            }
-          }
-        }
-
-        // Apply transparency and anti-aliasing to identified background pixels
-        for (const pIdx of bgIndices) {
-          const dIdx = pIdx * 4;
-          const r = data[dIdx];
-          const g = data[dIdx + 1];
-          const b = data[dIdx + 2];
-          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-          if (brightness >= threshold + 10) {
-            // Pure white background -> fully transparent
-            data[dIdx + 3] = 0;
-          } else {
-            // Edge transition -> smooth feathering
-            const factor = Math.max(0, Math.min(1, (threshold + 10 - brightness) / 25));
-            data[dIdx + 3] = Math.round(factor * 255);
-          }
-        }
-
-        ctx.putImageData(imgData, 0, 0);
-        const resultDataUrl = canvas.toDataURL("image/png");
-        transparentCache.set(trimmed, resultDataUrl);
-        resolve(resultDataUrl);
-      } catch (err) {
-        // If direct canvas fails (e.g. CORS restriction), try through our local image proxy
-        if (!trimmed.startsWith("data:") && !trimmed.startsWith("/api/proxy-image")) {
-          const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(trimmed)}`;
-          const proxyImg = new Image();
-          proxyImg.crossOrigin = "anonymous";
-          proxyImg.onload = () => {
-            try {
-              const pW = proxyImg.naturalWidth || proxyImg.width;
-              const pH = proxyImg.naturalHeight || proxyImg.height;
-              const pCanvas = document.createElement("canvas");
-              pCanvas.width = pW;
-              pCanvas.height = pH;
-              const pCtx = pCanvas.getContext("2d", { willReadFrequently: true });
-              if (pCtx) {
-                pCtx.drawImage(proxyImg, 0, 0, pW, pH);
-                const pImgData = pCtx.getImageData(0, 0, pW, pH);
-                const pData = pImgData.data;
-
-                // Process BFS Flood Fill
-                const total = pW * pH;
-                const vis = new Uint8Array(total);
-                const q: number[] = [];
-
-                for (let x = 0; x < pW; x++) {
-                  q.push(0 * pW + x);
-                  q.push((pH - 1) * pW + x);
-                  vis[0 * pW + x] = 1;
-                  vis[(pH - 1) * pW + x] = 1;
-                }
-                for (let y = 1; y < pH - 1; y++) {
-                  q.push(y * pW + 0);
-                  q.push(y * pW + (pW - 1));
-                  vis[y * pW + 0] = 1;
-                  vis[y * pW + (pW - 1)] = 1;
-                }
-
-                let h = 0;
-                while (h < q.length) {
-                  const pI = q[h++];
-                  const px = pI % pW;
-                  const py = Math.floor(pI / pW);
-                  const dI = pI * 4;
-                  const r = pData[dI];
-                  const g = pData[dI + 1];
-                  const b = pData[dI + 2];
-                  const a = pData[dI + 3];
-
-                  if (a === 0 || isLightBackgroundPixel(r, g, b, threshold, colorTolerance)) {
-                    pData[dI + 3] = 0;
-                    const nbs = [
-                      px > 0 ? pI - 1 : -1,
-                      px < pW - 1 ? pI + 1 : -1,
-                      py > 0 ? pI - pW : -1,
-                      py < pH - 1 ? pI + pW : -1,
-                    ];
-                    for (const n of nbs) {
-                      if (n !== -1 && vis[n] === 0) {
-                        vis[n] = 1;
-                        q.push(n);
-                      }
-                    }
-                  }
-                }
-                pCtx.putImageData(pImgData, 0, 0);
-                const pDataUrl = pCanvas.toDataURL("image/png");
-                transparentCache.set(trimmed, pDataUrl);
-                resolve(pDataUrl);
-                return;
-              }
-            } catch {}
-            transparentCache.set(trimmed, trimmed);
-            resolve(trimmed);
-          };
-          proxyImg.onerror = () => {
-            transparentCache.set(trimmed, trimmed);
-            resolve(trimmed);
-          };
-          proxyImg.src = proxyUrl;
-          return;
-        }
-
-        // Fallback to original image URL
+        // If not altered, cache trimmed
         transparentCache.set(trimmed, trimmed);
         resolve(trimmed);
+      } catch (err) {
+        // Direct canvas threw a security/CORS error -> fallback to proxy
+        tryProxyFallback();
       } finally {
         pendingPromises.delete(trimmed);
       }
     };
 
     img.onerror = () => {
-      pendingPromises.delete(trimmed);
-      transparentCache.set(trimmed, trimmed);
-      resolve(trimmed);
+      tryProxyFallback();
     };
 
     img.src = trimmed;

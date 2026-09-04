@@ -120,6 +120,16 @@ export default function ProductModal({
   const glowsInDark = product.badge === "Glow in the Dark";
   const shouldGlow = glowMode && glowsInDark;
 
+  // Transparent window check for 800 DIAS and ON DGAS
+  const isTargetTransparent = Boolean(
+    product?.name && (
+      product.name.toUpperCase().includes("800 DIAS") ||
+      product.name.toUpperCase().includes("800 DÍAS") ||
+      product.name.toUpperCase().includes("ON DGAS") ||
+      product.name.toUpperCase().includes("ONDGAS")
+    )
+  );
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -129,7 +139,7 @@ export default function ProductModal({
       />
 
       {/* Modal Container */}
-      <div className="relative bg-black/70 backdrop-blur-xl border border-white/15 rounded-xl max-w-4xl w-full text-white shadow-2xl z-10 flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
+      <div className="relative bg-neutral-950/40 backdrop-blur-xl border border-white/20 rounded-xl max-w-4xl w-full text-white shadow-2xl z-10 flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
         
         {/* Close Button */}
         <button
@@ -141,15 +151,15 @@ export default function ProductModal({
         </button>
 
         {/* Left: Viewport Galleries */}
-        <div className="md:w-1/2 flex flex-col bg-black/20 justify-between p-6 border-r border-white/10">
+        <div className="md:w-1/2 flex flex-col bg-transparent justify-between p-6 border-r border-white/10">
           <div 
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="flex-1 flex items-center justify-center min-h-[300px] max-h-[450px] relative overflow-hidden rounded-md bg-black/30 border border-white/10 select-none touch-pan-y"
+            className="flex-1 flex items-center justify-center min-h-[300px] max-h-[450px] relative overflow-hidden rounded-md bg-transparent border border-white/15 select-none touch-pan-y"
           >
             {!mainImgLoaded && (
-              <div className="absolute inset-0 bg-neutral-950 animate-pulse flex items-center justify-center z-0">
+              <div className="absolute inset-0 bg-transparent animate-pulse flex items-center justify-center z-0">
                 <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
               </div>
             )}
@@ -175,11 +185,11 @@ export default function ProductModal({
                 className="max-w-full max-h-full object-contain transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-64 flex flex-col items-center justify-center text-center p-6 bg-neutral-900/50 rounded-xl">
-                <span className="text-3xl font-black tracking-widest text-neutral-600 uppercase">
+              <div className="w-full h-64 flex flex-col items-center justify-center text-center p-6 bg-transparent border border-white/10 rounded-xl">
+                <span className="text-3xl font-black tracking-widest text-neutral-400 uppercase">
                   {product.name ? product.name.substring(0, 3).toUpperCase() : "TH"}
                 </span>
-                <span className="text-[10px] text-neutral-500 uppercase tracking-widest mt-2">Fotografía en preparación</span>
+                <span className="text-[10px] text-neutral-400 uppercase tracking-widest mt-2">Fotografía en preparación</span>
               </div>
             )}
 
@@ -216,10 +226,10 @@ export default function ProductModal({
                     setMainImgLoaded(false);
                     setSelectedImgIndex(idx);
                   }}
-                  className={`w-14 h-14 border rounded bg-black/30 backdrop-blur-xs flex-shrink-0 flex items-center justify-center overflow-hidden transition-all duration-300 cursor-pointer ${
+                  className={`w-14 h-14 border rounded bg-transparent flex-shrink-0 flex items-center justify-center overflow-hidden transition-all duration-300 cursor-pointer ${
                     idx === selectedImgIdx
                       ? "border-white"
-                      : "border-neutral-800 opacity-60 hover:opacity-100"
+                      : "border-white/20 opacity-60 hover:opacity-100"
                   }`}
                   style={
                     idx === selectedImgIdx && shouldGlow
