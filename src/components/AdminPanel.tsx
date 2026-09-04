@@ -1031,7 +1031,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video ONDGAS (ImageKit.io, Cloudinary o .mp4)</span>
+                  <span>Video 800 DÍAS (ImageKit.io, Cloudinary o .mp4)</span>
                   <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
                 </label>
                 <input
@@ -1045,35 +1045,33 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Miniatura / Preview ONDGAS (URL de Imagen o Poster)</span>
-                  {siteConfig.experiencePoster ? (
+                  <span>Miniatura / Preview 800 DÍAS (Fotograma o Imagen)</span>
+                  {siteConfig.experiencePoster && !siteConfig.experiencePoster.startsWith("/previews/") ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
                   ) : (
-                    <span className="text-gray-500 text-[9px]">Autogenerado (ImageKit / Cloudinary)</span>
+                    <span className="text-emerald-500 text-[9px] font-bold">Fotograma del Video (Activo)</span>
                   )}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={siteConfig.experiencePoster || ""}
-                    placeholder="https://... (dejar vacío para extraer fotograma automático)"
+                    placeholder="/previews/preview-800dias.webp (dejar vacío para fotograma por defecto)"
                     onChange={(e) => updateSiteConfig({ experiencePoster: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
-                  {siteConfig.experiencePoster && (
-                    <img 
-                      src={siteConfig.experiencePoster} 
-                      alt="Preview ONDGAS" 
-                      className="w-11 h-11 object-cover rounded border border-neutral-700" 
-                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                    />
-                  )}
+                  <img 
+                    src={siteConfig.experiencePoster || "/previews/preview-800dias.webp"} 
+                    alt="Preview 800 DIAS" 
+                    className="w-11 h-11 object-cover rounded border border-neutral-700" 
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video 800 DÍAS (ImageKit.io, Cloudinary o .mp4)</span>
+                  <span>Video ONDGAS (ImageKit.io, Cloudinary o .mp4)</span>
                   <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
                 </label>
                 <input
@@ -1087,29 +1085,27 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Miniatura / Preview 800 DÍAS (URL de Imagen o Poster)</span>
-                  {siteConfig.experiencePoster2 ? (
+                  <span>Miniatura / Preview ONDGAS (Fotograma o Imagen)</span>
+                  {siteConfig.experiencePoster2 && !siteConfig.experiencePoster2.startsWith("/previews/") ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
                   ) : (
-                    <span className="text-gray-500 text-[9px]">Autogenerado (ImageKit / Cloudinary)</span>
+                    <span className="text-emerald-500 text-[9px] font-bold">Fotograma del Video (Activo)</span>
                   )}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={siteConfig.experiencePoster2 || ""}
-                    placeholder="https://... (dejar vacío para extraer fotograma automático)"
+                    placeholder="/previews/preview-ondgas.webp (dejar vacío para fotograma por defecto)"
                     onChange={(e) => updateSiteConfig({ experiencePoster2: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
-                  {siteConfig.experiencePoster2 && (
-                    <img 
-                      src={siteConfig.experiencePoster2} 
-                      alt="Preview 800 DIAS" 
-                      className="w-11 h-11 object-cover rounded border border-neutral-700" 
-                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                    />
-                  )}
+                  <img 
+                    src={siteConfig.experiencePoster2 || "/previews/preview-ondgas.webp"} 
+                    alt="Preview ONDGAS" 
+                    className="w-11 h-11 object-cover rounded border border-neutral-700" 
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
                 </div>
               </div>
 

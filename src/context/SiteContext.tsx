@@ -202,8 +202,8 @@ const defaultSiteConfig: SiteConfig = {
   artistCredits: "",
   experienceVideo: "https://ik.imagekit.io/mvp0bxdrv/800%20DIAS/Clave%20Ali%CC%81%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?tr=orig",
   experienceVideo2: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
-  experiencePoster: "",
-  experiencePoster2: "",
+  experiencePoster: "/previews/preview-800dias.webp",
+  experiencePoster2: "/previews/preview-ondgas.webp",
   heroVideo: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
   showGlow: true,
   glowIntensity: "0.15",
@@ -304,8 +304,11 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.logoUrl && (parsed.logoUrl.includes("df3fh9wic") || parsed.logoUrl.includes("umbra.page"))) {
           parsed.logoUrl = "";
         }
-        if (parsed.experiencePoster && (parsed.experiencePoster.includes("8678b1b9") || parsed.experiencePoster.includes("41ebdb") || parsed.experiencePoster.includes("umbra.page"))) {
-          parsed.experiencePoster = "";
+        if (!parsed.experiencePoster || !parsed.experiencePoster.trim() || parsed.experiencePoster.includes("8678b1b9") || parsed.experiencePoster.includes("41ebdb") || parsed.experiencePoster.includes("umbra.page")) {
+          parsed.experiencePoster = defaultSiteConfig.experiencePoster;
+        }
+        if (!parsed.experiencePoster2 || !parsed.experiencePoster2.trim() || parsed.experiencePoster2.includes("8678b1b9") || parsed.experiencePoster2.includes("41ebdb") || parsed.experiencePoster2.includes("umbra.page")) {
+          parsed.experiencePoster2 = defaultSiteConfig.experiencePoster2;
         }
         if (parsed.heroVideo && (parsed.heroVideo.includes("umbra.page/cdn/shop/videos") || parsed.heroVideo.includes("41ebdb") || parsed.heroVideo.includes("8678b1b9"))) {
           parsed.heroVideo = defaultSiteConfig.heroVideo;
@@ -447,8 +450,11 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.logoUrl && (data.logoUrl.includes("df3fh9wic") || data.logoUrl.includes("umbra.page"))) {
           data.logoUrl = "";
         }
-        if (data.experiencePoster && (data.experiencePoster.includes("8678b1b9") || data.experiencePoster.includes("41ebdb") || data.experiencePoster.includes("umbra.page"))) {
-          data.experiencePoster = "";
+        if (!data.experiencePoster || !data.experiencePoster.trim() || data.experiencePoster.includes("8678b1b9") || data.experiencePoster.includes("41ebdb") || data.experiencePoster.includes("umbra.page")) {
+          data.experiencePoster = defaultSiteConfig.experiencePoster;
+        }
+        if (!data.experiencePoster2 || !data.experiencePoster2.trim() || data.experiencePoster2.includes("8678b1b9") || data.experiencePoster2.includes("41ebdb") || data.experiencePoster2.includes("umbra.page")) {
+          data.experiencePoster2 = defaultSiteConfig.experiencePoster2;
         }
         if (data.heroVideo && (data.heroVideo.includes("umbra.page/cdn/shop/videos") || data.heroVideo.includes("41ebdb") || data.heroVideo.includes("8678b1b9"))) {
           data.heroVideo = defaultSiteConfig.heroVideo;

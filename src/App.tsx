@@ -674,11 +674,16 @@ export default function App() {
           {/* Side-by-Side Vertical Videos Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto px-2">
             
-            {/* VIDEO 1 - 800 DÍAS */}
+            {/* VIDEO 1 - 800 DIAS */}
             {(() => {
-              const d800Product = activeProducts.find(p => p.name.toUpperCase().includes("800 DIAS") || p.name.toUpperCase().includes("800 DÍAS")) || activeProducts[1] || activeProducts[0];
-              const rawPoster = d800Product?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
-              const d800FallbackPoster = getOptimizedImageUrl(rawPoster, 600);
+              const video1Poster = (
+                siteConfigToUse.experiencePoster &&
+                !siteConfigToUse.experiencePoster.includes("umbra.page") &&
+                !siteConfigToUse.experiencePoster.includes("8678b1b9") &&
+                !siteConfigToUse.experiencePoster.includes("41ebdb")
+                  ? siteConfigToUse.experiencePoster
+                  : "/previews/preview-800dias.webp"
+              );
               const video1Src = siteConfigToUse.experienceVideo &&
                 !siteConfigToUse.experienceVideo.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo.includes("8678b1b9") &&
@@ -700,14 +705,8 @@ export default function App() {
                       muted={false}
                       transparentBg={true}
                       className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
-                      poster={
-                        siteConfigToUse.experiencePoster &&
-                        !siteConfigToUse.experiencePoster.includes("umbra.page") &&
-                        !siteConfigToUse.experiencePoster.includes("8678b1b9")
-                          ? getOptimizedImageUrl(siteConfigToUse.experiencePoster, 600)
-                          : undefined
-                      }
-                      fallbackPoster={d800FallbackPoster}
+                      poster={video1Poster}
+                      fallbackPoster="/previews/preview-800dias.webp"
                     />
                   </div>
                   <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
@@ -720,9 +719,14 @@ export default function App() {
 
             {/* VIDEO 2 - ONDGAS */}
             {(() => {
-              const ondgasProduct = activeProducts.find(p => p.name.toUpperCase().includes("ON DGAS") || p.name.toUpperCase().includes("ONDGAS")) || activeProducts[0];
-              const rawPoster2 = ondgasProduct?.images?.[0] || "https://res.cloudinary.com/demo/image/upload/q_auto,f_auto/v1682352857/cld-sample-video.jpg";
-              const ondgasFallbackPoster = getOptimizedImageUrl(rawPoster2, 600);
+              const video2Poster = (
+                siteConfigToUse.experiencePoster2 &&
+                !siteConfigToUse.experiencePoster2.includes("umbra.page") &&
+                !siteConfigToUse.experiencePoster2.includes("8678b1b9") &&
+                !siteConfigToUse.experiencePoster2.includes("41ebdb")
+                  ? siteConfigToUse.experiencePoster2
+                  : "/previews/preview-ondgas.webp"
+              );
               const video2Src = siteConfigToUse.experienceVideo2 &&
                 !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
                 !siteConfigToUse.experienceVideo2.includes("8678b1b9") &&
@@ -744,13 +748,8 @@ export default function App() {
                       muted={false}
                       transparentBg={true}
                       className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
-                      poster={
-                        siteConfigToUse.experiencePoster2 &&
-                        !siteConfigToUse.experiencePoster2.includes("umbra.page")
-                          ? getOptimizedImageUrl(siteConfigToUse.experiencePoster2, 600)
-                          : undefined
-                      }
-                      fallbackPoster={ondgasFallbackPoster}
+                      poster={video2Poster}
+                      fallbackPoster="/previews/preview-ondgas.webp"
                     />
                   </div>
                   <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
