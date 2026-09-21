@@ -499,8 +499,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Hero Loop section - Elegant, tightly framed hero presentation */}
-      <section id="inicio" className="relative w-full flex flex-col items-center justify-start pt-20 sm:pt-24 lg:pt-24 pb-8 sm:pb-12 px-4 overflow-hidden" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
+      {/* Hero Loop section - Elegant, tightly framed hero presentation with responsive widescreen PC adaptation */}
+      <section id="inicio" className="relative w-full flex flex-col items-center justify-start pt-20 sm:pt-24 lg:pt-28 pb-8 sm:pb-12 lg:pb-16 px-4 overflow-hidden lg:min-h-[560px] xl:min-h-[620px] lg:justify-center" style={{ backgroundColor: siteConfigToUse.backgroundColor || "#000000" }}>
         
         {/* Absolute Background Videos / Fallback posters */}
         <div className="absolute inset-0 z-0 overflow-hidden w-full h-full pointer-events-none">
@@ -515,12 +515,14 @@ export default function App() {
                 : null) ||
               "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig"
             }
+            videoScale={siteConfigToUse.heroVideoScale || "auto"}
+            videoFit={siteConfigToUse.heroVideoFit || "cover"}
             playsInline
             autoPlay
             loop
             muted
             customOverlayControls={false}
-            className="w-full h-full object-cover min-w-full min-h-full scale-105 brightness-[0.65] saturate-[0.95] contrast-[1.05]"
+            className="w-full h-full object-cover min-w-full min-h-full brightness-[0.68] saturate-[0.95] contrast-[1.05]"
             poster={
               siteConfigToUse.heroPoster &&
               !siteConfigToUse.heroPoster.includes("umbra.page") &&
@@ -528,10 +530,10 @@ export default function App() {
                 ? getOptimizedImageUrl(siteConfigToUse.heroPoster, 1280)
                 : undefined
             }
+            fallbackPoster="/previews/ondgas-3s.jpg"
           />
-          {/* Balanced Vignette Overlays - subtle and refined without heavy vertical framing */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/45 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/25 pointer-events-none" />
+          {/* Subtle top and bottom lighting transitions without lateral black frames */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/35 pointer-events-none" />
         </div>
 
         {/* Floating Hero Visual Config controls for Admin */}
@@ -545,6 +547,13 @@ export default function App() {
               >
                 <Pencil size={9} className="text-[#34d399]" />
                 <span>VIDEO FONDO</span>
+              </button>
+              <button
+                onClick={() => handleOpenVisualEdit("heroVideoScale", "Ajuste / Zoom PC (Eliminar Barras Negras)", "text")}
+                className="px-2.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-[9px] text-[#34d399] font-extrabold uppercase rounded border border-neutral-800 cursor-pointer flex items-center gap-1"
+              >
+                <Pencil size={9} className="text-[#34d399]" />
+                <span>ADAPTAR A PC</span>
               </button>
               <button
                 onClick={() => handleOpenVisualEdit("heroPoster", "Miniatura de Hero", "image")}
@@ -680,9 +689,10 @@ export default function App() {
                 siteConfigToUse.experiencePoster &&
                 !siteConfigToUse.experiencePoster.includes("umbra.page") &&
                 !siteConfigToUse.experiencePoster.includes("8678b1b9") &&
-                !siteConfigToUse.experiencePoster.includes("41ebdb")
+                !siteConfigToUse.experiencePoster.includes("41ebdb") &&
+                !siteConfigToUse.experiencePoster.includes("preview-800dias.webp")
                   ? siteConfigToUse.experiencePoster
-                  : "/previews/preview-800dias.webp"
+                  : "/previews/800dias-3s.jpg"
               );
               const video1Src = siteConfigToUse.experienceVideo &&
                 !siteConfigToUse.experienceVideo.includes("umbra.page") &&
@@ -706,7 +716,7 @@ export default function App() {
                       transparentBg={true}
                       className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
                       poster={video1Poster}
-                      fallbackPoster="/previews/preview-800dias.webp"
+                      fallbackPoster="/previews/800dias-3s.jpg"
                     />
                   </div>
                   <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
@@ -723,9 +733,10 @@ export default function App() {
                 siteConfigToUse.experiencePoster2 &&
                 !siteConfigToUse.experiencePoster2.includes("umbra.page") &&
                 !siteConfigToUse.experiencePoster2.includes("8678b1b9") &&
-                !siteConfigToUse.experiencePoster2.includes("41ebdb")
+                !siteConfigToUse.experiencePoster2.includes("41ebdb") &&
+                !siteConfigToUse.experiencePoster2.includes("preview-ondgas.webp")
                   ? siteConfigToUse.experiencePoster2
-                  : "/previews/preview-ondgas.webp"
+                  : "/previews/ondgas-3s.jpg"
               );
               const video2Src = siteConfigToUse.experienceVideo2 &&
                 !siteConfigToUse.experienceVideo2.includes("umbra.page") &&
@@ -749,7 +760,7 @@ export default function App() {
                       transparentBg={true}
                       className="w-full h-full object-cover brightness-[0.95] contrast-[1.05]"
                       poster={video2Poster}
-                      fallbackPoster="/previews/preview-ondgas.webp"
+                      fallbackPoster="/previews/ondgas-3s.jpg"
                     />
                   </div>
                   <span className="mt-2.5 text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">

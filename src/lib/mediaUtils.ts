@@ -338,3 +338,201 @@ export function getDriveMediaConfig(url: string | null | undefined): DriveMediaC
     thumbnailUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`
   };
 }
+
+// ----------------------------------------------------
+// Vimeo Support & Optimization Engine
+// ----------------------------------------------------
+
+export interface VimeoMediaConfig {
+  isVimeo: boolean;
+  videoId: string | null;
+  hash: string | null;
+  embedUrl: string;
+}
+
+export function isVimeoUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    trimmed.includes("vimeo.com") ||
+    trimmed.includes("player.vimeo.com") ||
+    trimmed.includes("vimeocdn.com")
+  );
+}
+
+export function extractVimeoConfig(url: string | null | undefined): VimeoMediaConfig {
+  if (!url || typeof url !== "string") {
+    return { isVimeo: false, videoId: null, hash: null, embedUrl: "" };
+  }
+  const trimmed = url.trim();
+  if (!isVimeoUrl(trimmed)) {
+    return { isVimeo: false, videoId: null, hash: null, embedUrl: "" };
+  }
+
+  // 1. player.vimeo.com/video/VIDEO_ID?h=HASH
+  const playerMatch = trimmed.match(/player\.vimeo\.com\/video\/(\d+)(?:[/?](?:[^&]*[?&])?h=([a-zA-Z0-9]+))?/i);
+  if (playerMatch && playerMatch[1]) {
+    const videoId = playerMatch[1];
+    let hash = playerMatch[2] || null;
+    if (!hash) {
+      const hParam = trimmed.match(/[?&]h=([a-zA-Z0-9]+)/i);
+      if (hParam && hParam[1]) hash = hParam[1];
+    }
+    const embedUrl = hash 
+      ? `https://player.vimeo.com/video/${videoId}?h=${hash}`
+      : `https://player.vimeo.com/video/${videoId}`;
+    return { isVimeo: true, videoId, hash, embedUrl };
+  }
+
+  // 2. vimeo.com/VIDEO_ID/HASH (unlisted / private)
+  const unlistedMatch = trimmed.match(/vimeo\.com\/(\d+)\/([a-zA-Z0-9]+)/i);
+  if (unlistedMatch && unlistedMatch[1] && unlistedMatch[2]) {
+    const videoId = unlistedMatch[1];
+    const hash = unlistedMatch[2];
+    return {
+      isVimeo: true,
+      videoId,
+      hash,
+      embedUrl: `https://player.vimeo.com/video/${videoId}?h=${hash}`
+    };
+  }
+
+  // 3. vimeo.com/VIDEO_ID (or vimeo.com/channels/*/ID or manage/videos/ID or groups/*/videos/ID)
+  const stdMatch = trimmed.match(/vimeo\.com\/(?:channels\/(?:[^\/]+\/)?|groups\/[^\/]+\/videos\/|album\/(?:\d+\/)?video\/|manage\/videos\/|video\/)?(\d+)/i);
+  if (stdMatch && stdMatch[1]) {
+    const videoId = stdMatch[1];
+    const hParam = trimmed.match(/[?&]h=([a-zA-Z0-9]+)/i);
+    const hash = hParam ? hParam[1] : null;
+    const embedUrl = hash
+      ? `https://player.vimeo.com/video/${videoId}?h=${hash}`
+      : `https://player.vimeo.com/video/${videoId}`;
+    return { isVimeo: true, videoId, hash, embedUrl };
+  }
+
+  return { isVimeo: true, videoId: null, hash: null, embedUrl: trimmed };
+}
+
+export function getVimeoEmbedUrl(
+  url: string,
+  options?: {
+    isHero?: boolean;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+    controls?: boolean;
+  }
+): string {
+  const config = extractVimeoConfig(url);
+  if (!config.isVimeo) return url;
+
+  const base = config.embedUrl;
+  const params = new URLSearchParams();
+
+  if (config.hash) {
+    params.set("h", config.hash);
+  }
+
+  // Vimeo options for clean, premium embedded playback
+  params.set("dnt", "1");
+  params.set("playsinline", "1");
+  params.set("autopause", "0");
+  params.set("api", "1");
+
+  if (options?.isHero) {
+    // True background hero video mode: hides all chrome, autoplays, loops continuously, muted
+    params.set("background", "1");
+    params.set("autoplay", "1");
+    params.set("loop", "1");
+    params.set("muted", "1");
+    params.set("byline", "0");
+    params.set("title", "0");
+  } else {
+    if (options?.autoplay) params.set("autoplay", "1");
+    if (options?.loop !== false) params.set("loop", "1");
+    if (options?.muted) params.set("muted", "1");
+    if (options?.controls === false) params.set("controls", "0");
+    params.set("title", "0");
+    params.set("byline", "0");
+    params.set("portrait", "0");
+    params.set("badge", "0");
+  }
+
+  const queryString = params.toString();
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}${queryString}`;
+}
+
+// ----------------------------------------------------
+// Imgur Support & Optimization Engine
+// ----------------------------------------------------
+
+export function isImgurUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim().toLowerCase();
+  return trimmed.includes("imgur.com");
+}
+
+export function isImgurVideoUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  if (!isImgurUrl(url)) return false;
+  return (
+    /\.(mp4|gifv|webm)(\?.*)?$/i.test(url.trim()) ||
+    url.trim().endsWith("/gifv")
+  );
+}
+
+export function getDirectImgurUrl(
+  url: string | null | undefined,
+  targetWidth: number = 600
+): string {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = url.trim();
+  if (!isImgurUrl(trimmed)) return trimmed;
+
+  try {
+    // 1. If it's a gifv, convert to direct mp4 video
+    if (trimmed.includes(".gifv")) {
+      return trimmed.replace(".gifv", ".mp4");
+    }
+
+    // 2. Extract Imgur Image ID
+    // Matches patterns like:
+    // https://i.imgur.com/8QzX9Yr.jpg
+    // https://imgur.com/8QzX9Yr
+    // https://imgur.com/a/8QzX9Yr (album URL pasted by user)
+    // https://imgur.com/gallery/8QzX9Yr
+    const match = trimmed.match(/(?:imgur\.com\/(?:a\/|gallery\/)?|i\.imgur\.com\/)([a-zA-Z0-9]+)(?:\.([a-zA-Z0-9]+))?/i);
+    if (!match || !match[1]) return trimmed;
+
+    const imgId = match[1];
+    let ext = match[2] ? match[2].toLowerCase() : "jpg";
+    if (ext === "gifv") ext = "mp4";
+
+    // If it's a PNG, preserve PNG directly to maintain alpha transparency for caps and logos
+    if (ext === "png") {
+      return `https://i.imgur.com/${imgId}.png`;
+    }
+
+    // If it's a video file (.mp4 or .webm)
+    if (ext === "mp4" || ext === "webm") {
+      return `https://i.imgur.com/${imgId}.${ext}`;
+    }
+
+    // For standard images, pick the optimal Imgur CDN sizing suffix:
+    // s: 90x90, b: 160x160, m: 320x320, l: 640x640, h: 1024x1024
+    let suffix = "";
+    if (targetWidth <= 160) {
+      suffix = "b";
+    } else if (targetWidth <= 320) {
+      suffix = "m";
+    } else if (targetWidth <= 640) {
+      suffix = "l";
+    } else if (targetWidth <= 1024) {
+      suffix = "h";
+    }
+
+    return `https://i.imgur.com/${imgId}${suffix}.${ext}`;
+  } catch {
+    return trimmed;
+  }
+}

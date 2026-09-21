@@ -38,6 +38,8 @@ export interface SiteConfig {
   experienceVideo: string;
   experienceVideo2?: string;
   heroVideo: string;
+  heroVideoScale?: string; // "auto" | "1" | "1.5" | "2" | "2.5" | "3"
+  heroVideoFit?: string; // "cover" | "ambient" | "zoom" | "contain"
   showGlow: boolean;
   glowIntensity: string; // e.g. "0.15" representation
   experienceTitle: string;
@@ -202,9 +204,12 @@ const defaultSiteConfig: SiteConfig = {
   artistCredits: "",
   experienceVideo: "https://ik.imagekit.io/mvp0bxdrv/800%20DIAS/Clave%20Ali%CC%81%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?tr=orig",
   experienceVideo2: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
-  experiencePoster: "/previews/preview-800dias.webp",
-  experiencePoster2: "/previews/preview-ondgas.webp",
+  experiencePoster: "/previews/800dias-3s.jpg",
+  experiencePoster2: "/previews/ondgas-3s.jpg",
   heroVideo: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
+  heroPoster: "/previews/ondgas-3s.jpg",
+  heroVideoScale: "auto",
+  heroVideoFit: "cover",
   showGlow: true,
   glowIntensity: "0.15",
   experienceTitle: "DETALLES EXCLUSIVOS AL DETALLE",

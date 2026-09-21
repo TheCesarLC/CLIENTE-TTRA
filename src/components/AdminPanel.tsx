@@ -1017,27 +1017,80 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video del Hero (ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-emerald-400 text-[9px] font-bold">Aceleración CDN Automática</span>
+                  <span>Video del Hero (Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
+                  <span className="text-emerald-400 text-[9px] font-bold">Vimeo & CDN Global</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.heroVideo || ""}
-                  placeholder="https://ik.imagekit.io/... o https://res.cloudinary.com/..."
+                  placeholder="https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
                   onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
+
+                {/* PC Screen Adaptation Controls for Hero Video */}
+                <div className="p-3 bg-neutral-900/70 border border-neutral-800 rounded-lg space-y-2.5 mt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-emerald-400 uppercase font-black tracking-wider flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Adaptación Pantalla PC / Videos Verticales
+                    </span>
+                    <span className="text-[8px] text-gray-400 uppercase font-bold tracking-widest bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800">
+                      Modo Panorámico
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-gray-300 leading-relaxed">
+                    Si tu video fue grabado en formato vertical (celular 9:16), este ajuste lo adapta automáticamente en computadoras (PC) para llenar la pantalla horizontal y eliminar las barras negras con proyección ambiental dinámica.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                        Escala / Zoom en PC:
+                      </label>
+                      <select
+                        value={siteConfig.heroVideoScale || "auto"}
+                        onChange={(e) => updateSiteConfig({ heroVideoScale: e.target.value })}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                      >
+                        <option value="auto">Automático (Panorámico PC Total - Sin Bordes)</option>
+                        <option value="3.5">Zoom 350% (Elimina Marcos Laterales Totales)</option>
+                        <option value="3.8">Zoom 380% (Pantallas Ultra-Anchas / Ultrawide)</option>
+                        <option value="3.2">Zoom 320% (Modo Panorámico Completo)</option>
+                        <option value="2.5">Zoom 250% (Videos Verticales 9:16)</option>
+                        <option value="2.0">Zoom 200%</option>
+                        <option value="1.5">Zoom 150%</option>
+                        <option value="1.0">Original 100% (Sin Zoom)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                        Efecto Ambiental de Fondo:
+                      </label>
+                      <select
+                        value={siteConfig.heroVideoFit || "cover"}
+                        onChange={(e) => updateSiteConfig({ heroVideoFit: e.target.value })}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                      >
+                        <option value="cover">Llenar Pantalla + Reflejo Ambiental Dinámico</option>
+                        <option value="ambient">Fondo Ambiental Difuminado Expandido</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video 800 DÍAS (ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
+                  <span>Video 800 DÍAS (Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
+                  <span className="text-emerald-400 text-[9px] font-bold">Vimeo & CDN Global</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo || ""}
-                  placeholder="https://ik.imagekit.io/... o https://res.cloudinary.com/..."
+                  placeholder="https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
                   onChange={(e) => updateSiteConfig({ experienceVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1045,7 +1098,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Miniatura / Preview 800 DÍAS (Fotograma o Imagen)</span>
+                  <span>Miniatura / Preview 800 DÍAS (Fotograma, Imgur o Imagen)</span>
                   {siteConfig.experiencePoster && !siteConfig.experiencePoster.startsWith("/previews/") ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
                   ) : (
@@ -1056,7 +1109,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   <input
                     type="text"
                     value={siteConfig.experiencePoster || ""}
-                    placeholder="/previews/preview-800dias.webp (dejar vacío para fotograma por defecto)"
+                    placeholder="/previews/800dias-3s.jpg o https://i.imgur.com/..."
                     onChange={(e) => updateSiteConfig({ experiencePoster: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
@@ -1071,13 +1124,13 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video ONDGAS (ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-emerald-400 text-[9px] font-bold">Auto-optimizado</span>
+                  <span>Video ONDGAS (Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
+                  <span className="text-emerald-400 text-[9px] font-bold">Vimeo & CDN Global</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo2 || ""}
-                  placeholder="https://ik.imagekit.io/... o https://res.cloudinary.com/..."
+                  placeholder="https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
                   onChange={(e) => updateSiteConfig({ experienceVideo2: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
@@ -1085,7 +1138,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Miniatura / Preview ONDGAS (Fotograma o Imagen)</span>
+                  <span>Miniatura / Preview ONDGAS (Fotograma, Imgur o Imagen)</span>
                   {siteConfig.experiencePoster2 && !siteConfig.experiencePoster2.startsWith("/previews/") ? (
                     <span className="text-emerald-400 text-[9px] font-bold">Personalizado</span>
                   ) : (
@@ -1096,7 +1149,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   <input
                     type="text"
                     value={siteConfig.experiencePoster2 || ""}
-                    placeholder="/previews/preview-ondgas.webp (dejar vacío para fotograma por defecto)"
+                    placeholder="/previews/ondgas-3s.jpg o https://i.imgur.com/..."
                     onChange={(e) => updateSiteConfig({ experiencePoster2: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />

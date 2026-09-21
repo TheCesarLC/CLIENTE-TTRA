@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Save, Type, Image as ImageIcon, Video, Palette, Link, Eye, Check, AlertCircle, HardDrive, Zap } from "lucide-react";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
-import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl } from "../lib/mediaUtils";
+import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl, isVimeoUrl, isImgurUrl } from "../lib/mediaUtils";
 import OptimizedVideoPlayer from "./OptimizedVideoPlayer";
 
 interface VisualEditDialogProps {
@@ -97,14 +97,47 @@ export default function VisualEditDialog({
             </label>
 
             {type === "text" && (
-              <input
-                type="text"
-                value={value || ""}
-                onChange={(e) => handleLiveChange(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all uppercase placeholder-gray-600 font-medium tracking-wider"
-                placeholder={`ENTRA ${label.toUpperCase()}...`}
-                required
-              />
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={value || ""}
+                  onChange={(e) => handleLiveChange(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all uppercase placeholder-gray-600 font-medium tracking-wider"
+                  placeholder={`ENTRA ${label.toUpperCase()}...`}
+                  required
+                />
+                {fieldName === "heroVideoScale" && (
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[9px] text-gray-400 uppercase font-black tracking-widest block">
+                      Seleccionar Ajuste para Pantalla PC:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { val: "auto", label: "Auto (Panorámico PC Total)" },
+                        { val: "3.5", label: "350% (Sin Bordes Laterales)" },
+                        { val: "3.8", label: "380% (Ultra-Ancho)" },
+                        { val: "3.2", label: "320% (Panorámico)" },
+                        { val: "2.5", label: "250% (Videos 9:16)" },
+                        { val: "1.0", label: "100% (Sin Zoom)" },
+                      ].map((preset) => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          onClick={() => handleLiveChange(preset.val)}
+                          className={`px-2 py-2 rounded text-[10px] font-bold uppercase tracking-wider border transition-all text-left flex items-center justify-between ${
+                            value === preset.val
+                              ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                              : "bg-neutral-900 border-neutral-800 text-gray-400 hover:text-white hover:border-neutral-700"
+                          }`}
+                        >
+                          <span>{preset.label}</span>
+                          {value === preset.val && <Check size={11} className="text-emerald-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {type === "textarea" && (
@@ -181,10 +214,17 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="Ejemplo: https://ik.imagekit.io/... o https://.../imagen.png"
+                    placeholder="Ejemplo: https://i.imgur.com/... o https://.../imagen.png"
                     required
                   />
                 </div>
+
+                {isImgurUrl(value) && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
+                    <Zap size={13} className="text-emerald-400 flex-shrink-0" />
+                    <span>Imgur detectado: Enlace directo en alta resolución y política anti-bloqueo activa</span>
+                  </div>
+                )}
 
                 {isImageKitUrl(value) && (
                   <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
@@ -236,10 +276,17 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="Ejemplo: https://ik.imagekit.io/... o https://res.cloudinary.com/... o .mp4"
+                    placeholder="Ejemplo: https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
                     required
                   />
                 </div>
+
+                {isVimeoUrl(value) && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] uppercase font-bold tracking-wider">
+                    <Zap size={13} className="text-blue-400 flex-shrink-0" />
+                    <span>Video de Vimeo detectado: Transmisión CDN global ultra-fluida sin restricciones de ancho de banda</span>
+                  </div>
+                )}
 
                 {isImageKitUrl(value) && (
                   <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">

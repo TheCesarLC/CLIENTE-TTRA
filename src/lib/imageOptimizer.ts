@@ -8,7 +8,9 @@ import {
   isImageKitImageUrl,
   isImageKitVideoUrl,
   getOptimizedImageKitImageUrl,
-  getOptimizedImageKitPosterUrl
+  getOptimizedImageKitPosterUrl,
+  isImgurUrl,
+  getDirectImgurUrl
 } from "./mediaUtils";
 
 /**
@@ -51,7 +53,12 @@ export function getOptimizedImageUrl(
     return getOptimizedCloudinaryPosterUrl(trimmed, targetWidth);
   }
 
-  // 5. Check if it's a Google Drive link
+  // 5. Check if it's an Imgur image URL (supports gallery, album, or direct links)
+  if (isImgurUrl(trimmed)) {
+    return getDirectImgurUrl(trimmed, targetWidth);
+  }
+
+  // 6. Check if it's a Google Drive link
   if (isGoogleDriveUrl(trimmed)) {
     const fileId = extractGoogleDriveId(trimmed);
     if (fileId) {
@@ -60,7 +67,7 @@ export function getOptimizedImageUrl(
     }
   }
 
-  // 6. Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
+  // 7. Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
   if (
     trimmed.includes("cdn/shop") ||
     trimmed.includes("umbra.page") ||
@@ -96,6 +103,7 @@ export function preloadImages(urls: string[], width: number = 600): void {
       if (!preloadedCache.has(optimizedUrl)) {
         preloadedCache.add(optimizedUrl);
         const img = new Image();
+        img.referrerPolicy = "no-referrer";
         img.src = optimizedUrl;
       }
     }

@@ -7,7 +7,12 @@ export const PRODUCTS: Product[] = [
     priceMXN: 1499,
     originalPriceMXN: 1600,
     stockQuantity: 15,
-    images: [],
+    images: [
+      "/previews/ondgas-1s.jpg",
+      "/previews/ondgas-3s.jpg",
+      "/previews/ondgas-4s.jpg",
+      "/previews/ondgas-6s.jpg"
+    ],
     description: "Gorra de colección premium 'ON DGAS'. Diseñada para la máxima distinción urbana, destaca por sus costuras reforzadas, acabados de gamuza italiana de exportación y un diseño totalmente exclusivo. Incluye caja de colección premium, pines coleccionables y tarjeta holográfica de autenticidad.",
     outOfStock: false,
     category: "NIGHTMARES",
@@ -27,7 +32,12 @@ export const PRODUCTS: Product[] = [
     priceMXN: 1499,
     originalPriceMXN: 1600,
     stockQuantity: 10,
-    images: [],
+    images: [
+      "/previews/800dias-1s.jpg",
+      "/previews/800dias-3s.jpg",
+      "/previews/800dias-4s.jpg",
+      "/previews/800dias-6s.jpg"
+    ],
     description: "Edición exclusiva '800 DIAS'. Una pieza con alma propia que encarna el sigilo y la noche eterna. Confeccionada con paneles estructurados rígidos de primera clase para una perfecta forma permanente, materiales suaves al tacto y acabados de terciopelo premium.",
     outOfStock: false,
     category: "SHADOWS IN THE DARKNESS",
