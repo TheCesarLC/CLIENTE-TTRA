@@ -7,6 +7,7 @@ import { postApi } from "../lib/api";
 import { verifyStripeKey } from "../lib/stripeClient";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 import { TransparentProductImage } from "./TransparentProductImage";
+import TransparentLogo from "./TransparentLogo";
 import { 
   X, 
   Settings, 
@@ -905,12 +906,21 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors font-mono text-gray-200"
                       />
                       {(siteConfig.logoUrl || siteConfig.headerLogo) && (
-                        <div className="w-10 h-10 bg-black/90 border border-neutral-700 rounded flex items-center justify-center p-1 overflow-hidden shrink-0">
-                          <img
-                            src={getOptimizedImageUrl(siteConfig.logoUrl || siteConfig.headerLogo, 100)}
+                        <div 
+                          className="w-10 h-10 border border-neutral-700 rounded flex items-center justify-center p-1 overflow-hidden shrink-0"
+                          style={{
+                            backgroundColor: "#111827",
+                            backgroundImage: "linear-gradient(45deg, #1f2937 25%, transparent 25%), linear-gradient(-45deg, #1f2937 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1f2937 75%), linear-gradient(-45deg, transparent 75%, #1f2937 75%)",
+                            backgroundSize: "8px 8px",
+                            backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0px"
+                          }}
+                          title="Fondo ajedrezado indica transparencia real"
+                        >
+                          <TransparentLogo
+                            src={siteConfig.logoUrl || siteConfig.headerLogo}
                             alt="Logo Central"
                             className="max-h-full max-w-full object-contain"
-                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                            onError={() => {}}
                           />
                         </div>
                       )}
@@ -940,12 +950,21 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors font-mono text-gray-200"
                       />
                       {(siteConfig.headerLogo || siteConfig.logoUrl) && (
-                        <div className="w-10 h-10 bg-black/90 border border-neutral-700 rounded flex items-center justify-center p-1 overflow-hidden shrink-0">
-                          <img
-                            src={getOptimizedImageUrl(siteConfig.headerLogo || siteConfig.logoUrl, 100)}
+                        <div 
+                          className="w-10 h-10 border border-neutral-700 rounded flex items-center justify-center p-1 overflow-hidden shrink-0"
+                          style={{
+                            backgroundColor: "#111827",
+                            backgroundImage: "linear-gradient(45deg, #1f2937 25%, transparent 25%), linear-gradient(-45deg, #1f2937 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1f2937 75%), linear-gradient(-45deg, transparent 75%, #1f2937 75%)",
+                            backgroundSize: "8px 8px",
+                            backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0px"
+                          }}
+                          title="Fondo ajedrezado indica transparencia real"
+                        >
+                          <TransparentLogo
+                            src={siteConfig.headerLogo || siteConfig.logoUrl}
                             alt="Logo Header"
                             className="max-h-full max-w-full object-contain"
-                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                            onError={() => {}}
                           />
                         </div>
                       )}

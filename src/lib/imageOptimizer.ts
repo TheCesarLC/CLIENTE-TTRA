@@ -10,18 +10,21 @@ import {
   getOptimizedImageKitImageUrl,
   getOptimizedImageKitPosterUrl,
   isImgurUrl,
-  getDirectImgurUrl
+  getDirectImgurUrl,
+  isPngUrl
 } from "./mediaUtils";
 
 /**
  * Image Optimizer Utility for TETRA HATS
  * Converts heavy raw PNG images, ImageKit.io media, Cloudinary media, and Google Drive links
- * into ultra-fast compressed, auto-formatted (WebP/AVIF) CDN thumbnails.
+ * into ultra-fast compressed, auto-formatted (WebP/AVIF) CDN thumbnails,
+ * while strictly preserving PNG alpha transparency for logos and transparent products.
  */
 
 export function getOptimizedImageUrl(
   url: string | null | undefined,
-  targetWidth: number = 600
+  targetWidth: number = 600,
+  options?: { preserveTransparency?: boolean }
 ): string {
   if (!url || typeof url !== "string") return "";
 
@@ -33,9 +36,11 @@ export function getOptimizedImageUrl(
     return "";
   }
 
+  const preserveTransparency = Boolean(options?.preserveTransparency || isPngUrl(trimmed));
+
   // 1. Check if it's an ImageKit.io image URL
   if (isImageKitImageUrl(trimmed)) {
-    return getOptimizedImageKitImageUrl(trimmed, targetWidth);
+    return getOptimizedImageKitImageUrl(trimmed, targetWidth, { preserveTransparency });
   }
 
   // 2. Check if it's an ImageKit.io video URL being used as an image (generate dynamic /ik-thumbnail.jpg)
@@ -45,7 +50,7 @@ export function getOptimizedImageUrl(
 
   // 3. Check if it's a Cloudinary image URL
   if (isCloudinaryImageUrl(trimmed)) {
-    return getOptimizedCloudinaryImageUrl(trimmed, targetWidth);
+    return getOptimizedCloudinaryImageUrl(trimmed, targetWidth, { preserveTransparency });
   }
 
   // 4. Check if it's a Cloudinary video URL being used as an image (convert to instant frame thumbnail)
@@ -55,7 +60,7 @@ export function getOptimizedImageUrl(
 
   // 5. Check if it's an Imgur image URL (supports gallery, album, or direct links)
   if (isImgurUrl(trimmed)) {
-    return getDirectImgurUrl(trimmed, targetWidth);
+    return getDirectImgurUrl(trimmed, targetWidth, { preserveTransparency });
   }
 
   // 6. Check if it's a Google Drive link
@@ -78,11 +83,14 @@ export function getOptimizedImageUrl(
 
       // Set width & format query parameters for CDN auto-compression
       urlObj.searchParams.set("width", targetWidth.toString());
+      if (preserveTransparency) {
+        urlObj.searchParams.set("format", "png");
+      }
       
       // Preserve exact original pathname to avoid 404s on custom proxies
       return urlObj.toString();
     } catch {
-      return `${trimmed}?width=${targetWidth}`;
+      return `${trimmed}?width=${targetWidth}${preserveTransparency ? "&format=png" : ""}`;
     }
   }
 

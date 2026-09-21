@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { X, Save, Type, Image as ImageIcon, Video, Palette, Link, Eye, Check, AlertCircle, HardDrive, Zap } from "lucide-react";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
-import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl, isVimeoUrl, isImgurUrl } from "../lib/mediaUtils";
+import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl, isVimeoUrl, isImgurUrl, isPngUrl } from "../lib/mediaUtils";
 import OptimizedVideoPlayer from "./OptimizedVideoPlayer";
+import TransparentLogo from "./TransparentLogo";
 
 interface VisualEditDialogProps {
   isOpen: boolean;
@@ -249,17 +250,42 @@ export default function VisualEditDialog({
 
                 {/* Previews */}
                 {value && (
-                  <div className="border border-neutral-900 p-2 bg-black/40 rounded flex flex-col items-center justify-center gap-1.5">
+                  <div className="border border-neutral-900 p-3 bg-black/40 rounded flex flex-col items-center justify-center gap-2">
                     <span className="text-[8px] text-gray-500 uppercase tracking-widest font-bold">Vista previa del recurso</span>
-                    <img
-                      src={getOptimizedImageUrl(value, 600)}
-                      alt="URL Preview"
-                      className="max-h-28 object-contain rounded border border-neutral-850 bg-neutral-900"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://placehold.co/400x150/000000/ffffff?text=Image+URL+Invalida";
-                      }}
-                      referrerPolicy="no-referrer"
-                    />
+                    {fieldName === "headerLogo" || fieldName === "logoUrl" || isPngUrl(value) ? (
+                      <div 
+                        className="w-full max-w-sm py-4 px-6 rounded border border-neutral-750 flex items-center justify-center overflow-hidden"
+                        style={{
+                          backgroundColor: "#0d1117",
+                          backgroundImage: "linear-gradient(45deg, #161b22 25%, transparent 25%), linear-gradient(-45deg, #161b22 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #161b22 75%), linear-gradient(-45deg, transparent 75%, #161b22 75%)",
+                          backgroundSize: "10px 10px",
+                          backgroundPosition: "0 0, 0 5px, 5px -5px, -5px 0px"
+                        }}
+                        title="Fondo ajedrezado para verificar transparencia PNG"
+                      >
+                        <TransparentLogo
+                          src={value}
+                          alt="Vista previa PNG"
+                          className="max-h-24 object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <img
+                        src={getOptimizedImageUrl(value, 600)}
+                        alt="URL Preview"
+                        className="max-h-28 object-contain rounded border border-neutral-850"
+                        style={{ backgroundColor: "transparent" }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://placehold.co/400x150/000000/ffffff?text=Image+URL+Invalida";
+                        }}
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    {(fieldName === "headerLogo" || fieldName === "logoUrl" || isPngUrl(value)) && (
+                      <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider">
+                        Transparencia PNG preservada (Sin fondo negro)
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

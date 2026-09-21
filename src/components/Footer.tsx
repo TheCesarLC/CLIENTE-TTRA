@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Mail, Instagram, Check, Pencil, Trash2, Eye } from "lucide-react";
 import { useSite, SiteConfig } from "../context/SiteContext";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import TransparentLogo from "./TransparentLogo";
 
 interface FooterProps {
   siteConfig?: SiteConfig;
@@ -182,11 +183,10 @@ export default function Footer({
           <div className="space-y-4 text-left relative group/footer-logo">
             <div className="flex items-center gap-3">
               {siteConfig.logoUrl ? (
-                <img
-                  src={getOptimizedImageUrl(siteConfig.logoUrl, 300)}
+                <TransparentLogo
+                  src={siteConfig.logoUrl}
                   alt="TETRA HATS"
                   className="h-6 object-contain"
-                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <span className="text-base font-black tracking-[0.25em] uppercase text-white">

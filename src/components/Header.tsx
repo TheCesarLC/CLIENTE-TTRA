@@ -3,6 +3,7 @@ import { Menu, Search, User, ShoppingBag, Globe, Sparkles, X, ShieldAlert, LogIn
 import { CartItem, GLOW_COLORS } from "../types";
 import { useSite, SiteConfig } from "../context/SiteContext";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import TransparentLogo from "./TransparentLogo";
 
 interface HeaderProps {
   cart: CartItem[];
@@ -156,11 +157,10 @@ export default function Header({
               id="header-logo-button"
             >
               {hasValidLogo ? (
-                <img
-                  src={getOptimizedImageUrl(rawLogoSrc!, 400)}
+                <TransparentLogo
+                  src={rawLogoSrc!}
                   alt="TETRA HATS"
                   className="h-9 md:h-12 object-contain transition-transform group-hover:scale-105"
-                  referrerPolicy="no-referrer"
                   onError={() => setLogoImgError(true)}
                 />
               ) : (
@@ -312,12 +312,17 @@ export default function Header({
           <div className="fixed top-0 bottom-0 left-0 w-80 bg-neutral-950 border-r border-neutral-800 p-6 flex flex-col justify-between z-50">
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-neutral-900">
-                <img
-                  src={siteConfig.headerLogo || null}
-                  alt="Logo"
-                  className="h-6 object-contain"
-                  referrerPolicy="no-referrer"
-                />
+                {hasValidLogo ? (
+                  <TransparentLogo
+                    src={rawLogoSrc!}
+                    alt="TETRA HATS"
+                    className="h-6 object-contain"
+                  />
+                ) : (
+                  <span className="text-base font-black tracking-widest text-white uppercase">
+                    TETRA HATS
+                  </span>
+                )}
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-gray-400 hover:text-white p-1"

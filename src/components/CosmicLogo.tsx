@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { removeBackground, getCachedTransparentImage } from "../lib/transparentBg";
 
 interface CosmicLogoProps {
   src?: string;
@@ -54,28 +55,67 @@ export default function CosmicLogo({
     !src.includes("example.com")
   );
 
-  const optimizedSrc = hasCustomSrc ? getOptimizedImageUrl(src!, 1400) : "";
+  const optimizedSrc = hasCustomSrc 
+    ? getOptimizedImageUrl(src!, 1400, { preserveTransparency: true }) 
+    : "";
 
-  // Preload custom image if provided
+  // Preload custom image if provided with guaranteed transparent cutout
   useEffect(() => {
     if (!optimizedSrc) {
       setCustomImage(null);
       return;
     }
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.referrerPolicy = "no-referrer";
-    img.src = optimizedSrc;
+    let isMounted = true;
 
-    img.onload = () => {
-      setCustomImage(img);
+    const loadImg = (url: string) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.referrerPolicy = "no-referrer";
+      img.onload = () => {
+        if (isMounted) setCustomImage(img);
+      };
+      img.onerror = () => {
+        if (url !== optimizedSrc) {
+          // Fallback to optimized directly if processed failed
+          const fallback = new Image();
+          fallback.crossOrigin = "anonymous";
+          fallback.referrerPolicy = "no-referrer";
+          fallback.onload = () => {
+            if (isMounted) setCustomImage(fallback);
+          };
+          fallback.onerror = () => {
+            if (isMounted) setCustomImage(null);
+          };
+          fallback.src = optimizedSrc;
+        } else if (isMounted) {
+          setCustomImage(null);
+        }
+      };
+      img.src = url;
     };
 
-    img.onerror = () => {
-      setCustomImage(null);
+    const cached = getCachedTransparentImage(optimizedSrc) || (src ? getCachedTransparentImage(src) : null);
+    if (cached) {
+      loadImg(cached);
+      return;
+    }
+
+    // Start with optimized and attempt dark background strip
+    loadImg(optimizedSrc);
+
+    removeBackground(optimizedSrc, { threshold: 55, colorTolerance: 38 })
+      .then((transparentUrl) => {
+        if (isMounted && transparentUrl && transparentUrl !== optimizedSrc) {
+          loadImg(transparentUrl);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
     };
-  }, [optimizedSrc]);
+  }, [optimizedSrc, src]);
 
   // Main Canvas Cosmic Animation Engine with Scroll Parallax & Instant Render
   useEffect(() => {

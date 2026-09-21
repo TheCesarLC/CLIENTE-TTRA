@@ -65,6 +65,19 @@ export function isImageKitVideoUrl(url: string | null | undefined): boolean {
   );
 }
 
+export function isPngUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const clean = url.trim().toLowerCase();
+  return (
+    clean.includes(".png") ||
+    clean.includes("format=png") ||
+    clean.includes("f_png") ||
+    clean.includes("f-png") ||
+    clean.includes("fm=png") ||
+    clean.includes("image/png")
+  );
+}
+
 export function isImageKitImageUrl(url: string | null | undefined): boolean {
   if (!url || typeof url !== "string") return false;
   if (!isImageKitUrl(url)) return false;
@@ -72,26 +85,29 @@ export function isImageKitImageUrl(url: string | null | undefined): boolean {
 }
 
 /**
- * Optimizes an ImageKit.io image with automatic format selection (WebP/AVIF),
- * intelligent compression (q-80) and responsive width constraint.
+ * Optimizes an ImageKit.io image with automatic format selection (WebP/AVIF)
+ * or preserves PNG transparency (f-png) when the original is a transparent PNG or requested.
  */
 export function getOptimizedImageKitImageUrl(
   url: string,
-  targetWidth: number = 600
+  targetWidth: number = 600,
+  options?: { preserveTransparency?: boolean }
 ): string {
   if (!url || !isImageKitImageUrl(url)) return url;
 
   try {
     const trimmed = url.trim();
     const urlObj = new URL(trimmed);
+    const isPng = options?.preserveTransparency || isPngUrl(trimmed);
+    const formatParam = isPng ? "f-png" : "f-auto";
 
     // If URL already has path transformation (e.g. /tr:w-300,q-80/), clean and replace
     const pathSegments = urlObj.pathname.split("/");
     const trIndex = pathSegments.findIndex((seg) => seg.startsWith("tr:"));
 
     if (trIndex !== -1) {
-      // Replace existing path transformation with optimal targetWidth
-      pathSegments[trIndex] = `tr:w-${targetWidth},f-auto,q-80`;
+      // Replace existing path transformation with optimal targetWidth and format
+      pathSegments[trIndex] = `tr:w-${targetWidth},${formatParam},q-85`;
       urlObj.pathname = pathSegments.join("/");
       // Remove conflicting query transformation
       urlObj.searchParams.delete("tr");
@@ -99,14 +115,16 @@ export function getOptimizedImageKitImageUrl(
     }
 
     // Otherwise use universal query-based transformation
-    urlObj.searchParams.set("tr", `w-${targetWidth},f-auto,q-80`);
+    urlObj.searchParams.set("tr", `w-${targetWidth},${formatParam},q-85`);
     return urlObj.toString();
   } catch {
     // Fallback simple query append
     const clean = url.trim();
+    const isPng = options?.preserveTransparency || isPngUrl(clean);
+    const formatParam = isPng ? "f-png" : "f-auto";
     return clean.includes("?") 
-      ? `${clean}&tr=w-${targetWidth},f-auto,q-80` 
-      : `${clean}?tr=w-${targetWidth},f-auto,q-80`;
+      ? `${clean}&tr=w-${targetWidth},${formatParam},q-85` 
+      : `${clean}?tr=w-${targetWidth},${formatParam},q-85`;
   }
 }
 
@@ -281,11 +299,12 @@ export function getOptimizedCloudinaryPosterUrl(
 }
 
 /**
- * Optimizes a Cloudinary image URL with f_auto, q_auto and width constraint
+ * Optimizes a Cloudinary image URL with f_auto or f_png (for alpha transparency) and width constraint
  */
 export function getOptimizedCloudinaryImageUrl(
   url: string,
-  targetWidth: number = 600
+  targetWidth: number = 600,
+  options?: { preserveTransparency?: boolean }
 ): string {
   if (!url || !isCloudinaryImageUrl(url)) return url;
 
@@ -299,7 +318,9 @@ export function getOptimizedCloudinaryImageUrl(
       cleanPath = parts.slice(1).join("/");
     }
 
-    const transforms = `f_auto,q_auto,w_${targetWidth},c_limit`;
+    const isPng = options?.preserveTransparency || isPngUrl(url);
+    const formatParam = isPng ? "f_png" : "f_auto";
+    const transforms = `${formatParam},q_auto,w_${targetWidth},c_limit`;
     return `${before}/image/upload/${transforms}/${cleanPath}`;
   } catch {
     return url;
@@ -483,7 +504,8 @@ export function isImgurVideoUrl(url: string | null | undefined): boolean {
 
 export function getDirectImgurUrl(
   url: string | null | undefined,
-  targetWidth: number = 600
+  targetWidth: number = 600,
+  options?: { preserveTransparency?: boolean }
 ): string {
   if (!url || typeof url !== "string") return "";
   const trimmed = url.trim();
@@ -497,7 +519,7 @@ export function getDirectImgurUrl(
 
     // 2. Extract Imgur Image ID
     // Matches patterns like:
-    // https://i.imgur.com/8QzX9Yr.jpg
+    // https://i.imgur.com/8QzX9Yr.png
     // https://imgur.com/8QzX9Yr
     // https://imgur.com/a/8QzX9Yr (album URL pasted by user)
     // https://imgur.com/gallery/8QzX9Yr
@@ -505,11 +527,12 @@ export function getDirectImgurUrl(
     if (!match || !match[1]) return trimmed;
 
     const imgId = match[1];
-    let ext = match[2] ? match[2].toLowerCase() : "jpg";
+    const isPng = options?.preserveTransparency || isPngUrl(trimmed);
+    let ext = match[2] ? match[2].toLowerCase() : (isPng ? "png" : "png");
     if (ext === "gifv") ext = "mp4";
 
-    // If it's a PNG, preserve PNG directly to maintain alpha transparency for caps and logos
-    if (ext === "png") {
+    // If it's a PNG or transparency is requested, preserve PNG directly to maintain alpha transparency for caps and logos
+    if (ext === "png" || isPng) {
       return `https://i.imgur.com/${imgId}.png`;
     }
 
