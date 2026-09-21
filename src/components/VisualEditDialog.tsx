@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { X, Save, Type, Image as ImageIcon, Video, Palette, Link, Eye, Check, AlertCircle, HardDrive, Zap } from "lucide-react";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
-import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl, isVimeoUrl, isImgurUrl, isPngUrl } from "../lib/mediaUtils";
+import { isGoogleDriveUrl, isImageKitUrl, isCloudinaryUrl, isVimeoUrl, isImgurUrl, isPngUrl, isYouTubeUrl } from "../lib/mediaUtils";
 import OptimizedVideoPlayer from "./OptimizedVideoPlayer";
 import TransparentLogo from "./TransparentLogo";
+import MediaSourceBadge from "./MediaSourceBadge";
 
 interface VisualEditDialogProps {
   isOpen: boolean;
@@ -220,33 +221,7 @@ export default function VisualEditDialog({
                   />
                 </div>
 
-                {isImgurUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
-                    <Zap size={13} className="text-emerald-400 flex-shrink-0" />
-                    <span>Imgur detectado: Enlace directo en alta resolución y política anti-bloqueo activa</span>
-                  </div>
-                )}
-
-                {isImageKitUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
-                    <Zap size={13} className="text-emerald-400 flex-shrink-0" />
-                    <span>ImageKit.io detectado: WebP/AVIF y CDN global activados automáticamente</span>
-                  </div>
-                )}
-
-                {isGoogleDriveUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] uppercase font-bold tracking-wider">
-                    <HardDrive size={13} className="text-blue-400 flex-shrink-0" />
-                    <span>Enlace de Google Drive detectado y optimizado automáticamente</span>
-                  </div>
-                )}
-
-                {isCloudinaryUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded text-purple-400 text-[10px] uppercase font-bold tracking-wider">
-                    <Zap size={13} className="text-purple-400 flex-shrink-0" />
-                    <span>Cloudinary detectado: f_auto y q_auto activados</span>
-                  </div>
-                )}
+                {value && <MediaSourceBadge url={value} />}
 
                 {/* Previews */}
                 {value && (
@@ -302,38 +277,12 @@ export default function VisualEditDialog({
                     value={value || ""}
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
-                    placeholder="Ejemplo: https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
+                    placeholder="Ejemplo: https://youtube.com/watch?v=... o https://youtu.be/... o Vimeo o .mp4"
                     required
                   />
                 </div>
 
-                {isVimeoUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] uppercase font-bold tracking-wider">
-                    <Zap size={13} className="text-blue-400 flex-shrink-0" />
-                    <span>Video de Vimeo detectado: Transmisión CDN global ultra-fluida sin restricciones de ancho de banda</span>
-                  </div>
-                )}
-
-                {isImageKitUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
-                    <Zap size={13} className="text-emerald-400 flex-shrink-0" />
-                    <span>Video de ImageKit.io detectado. Aceleración CDN y extracción de póster activada.</span>
-                  </div>
-                )}
-
-                {isCloudinaryUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded text-purple-400 text-[10px] uppercase font-bold tracking-wider">
-                    <Zap size={13} className="text-purple-400 flex-shrink-0" />
-                    <span>Video de Cloudinary detectado. Optimización f_mp4/q_auto y extracción de fotograma activada.</span>
-                  </div>
-                )}
-
-                {isGoogleDriveUrl(value) && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] uppercase font-bold tracking-wider">
-                    <HardDrive size={13} className="text-blue-400 flex-shrink-0" />
-                    <span>Video de Google Drive detectado. Reproductores y CDN sincronizados.</span>
-                  </div>
-                )}
+                {value && <MediaSourceBadge url={value} />}
 
                 {/* Video Preview */}
                 {value && (

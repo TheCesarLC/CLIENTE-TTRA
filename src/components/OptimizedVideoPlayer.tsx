@@ -9,7 +9,10 @@ import {
   getOptimizedImageKitPosterUrl,
   isVimeoUrl,
   extractVimeoConfig,
-  getVimeoEmbedUrl
+  getVimeoEmbedUrl,
+  isYouTubeUrl,
+  extractYouTubeConfig,
+  getYouTubeEmbedUrl
 } from "../lib/mediaUtils";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 
@@ -73,6 +76,7 @@ export default function OptimizedVideoPlayer({
   const isCloudinary = useMemo(() => isCloudinaryVideoUrl(src), [src]);
   const isImageKit = useMemo(() => isImageKitVideoUrl(src), [src]);
   const vimeoConfig = useMemo(() => extractVimeoConfig(src), [src]);
+  const ytConfig = useMemo(() => extractYouTubeConfig(src), [src]);
 
   // Build ordered list of candidate poster URLs to test sequentially
   const posterCandidates: string[] = useMemo(() => {
@@ -84,7 +88,10 @@ export default function OptimizedVideoPlayer({
     }
 
     // 2. Provider dynamic thumbnails / frames
-    if (vimeoConfig.isVimeo && vimeoConfig.videoId) {
+    if (ytConfig.isYouTube && ytConfig.videoId) {
+      list.push(`https://img.youtube.com/vi/${ytConfig.videoId}/maxresdefault.jpg`);
+      list.push(`https://img.youtube.com/vi/${ytConfig.videoId}/hqdefault.jpg`);
+    } else if (vimeoConfig.isVimeo && vimeoConfig.videoId) {
       list.push(`https://vumbnail.com/${vimeoConfig.videoId}.jpg`);
     } else if (isImageKit) {
       const ikPoster = getOptimizedImageKitPosterUrl(src, isHero ? 960 : 480);
@@ -107,7 +114,7 @@ export default function OptimizedVideoPlayer({
     }
 
     return list;
-  }, [poster, src, fallbackPoster, driveConfig, isCloudinary, isImageKit, vimeoConfig, isHero]);
+  }, [poster, src, fallbackPoster, driveConfig, isCloudinary, isImageKit, vimeoConfig, ytConfig, isHero]);
 
   // Reset candidate index when inputs change
   useEffect(() => {
@@ -289,6 +296,141 @@ export default function OptimizedVideoPlayer({
   // If no source provided at all, render nothing
   if (!src) return null;
 
+  // 1a. If YouTube video in Hero: render optimized full-bleed background iframe with PC widescreen adaptation
+  if (isHero && ytConfig.isYouTube && ytConfig.videoId) {
+    const heroYtUrl = getYouTubeEmbedUrl(src, { isHero: true });
+
+    // Adaptive scale for PC widescreen: expands video horizontally to cover the monitor without black bars
+    let ytScaleClasses = ytConfig.isShort
+      ? "w-[130%] h-[130%] md:w-[320%] md:h-[320%] lg:w-[360%] lg:h-[360%] xl:w-[400%] xl:h-[400%]"
+      : "w-[115%] h-[115%] md:w-[135%] md:h-[135%] lg:w-[150%] lg:h-[150%] xl:w-[170%] xl:h-[170%]";
+
+    if (videoScale === "1" || videoScale === "1.0") {
+      ytScaleClasses = "w-[100%] h-[100%]";
+    } else if (videoScale === "1.5") {
+      ytScaleClasses = "w-[115%] h-[115%] md:w-[150%] md:h-[150%] lg:w-[180%] lg:h-[180%]";
+    } else if (videoScale === "2" || videoScale === "2.0") {
+      ytScaleClasses = "w-[120%] h-[120%] md:w-[200%] md:h-[200%] lg:w-[240%] lg:h-[240%]";
+    } else if (videoScale === "2.5") {
+      ytScaleClasses = "w-[125%] h-[125%] md:w-[260%] md:h-[260%] lg:w-[300%] lg:h-[300%]";
+    } else if (videoScale === "3" || videoScale === "3.0") {
+      ytScaleClasses = "w-[130%] h-[130%] md:w-[300%] md:h-[300%] lg:w-[330%] lg:h-[330%]";
+    } else if (videoScale === "3.2") {
+      ytScaleClasses = "w-[130%] h-[130%] md:w-[320%] md:h-[320%] lg:w-[350%] lg:h-[350%]";
+    } else if (videoScale === "3.5") {
+      ytScaleClasses = "w-[130%] h-[130%] md:w-[340%] md:h-[340%] lg:w-[370%] lg:h-[370%] xl:w-[400%] xl:h-[400%]";
+    } else if (videoScale === "3.8") {
+      ytScaleClasses = "w-[130%] h-[130%] md:w-[360%] md:h-[360%] lg:w-[400%] lg:h-[400%] xl:w-[430%] xl:h-[430%]";
+    }
+
+    return (
+      <div 
+        ref={containerRef}
+        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none"
+      >
+        {/* Ambient Dynamic Background: high-res YouTube poster with subtle blur fills widescreen monitor edges */}
+        {(currentPoster || ytConfig.thumbnailUrl) && (
+          <img
+            src={currentPoster || ytConfig.thumbnailUrl || ""}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover filter blur-3xl opacity-50 scale-125 pointer-events-none"
+            referrerPolicy="no-referrer"
+          />
+        )}
+
+        {/* Foreground Hero YouTube Video adapted to PC widescreen with zero black bars */}
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+          <iframe
+            src={heroYtUrl}
+            className={`${ytScaleClasses} max-w-none flex-shrink-0 object-cover pointer-events-none border-0 transition-all duration-700`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            tabIndex={-1}
+            title="Hero YouTube Video"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 1b. If YouTube video in interactive/section mode:
+  if (ytConfig.isYouTube && ytConfig.videoId) {
+    const isThisActive = id ? activeVideoId === id : isPlaying;
+    const ytPlayUrl = getYouTubeEmbedUrl(src, {
+      autoplay: true,
+      muted: isMuted,
+      loop: loop,
+      controls: true,
+    });
+
+    return (
+      <div 
+        ref={containerRef}
+        className={`relative w-full h-full overflow-hidden select-none ${
+          transparentBg ? "bg-transparent" : "bg-neutral-950"
+        } flex items-center justify-center ${
+          customOverlayControls ? "group cursor-pointer" : ""
+        }`}
+      >
+        {isThisActive || autoPlay ? (
+          <div className="relative w-full h-full">
+            <iframe
+              src={ytPlayUrl}
+              className="w-full h-full border-0 object-cover"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              title="YouTube Video Player"
+            />
+            {/* Minimalist Floating Controls */}
+            <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-2 pointer-events-auto">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPlaying(false);
+                  if (id && onPlayRequest) onPlayRequest(null);
+                }}
+                className="px-2.5 py-1 rounded-full bg-black/75 hover:bg-black/90 text-white backdrop-blur-md border border-white/20 text-[9px] font-bold uppercase tracking-wider transition-all shadow-xl cursor-pointer flex items-center gap-1"
+              >
+                <Pause size={10} className="text-white" />
+                <span>Pausar</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div 
+            className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-950 relative overflow-hidden cursor-pointer"
+            onClick={() => {
+              setIsPlaying(true);
+              if (id && onPlayRequest) {
+                onPlayRequest(id);
+              }
+            }}
+          >
+            {currentPoster && (
+              <img 
+                src={currentPoster} 
+                alt="Vista Previa YouTube" 
+                className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                referrerPolicy="no-referrer"
+                onError={handlePosterError}
+              />
+            )}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+            <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl z-10 transition-transform group-hover:scale-110 active:scale-95 border border-red-500/40">
+              <Play size={24} className="ml-0.5 fill-white" />
+            </div>
+            <span className="mt-3 text-[10px] font-black uppercase tracking-widest text-red-400 z-10 bg-black/80 px-3.5 py-1 rounded-full backdrop-blur-md border border-red-500/30 shadow-lg">
+              Reproducir Video YouTube
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // 1. If Vimeo video in Hero: render optimized full-bleed background iframe with PC widescreen adaptation
   if (isHero && vimeoConfig.isVimeo && vimeoConfig.videoId) {
     const heroVimeoUrl = getVimeoEmbedUrl(src, { isHero: true });
@@ -323,6 +465,7 @@ export default function OptimizedVideoPlayer({
           src={heroVimeoUrl}
           className="absolute inset-0 w-[450%] h-[450%] -ml-[175%] -mt-[175%] object-cover pointer-events-none border-0 filter blur-3xl opacity-80 scale-150"
           allow="autoplay; fullscreen; picture-in-picture"
+          referrerPolicy="strict-origin-when-cross-origin"
           tabIndex={-1}
           title="Hero Vimeo Ambient Background"
         />
@@ -333,6 +476,7 @@ export default function OptimizedVideoPlayer({
             src={heroVimeoUrl}
             className={`${vimeoScaleClasses} max-w-none flex-shrink-0 object-cover pointer-events-none border-0 transition-all duration-700`}
             allow="autoplay; fullscreen; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
             tabIndex={-1}
             title="Hero Vimeo Video"
           />
@@ -366,6 +510,7 @@ export default function OptimizedVideoPlayer({
               src={vimeoPlayUrl}
               className="w-full h-full border-0 object-cover"
               allow="autoplay; fullscreen; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
               title="Vimeo Video Player"
             />
@@ -435,6 +580,7 @@ export default function OptimizedVideoPlayer({
             src={`${driveConfig.embedUrl}?autoplay=1&muted=${autoPlay ? 1 : 0}`}
             className="w-full h-full border-0 object-cover"
             allow="autoplay; encrypted-media"
+            referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
             title="Video Player"
           />

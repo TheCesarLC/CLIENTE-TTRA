@@ -8,6 +8,7 @@ import { verifyStripeKey } from "../lib/stripeClient";
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 import { TransparentProductImage } from "./TransparentProductImage";
 import TransparentLogo from "./TransparentLogo";
+import MediaSourceBadge from "./MediaSourceBadge";
 import { 
   X, 
   Settings, 
@@ -925,6 +926,9 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         </div>
                       )}
                     </div>
+                    {siteConfig.logoUrl && (
+                      <MediaSourceBadge url={siteConfig.logoUrl} showDetails={false} />
+                    )}
                     <p className="text-[9px] text-gray-500">Este es el logo que aparece en el centro de la pantalla principal con el efecto galáctico de estrellas animadas.</p>
                   </div>
 
@@ -969,6 +973,9 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         </div>
                       )}
                     </div>
+                    {siteConfig.headerLogo && (
+                      <MediaSourceBadge url={siteConfig.headerLogo} showDetails={false} />
+                    )}
                     <p className="text-[9px] text-gray-500">Este es el logo compacto que permanece en la parte superior fija del sitio.</p>
                   </div>
                 </div>
@@ -1036,16 +1043,20 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video del Hero (Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-emerald-400 text-[9px] font-bold">Vimeo & CDN Global</span>
+                  <span>Video del Hero (YouTube, Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
+                  <span className="text-red-400 text-[9px] font-bold">YouTube, Vimeo & CDN</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.heroVideo || ""}
-                  placeholder="https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
+                  placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/... o Vimeo o .mp4"
                   onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
+
+                {siteConfig.heroVideo && (
+                  <MediaSourceBadge url={siteConfig.heroVideo} />
+                )}
 
                 {/* PC Screen Adaptation Controls for Hero Video */}
                 <div className="p-3 bg-neutral-900/70 border border-neutral-800 rounded-lg space-y-2.5 mt-2">
@@ -1103,16 +1114,19 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video 800 DÍAS (Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-emerald-400 text-[9px] font-bold">Vimeo & CDN Global</span>
+                  <span>Video 800 DÍAS (YouTube, Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
+                  <span className="text-red-400 text-[9px] font-bold">YouTube, Vimeo & CDN</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo || ""}
-                  placeholder="https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
+                  placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/... o Vimeo o .mp4"
                   onChange={(e) => updateSiteConfig({ experienceVideo: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
+                {siteConfig.experienceVideo && (
+                  <MediaSourceBadge url={siteConfig.experienceVideo} />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1143,16 +1157,19 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
               <div className="space-y-2">
                 <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video ONDGAS (Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-emerald-400 text-[9px] font-bold">Vimeo & CDN Global</span>
+                  <span>Video ONDGAS (YouTube, Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
+                  <span className="text-red-400 text-[9px] font-bold">YouTube, Vimeo & CDN</span>
                 </label>
                 <input
                   type="text"
                   value={siteConfig.experienceVideo2 || ""}
-                  placeholder="https://vimeo.com/... o https://player.vimeo.com/video/... o .mp4"
+                  placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/... o Vimeo o .mp4"
                   onChange={(e) => updateSiteConfig({ experienceVideo2: e.target.value })}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                 />
+                {siteConfig.experienceVideo2 && (
+                  <MediaSourceBadge url={siteConfig.experienceVideo2} />
+                )}
               </div>
 
               <div className="space-y-2">

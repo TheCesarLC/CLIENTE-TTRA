@@ -44,8 +44,12 @@
     <link rel="preconnect" href="https://drive.google.com" crossorigin />
     <link rel="dns-prefetch" href="https://drive.google.com" />
 
-    <!-- Anti-hotlink blocker bypass & CDN preconnects for Imgur & Vimeo -->
-    <meta name="referrer" content="no-referrer" />
+    <!-- Referrer Policy and CDN preconnects for YouTube, Vimeo, Google & Media CDNs -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="preconnect" href="https://www.youtube.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.youtube.com" />
+    <link rel="preconnect" href="https://i.ytimg.com" crossorigin />
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link rel="preconnect" href="https://i.imgur.com" crossorigin />
     <link rel="dns-prefetch" href="https://i.imgur.com" />
     <link rel="preconnect" href="https://player.vimeo.com" crossorigin />
