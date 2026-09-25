@@ -17,6 +17,7 @@ import {
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 
 interface OptimizedVideoPlayerProps {
+  key?: React.Key;
   id?: string;
   activeVideoId?: string | null;
   onPlayRequest?: (id: string | null) => void;

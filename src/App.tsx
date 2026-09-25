@@ -213,6 +213,23 @@ export default function App() {
 
   const rgbStr = hexToRgb(glowColor);
 
+  // Responsive device detection: Mobile (< 768px) vs PC / Tablet (>= 768px)
+  const [isTabletOrDesktop, setIsTabletOrDesktop] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 768;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsTabletOrDesktop(window.innerWidth >= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Sync cart with localStorage
   useEffect(() => {
     try {
@@ -505,15 +522,25 @@ export default function App() {
         {/* Absolute Background Videos / Fallback posters */}
         <div className="absolute inset-0 z-0 overflow-hidden w-full h-full pointer-events-none">
           <OptimizedVideoPlayer
+            key={isTabletOrDesktop && siteConfigToUse.heroVideoDesktop ? "desktop-hero" : "mobile-hero"}
             isHero
             src={
-              (siteConfigToUse.heroVideo &&
-              !siteConfigToUse.heroVideo.includes("umbra.page") &&
-              !siteConfigToUse.heroVideo.includes("8678b1b9") &&
-              !siteConfigToUse.heroVideo.includes("41ebdb")
-                ? siteConfigToUse.heroVideo
-                : null) ||
-              "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig"
+              // If on PC or Tablet (>= 768px) and user configured a desktop/tablet video (e.g. YouTube):
+              (isTabletOrDesktop &&
+              siteConfigToUse.heroVideoDesktop &&
+              siteConfigToUse.heroVideoDesktop.trim() &&
+              !siteConfigToUse.heroVideoDesktop.includes("umbra.page") &&
+              !siteConfigToUse.heroVideoDesktop.includes("8678b1b9")
+                ? siteConfigToUse.heroVideoDesktop
+                : (
+                    (siteConfigToUse.heroVideo &&
+                    !siteConfigToUse.heroVideo.includes("umbra.page") &&
+                    !siteConfigToUse.heroVideo.includes("8678b1b9") &&
+                    !siteConfigToUse.heroVideo.includes("41ebdb")
+                      ? siteConfigToUse.heroVideo
+                      : null) ||
+                    "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig"
+                  ))
             }
             videoScale={siteConfigToUse.heroVideoScale || "auto"}
             videoFit={siteConfigToUse.heroVideoFit || "cover"}
@@ -542,11 +569,20 @@ export default function App() {
             <span className="text-[8px] text-[#34d399] font-black uppercase tracking-[0.2em] block">Controles del Banner Hero</span>
             <div className="flex flex-col gap-1.5 pt-1">
               <button
-                onClick={() => handleOpenVisualEdit("heroVideo", "Video de Hero", "video")}
+                onClick={() => handleOpenVisualEdit("heroVideo", "Video Móvil (Celulares)", "video")}
                 className="px-2.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-[9px] text-white font-extrabold uppercase rounded border border-neutral-800 cursor-pointer flex items-center gap-1"
+                title="Video para versión móvil"
               >
                 <Pencil size={9} className="text-[#34d399]" />
-                <span>VIDEO FONDO</span>
+                <span>VIDEO MÓVIL</span>
+              </button>
+              <button
+                onClick={() => handleOpenVisualEdit("heroVideoDesktop", "Video PC y Tablet (YouTube / Pantalla Ancha)", "video")}
+                className="px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-[9px] text-[#34d399] font-black uppercase rounded border border-emerald-500/50 cursor-pointer flex items-center gap-1 shadow-md shadow-emerald-950/40"
+                title="Pega aquí el enlace de YouTube para PC y Tablet"
+              >
+                <Pencil size={9} className="text-[#34d399]" />
+                <span>VIDEO PC / TABLET (YOUTUBE)</span>
               </button>
               <button
                 onClick={() => handleOpenVisualEdit("heroVideoScale", "Ajuste / Zoom PC (Eliminar Barras Negras)", "text")}

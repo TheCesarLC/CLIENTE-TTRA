@@ -38,6 +38,7 @@ export interface SiteConfig {
   experienceVideo: string;
   experienceVideo2?: string;
   heroVideo: string;
+  heroVideoDesktop?: string;
   heroVideoScale?: string; // "auto" | "1" | "1.5" | "2" | "2.5" | "3"
   heroVideoFit?: string; // "cover" | "ambient" | "zoom" | "contain"
   showGlow: boolean;
@@ -207,6 +208,7 @@ const defaultSiteConfig: SiteConfig = {
   experiencePoster: "/previews/800dias-3s.jpg",
   experiencePoster2: "/previews/ondgas-3s.jpg",
   heroVideo: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig",
+  heroVideoDesktop: "",
   heroPoster: "/previews/ondgas-3s.jpg",
   heroVideoScale: "auto",
   heroVideoFit: "cover",
@@ -322,6 +324,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           parsed.heroVideo = defaultSiteConfig.heroVideo;
         }
         parsed.heroVideo = normalizeVideoUrl(parsed.heroVideo, defaultSiteConfig.heroVideo);
+        if (parsed.heroVideoDesktop) {
+          parsed.heroVideoDesktop = normalizeVideoUrl(parsed.heroVideoDesktop, "");
+        }
         parsed.experienceVideo = normalizeVideoUrl(parsed.experienceVideo, defaultSiteConfig.experienceVideo);
         parsed.experienceVideo2 = normalizeVideoUrl(parsed.experienceVideo2, defaultSiteConfig.experienceVideo2);
         return { ...defaultSiteConfig, ...parsed };
@@ -468,6 +473,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data.heroVideo = defaultSiteConfig.heroVideo;
         }
         data.heroVideo = normalizeVideoUrl(data.heroVideo, defaultSiteConfig.heroVideo);
+        if (data.heroVideoDesktop) {
+          data.heroVideoDesktop = normalizeVideoUrl(data.heroVideoDesktop, "");
+        }
         data.experienceVideo = normalizeVideoUrl(data.experienceVideo, defaultSiteConfig.experienceVideo);
         data.experienceVideo2 = normalizeVideoUrl(data.experienceVideo2, defaultSiteConfig.experienceVideo2);
         setSiteConfig({ ...defaultSiteConfig, ...data } as SiteConfig);
@@ -843,6 +851,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateSiteConfig = async (newConfig: Partial<SiteConfig>) => {
     const sanitized = { ...newConfig };
     if (sanitized.heroVideo) sanitized.heroVideo = normalizeVideoUrl(sanitized.heroVideo);
+    if (sanitized.heroVideoDesktop !== undefined) sanitized.heroVideoDesktop = normalizeVideoUrl(sanitized.heroVideoDesktop);
     if (sanitized.experienceVideo) sanitized.experienceVideo = normalizeVideoUrl(sanitized.experienceVideo);
     if (sanitized.experienceVideo2) sanitized.experienceVideo2 = normalizeVideoUrl(sanitized.experienceVideo2);
 

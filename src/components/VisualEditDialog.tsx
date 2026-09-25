@@ -278,14 +278,20 @@ export default function VisualEditDialog({
                     onChange={(e) => handleLiveChange(e.target.value)}
                     className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-emerald-500 text-white text-xs px-4 py-3 rounded focus:outline-none transition-all placeholder-gray-600 font-mono text-[11px]"
                     placeholder="Ejemplo: https://youtube.com/watch?v=... o https://youtu.be/... o Vimeo o .mp4"
-                    required
+                    required={fieldName !== "heroVideoDesktop" && fieldName !== "experienceVideo2"}
                   />
                 </div>
+
+                {fieldName === "heroVideoDesktop" && (
+                  <p className="text-[10px] text-emerald-400/90 leading-tight">
+                    💡 <strong>Consejo para PC / Tablet:</strong> Puedes pegar cualquier enlace de YouTube (normal o Short). Se reproducirá automáticamente en computadoras y tablets sin modificar la versión móvil.
+                  </p>
+                )}
 
                 {value && <MediaSourceBadge url={value} />}
 
                 {/* Video Preview */}
-                {value && (
+                {value ? (
                   <div className="border border-neutral-900 p-2 bg-black/40 rounded flex flex-col items-center justify-center gap-1.5">
                     <span className="text-[8px] text-gray-500 uppercase tracking-widest font-bold">Vista previa del video</span>
                     <div className="w-full max-w-xs aspect-video rounded overflow-hidden border border-neutral-850 bg-black">
@@ -299,7 +305,13 @@ export default function VisualEditDialog({
                       />
                     </div>
                   </div>
-                )}
+                ) : fieldName === "heroVideoDesktop" ? (
+                  <div className="p-3 bg-neutral-900/40 border border-neutral-850 rounded text-center">
+                    <span className="text-[10px] text-gray-400">
+                      * Actualmente vacío: PC y Tablet usarán el video de móvil como respaldo.
+                    </span>
+                  </div>
+                ) : null}
               </div>
             )}
 

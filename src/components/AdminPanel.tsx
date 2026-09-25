@@ -1041,40 +1041,101 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest flex items-center justify-between">
-                  <span>Video del Hero (YouTube, Vimeo, ImageKit.io, Cloudinary o .mp4)</span>
-                  <span className="text-red-400 text-[9px] font-bold">YouTube, Vimeo & CDN</span>
-                </label>
-                <input
-                  type="text"
-                  value={siteConfig.heroVideo || ""}
-                  placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/... o Vimeo o .mp4"
-                  onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
-                />
+              {/* BLOQUE DE VIDEOS HERO RESPONSIVOS: MÓVIL VS PC/TABLET */}
+              <div className="md:col-span-2 p-5 bg-neutral-900/50 border border-neutral-800 rounded-xl space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                        VIDEOS DEL BANNER HERO (MÓVIL VS PC / TABLET)
+                      </h4>
+                      <p className="text-[10px] text-gray-400">
+                        Configura un video para celulares y otro diferente (ej. YouTube) para pantallas grandes.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-2.5 py-1 bg-neutral-950 text-emerald-400 border border-emerald-500/30 rounded font-black tracking-widest uppercase">
+                    Doble Formato Activo
+                  </span>
+                </div>
 
-                {siteConfig.heroVideo && (
-                  <MediaSourceBadge url={siteConfig.heroVideo} />
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 1. VIDEO VERSIÓN MÓVIL */}
+                  <div className="space-y-2 p-3.5 bg-neutral-950/80 border border-neutral-800 rounded-lg">
+                    <label className="text-[10px] text-gray-300 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[8px] font-black">1. CELULARES</span>
+                        <span>Video Versión Móvil</span>
+                      </span>
+                      <span className="text-blue-400 text-[9px] font-bold">Activo en Móvil</span>
+                    </label>
+                    <p className="text-[10px] text-gray-400 leading-snug">
+                      Video vertical o estándar que se reproduce en celulares (&lt; 768px). Se mantiene intacto según tus indicaciones.
+                    </p>
+                    <input
+                      type="text"
+                      value={siteConfig.heroVideo || ""}
+                      placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/... o CDN .mp4"
+                      onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono"
+                    />
+                    {siteConfig.heroVideo && (
+                      <MediaSourceBadge url={siteConfig.heroVideo} />
+                    )}
+                  </div>
+
+                  {/* 2. VIDEO VERSIÓN PC O TABLET (NUEVO LINK DE YOUTUBE) */}
+                  <div className="space-y-2 p-3.5 bg-neutral-950/80 border border-emerald-500/30 rounded-lg shadow-lg shadow-emerald-950/20">
+                    <label className="text-[10px] text-emerald-300 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black">2. PC Y TABLET</span>
+                        <span>Video PC / Tablet (Nuevo YouTube)</span>
+                      </span>
+                      <span className="text-emerald-400 text-[9px] font-bold">Widescreen</span>
+                    </label>
+                    <p className="text-[10px] text-gray-400 leading-snug">
+                      Pega aquí tu nuevo enlace de YouTube para computadoras y tablets (iPad / monitores ≥ 768px). Si está vacío, usará el de móvil.
+                    </p>
+                    <input
+                      type="text"
+                      value={siteConfig.heroVideoDesktop || ""}
+                      placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/..."
+                      onChange={(e) => updateSiteConfig({ heroVideoDesktop: e.target.value })}
+                      className="w-full bg-neutral-900 border border-emerald-500/40 rounded p-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 transition-colors placeholder:text-neutral-700 font-mono shadow-inner"
+                    />
+                    {siteConfig.heroVideoDesktop ? (
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <MediaSourceBadge url={siteConfig.heroVideoDesktop} />
+                        <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
+                          ✓ Se reproducirá en PC y Tablet
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[9px] text-gray-500 italic block pt-0.5">
+                        * Sin video específico de PC: se usará el video de móvil como respaldo.
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 {/* PC Screen Adaptation Controls for Hero Video */}
-                <div className="p-3 bg-neutral-900/70 border border-neutral-800 rounded-lg space-y-2.5 mt-2">
+                <div className="p-3.5 bg-neutral-950/90 border border-neutral-800 rounded-lg space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] text-emerald-400 uppercase font-black tracking-wider flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Adaptación Pantalla PC / Videos Verticales
+                      Adaptación Pantalla PC / Videos Panorámicos o Verticales
                     </span>
-                    <span className="text-[8px] text-gray-400 uppercase font-bold tracking-widest bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800">
-                      Modo Panorámico
+                    <span className="text-[8px] text-gray-400 uppercase font-bold tracking-widest bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">
+                      Ajuste Panorámico
                     </span>
                   </div>
 
                   <p className="text-[10px] text-gray-300 leading-relaxed">
-                    Si tu video fue grabado en formato vertical (celular 9:16), este ajuste lo adapta automáticamente en computadoras (PC) para llenar la pantalla horizontal y eliminar las barras negras con proyección ambiental dinámica.
+                    Si tu video de YouTube o MP4 necesita ajustarse en monitores anchos para llenar la pantalla horizontal sin bordes negros, puedes elegir la escala de zoom deseada y el efecto ambiental dinámico.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
                       <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
                         Escala / Zoom en PC:
@@ -1082,16 +1143,16 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       <select
                         value={siteConfig.heroVideoScale || "auto"}
                         onChange={(e) => updateSiteConfig({ heroVideoScale: e.target.value })}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
                       >
                         <option value="auto">Automático (Panorámico PC Total - Sin Bordes)</option>
+                        <option value="1.0">Original 100% (Ideal para videos horizontales 16:9)</option>
+                        <option value="1.5">Zoom 150%</option>
+                        <option value="2.0">Zoom 200%</option>
+                        <option value="2.5">Zoom 250% (Videos Verticales 9:16)</option>
+                        <option value="3.2">Zoom 320% (Modo Panorámico Completo)</option>
                         <option value="3.5">Zoom 350% (Elimina Marcos Laterales Totales)</option>
                         <option value="3.8">Zoom 380% (Pantallas Ultra-Anchas / Ultrawide)</option>
-                        <option value="3.2">Zoom 320% (Modo Panorámico Completo)</option>
-                        <option value="2.5">Zoom 250% (Videos Verticales 9:16)</option>
-                        <option value="2.0">Zoom 200%</option>
-                        <option value="1.5">Zoom 150%</option>
-                        <option value="1.0">Original 100% (Sin Zoom)</option>
                       </select>
                     </div>
 
@@ -1102,7 +1163,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       <select
                         value={siteConfig.heroVideoFit || "cover"}
                         onChange={(e) => updateSiteConfig({ heroVideoFit: e.target.value })}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
                       >
                         <option value="cover">Llenar Pantalla + Reflejo Ambiental Dinámico</option>
                         <option value="ambient">Fondo Ambiental Difuminado Expandido</option>
