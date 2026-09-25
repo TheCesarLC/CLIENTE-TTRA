@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { 
   getDriveMediaConfig, 
   isCloudinaryVideoUrl, 
@@ -15,6 +15,249 @@ import {
   getYouTubeEmbedUrl
 } from "../lib/mediaUtils";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+
+/**
+ * Global singleton helper to ensure the YouTube IFrame API script is loaded and ready.
+ */
+function ensureYouTubeIframeApi(): Promise<any> {
+  if (typeof window === "undefined") return Promise.reject();
+  if ((window as any).YT && (window as any).YT.Player) {
+    return Promise.resolve((window as any).YT);
+  }
+  return new Promise((resolve) => {
+    let script = document.getElementById("yt-iframe-api") as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement("script");
+      script.id = "yt-iframe-api";
+      script.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(script);
+    }
+    const prev = (window as any).onYouTubeIframeAPIReady;
+    (window as any).onYouTubeIframeAPIReady = () => {
+      if (typeof prev === "function") prev();
+      resolve((window as any).YT);
+    };
+    const poll = setInterval(() => {
+      if ((window as any).YT && (window as any).YT.Player) {
+        clearInterval(poll);
+        resolve((window as any).YT);
+      }
+    }, 100);
+    setTimeout(() => clearInterval(poll), 10000);
+  });
+}
+
+/**
+ * Dedicated Background YouTube Player for Hero section.
+ * Engineered specifically so that the player NEVER shows play controls, center play buttons,
+ * end-screens, or pause overlays when reloading / looping automatically.
+ */
+function HeroYouTubeBackground({
+  src,
+  videoId,
+  currentPoster,
+  thumbnailUrl,
+  aiEnhance,
+  videoScale,
+  isShort,
+}: {
+  src: string;
+  videoId: string;
+  currentPoster?: string;
+  thumbnailUrl?: string;
+  aiEnhance?: boolean;
+  videoScale?: string;
+  isShort?: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const playerRef = useRef<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const heroYtUrl = useMemo(() => {
+    return getYouTubeEmbedUrl(src, { isHero: true });
+  }, [src]);
+
+  // Seamless postMessage sender to YouTube iframe
+  const sendIframeCommand = useCallback((func: string, args: any[] = []) => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func, args }),
+          "*"
+        );
+      } catch (_) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    let loopChecker: NodeJS.Timeout | null = null;
+
+    // Listen to YouTube postMessages to instantly handle ended/paused states before controls can render
+    const handleWindowMessage = (e: MessageEvent) => {
+      try {
+        let data = e.data;
+        if (typeof data === "string") {
+          data = JSON.parse(data);
+        }
+        if (data && data.event === "onStateChange") {
+          // 0 = ENDED, 2 = PAUSED
+          if (data.info === 0 || data.info === 2) {
+            sendIframeCommand("seekTo", [0, true]);
+            sendIframeCommand("playVideo");
+          } else if (data.info === 1) {
+            // PLAYING
+            if (isMounted) setIsLoaded(true);
+          }
+        } else if (data && data.event === "initialDelivery") {
+          sendIframeCommand("mute");
+          sendIframeCommand("playVideo");
+        }
+      } catch (_) {}
+    };
+
+    window.addEventListener("message", handleWindowMessage);
+
+    // Initialize YouTube Iframe API for millisecond-level loop control
+    ensureYouTubeIframeApi().then((YT) => {
+      if (!isMounted || !iframeRef.current) return;
+
+      try {
+        playerRef.current = new YT.Player(iframeRef.current, {
+          events: {
+            onReady: (event: any) => {
+              if (!isMounted) return;
+              event.target.mute();
+              event.target.playVideo();
+              if (typeof event.target.setPlaybackQuality === "function") {
+                event.target.setPlaybackQuality("hd1080");
+              }
+              setIsLoaded(true);
+            },
+            onStateChange: (event: any) => {
+              if (!isMounted) return;
+              // 0 = ENDED, 1 = PLAYING, 2 = PAUSED
+              if (event.data === 0) {
+                // Continuous instant loop: seek to 0 and play immediately so NO end-screen or play button appears
+                event.target.seekTo(0, true);
+                event.target.playVideo();
+              } else if (event.data === 2) {
+                // Never remain paused with play button overlay
+                event.target.playVideo();
+              } else if (event.data === 1) {
+                setIsLoaded(true);
+              }
+            },
+          },
+        });
+
+        // Continuous Loop Watcher: check every 120ms
+        // If the video is within 0.35s of the end, seek back to 0 immediately!
+        // This PREVENTS YouTube from ever transitioning to the ENDED state,
+        // so the player NEVER unloads, NEVER reloads, and NEVER renders the play button!
+        loopChecker = setInterval(() => {
+          const player = playerRef.current;
+          if (player && typeof player.getCurrentTime === "function" && typeof player.getDuration === "function") {
+            try {
+              const currentTime = player.getCurrentTime();
+              const duration = player.getDuration();
+              if (duration > 0 && currentTime >= duration - 0.35) {
+                player.seekTo(0, true);
+                player.playVideo();
+              }
+            } catch (_) {}
+          } else {
+            sendIframeCommand("listening");
+          }
+        }, 120);
+      } catch (_) {}
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("message", handleWindowMessage);
+      if (loopChecker) clearInterval(loopChecker);
+      if (playerRef.current && typeof playerRef.current.destroy === "function") {
+        try {
+          playerRef.current.destroy();
+        } catch (_) {}
+      }
+    };
+  }, [sendIframeCommand]);
+
+  // Adaptive scale for PC widescreen: expands video horizontally to cover the monitor without black bars
+  let ytScaleClasses = isShort
+    ? "w-[130%] h-[130%] md:w-[320%] md:h-[320%] lg:w-[360%] lg:h-[360%] xl:w-[400%] xl:h-[400%]"
+    : "w-[115%] h-[115%] md:w-[135%] md:h-[135%] lg:w-[150%] lg:h-[150%] xl:w-[170%] xl:h-[170%]";
+
+  if (videoScale === "1" || videoScale === "1.0") {
+    ytScaleClasses = "w-[100%] h-[100%]";
+  } else if (videoScale === "1.5") {
+    ytScaleClasses = "w-[115%] h-[115%] md:w-[150%] md:h-[150%] lg:w-[180%] lg:h-[180%]";
+  } else if (videoScale === "2" || videoScale === "2.0") {
+    ytScaleClasses = "w-[120%] h-[120%] md:w-[200%] md:h-[200%] lg:w-[240%] lg:h-[240%]";
+  } else if (videoScale === "2.5") {
+    ytScaleClasses = "w-[125%] h-[125%] md:w-[260%] md:h-[260%] lg:w-[300%] lg:h-[300%]";
+  } else if (videoScale === "3" || videoScale === "3.0") {
+    ytScaleClasses = "w-[130%] h-[130%] md:w-[300%] md:h-[300%] lg:w-[330%] lg:h-[330%]";
+  } else if (videoScale === "3.2") {
+    ytScaleClasses = "w-[130%] h-[130%] md:w-[320%] md:h-[320%] lg:w-[350%] lg:h-[350%]";
+  } else if (videoScale === "3.5") {
+    ytScaleClasses = "w-[130%] h-[130%] md:w-[340%] md:h-[340%] lg:w-[370%] lg:h-[370%] xl:w-[400%] xl:h-[400%]";
+  } else if (videoScale === "3.8") {
+    ytScaleClasses = "w-[130%] h-[130%] md:w-[360%] md:h-[360%] lg:w-[400%] lg:h-[400%] xl:w-[430%] xl:h-[430%]";
+  }
+
+  const posterSrc = currentPoster || thumbnailUrl || "";
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none"
+    >
+      {/* Ambient Dynamic Background: high-res YouTube poster with subtle blur fills widescreen monitor edges */}
+      {posterSrc && (
+        <img
+          src={posterSrc}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover filter blur-3xl opacity-65 scale-150 pointer-events-none transition-opacity duration-1000"
+          referrerPolicy="no-referrer"
+        />
+      )}
+
+      {/* Foreground Hero YouTube Video adapted to PC widescreen with zero black bars */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+        <iframe
+          ref={iframeRef}
+          src={heroYtUrl}
+          loading="eager"
+          className={`${ytScaleClasses} max-w-none flex-shrink-0 object-cover pointer-events-none border-0 transition-opacity duration-700 transform-gpu [backface-visibility:hidden] [transform:translateZ(0)] ${
+            aiEnhance ? "contrast-[1.05] saturate-[1.08] brightness-[1.01]" : ""
+          } ${isLoaded ? "opacity-100" : "opacity-95"}`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          tabIndex={-1}
+          title="Hero YouTube Video"
+        />
+      </div>
+
+      {/* Smooth initial cover that crossfades away once video is playing */}
+      {posterSrc && !isLoaded && (
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-700">
+          <img
+            src={posterSrc}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover brightness-[0.7]"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface OptimizedVideoPlayerProps {
   key?: React.Key;
@@ -36,6 +279,7 @@ interface OptimizedVideoPlayerProps {
   transparentBg?: boolean;
   videoScale?: string;
   videoFit?: string;
+  aiEnhance?: boolean;
 }
 
 export default function OptimizedVideoPlayer({
@@ -57,6 +301,7 @@ export default function OptimizedVideoPlayer({
   transparentBg = false,
   videoScale = "auto",
   videoFit = "cover",
+  aiEnhance = true,
 }: OptimizedVideoPlayerProps) {
   const [videoError, setVideoError] = useState(false);
   const [usingFallbackSrc, setUsingFallbackSrc] = useState(false);
@@ -95,15 +340,15 @@ export default function OptimizedVideoPlayer({
     } else if (vimeoConfig.isVimeo && vimeoConfig.videoId) {
       list.push(`https://vumbnail.com/${vimeoConfig.videoId}.jpg`);
     } else if (isImageKit) {
-      const ikPoster = getOptimizedImageKitPosterUrl(src, isHero ? 960 : 480);
+      const ikPoster = getOptimizedImageKitPosterUrl(src, isHero ? 1440 : 1080);
       if (ikPoster) list.push(ikPoster);
     } else if (driveConfig.isDrive && driveConfig.fileId) {
       if (driveConfig.thumbnailUrl) list.push(driveConfig.thumbnailUrl);
     } else if (isCloudinary) {
-      const autoPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 960 : 480, "auto");
+      const autoPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 1440 : 1080, "auto");
       if (autoPoster) list.push(autoPoster);
 
-      const offsetPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 960 : 480, "1.0");
+      const offsetPoster = getOptimizedCloudinaryPosterUrl(src, isHero ? 1440 : 1080, "1.0");
       if (offsetPoster && offsetPoster !== autoPoster) list.push(offsetPoster);
     } else if (src && src.includes("cloudinary.com") && /\.(mp4|mov|webm)(\?.*)?$/i.test(src)) {
       list.push(src.replace(/\.(mp4|mov|webm)(\?.*)?$/i, ".jpg$2"));
@@ -160,43 +405,54 @@ export default function OptimizedVideoPlayer({
     }
   }, [activeVideoId, id, isHero]);
 
-  // Compute optimized video source
+  // Compute optimized video source with maximum HD bitrate delivery
   const videoSrc = useMemo(() => {
     if (!src) return "";
     if (usingFallbackSrc) return src;
-    if (isImageKit) return getOptimizedImageKitVideoUrl(src, { width: isHero ? 720 : 480, isHero });
+    if (isImageKit) {
+      // tr=orig delivers the master stream (1080p/4K) directly from global CloudFront CDN
+      return getOptimizedImageKitVideoUrl(src, { isHero });
+    }
     if (driveConfig.isDrive) return `/api/video-stream?id=${driveConfig.fileId}`;
-    if (isCloudinary) return getOptimizedCloudinaryVideoUrl(src, { width: isHero ? 720 : 480, isHero });
+    if (isCloudinary) {
+      // 1080p high quality master
+      return getOptimizedCloudinaryVideoUrl(src, { width: 1920, quality: "auto:best", isHero });
+    }
     return src;
   }, [src, usingFallbackSrc, isImageKit, isHero, driveConfig, isCloudinary]);
 
-  // Autoplay and playback initialization for Hero or autoPlay videos
+  // Bulletproof zero-latency autoplay engine with tab visibility & IntersectionObserver recovery
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoSrc) return;
 
-    if (isHero || autoPlay) {
+    let isMounted = true;
+
+    const attemptAutoplay = () => {
+      if (!video) return;
       video.muted = true;
       video.defaultMuted = true;
       video.playsInline = true;
       video.setAttribute("playsinline", "");
       video.setAttribute("webkit-playsinline", "");
       video.setAttribute("muted", "");
-      
+
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            setIsPlaying(true);
-            setHasRenderedFrame(true);
+            if (isMounted) {
+              setIsPlaying(true);
+              setHasRenderedFrame(true);
+            }
           })
           .catch(() => {
-            // Autoplay restricted by browser: unlock on first touch or click
+            // Passive gesture unlock listener if browser blocks initial autoplay
             const unlockHandler = () => {
-              if (videoRef.current) {
-                videoRef.current.muted = true;
-                videoRef.current.defaultMuted = true;
-                videoRef.current.play().then(() => {
+              if (video && isMounted) {
+                video.muted = true;
+                video.defaultMuted = true;
+                video.play().then(() => {
                   setIsPlaying(true);
                   setHasRenderedFrame(true);
                 }).catch(() => {});
@@ -205,11 +461,47 @@ export default function OptimizedVideoPlayer({
               window.removeEventListener("click", unlockHandler);
               window.removeEventListener("scroll", unlockHandler);
             };
-            window.addEventListener("touchstart", unlockHandler, { once: true });
-            window.addEventListener("click", unlockHandler, { once: true });
-            window.addEventListener("scroll", unlockHandler, { once: true });
+            window.addEventListener("touchstart", unlockHandler, { once: true, passive: true });
+            window.addEventListener("click", unlockHandler, { once: true, passive: true });
+            window.addEventListener("scroll", unlockHandler, { once: true, passive: true });
           });
       }
+    };
+
+    if (isHero || autoPlay) {
+      attemptAutoplay();
+
+      // Resume smoothly when tab returns to focus / active screen
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible" && (isHero || autoPlay)) {
+          if (video && video.paused) {
+            attemptAutoplay();
+          }
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      // Intersection observer: trigger when video container enters viewport
+      let observer: IntersectionObserver | null = null;
+      if (containerRef.current && typeof IntersectionObserver !== "undefined") {
+        observer = new IntersectionObserver(
+          (entries) => {
+            const entry = entries[0];
+            if (entry && entry.isIntersecting && video.paused && (isHero || autoPlay)) {
+              attemptAutoplay();
+            }
+          },
+          { threshold: 0.1 }
+        );
+        observer.observe(containerRef.current);
+      }
+
+      return () => {
+        isMounted = false;
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        if (observer) observer.disconnect();
+      };
     }
   }, [videoSrc, isHero, autoPlay]);
 
@@ -286,8 +578,8 @@ export default function OptimizedVideoPlayer({
   const handleTimeUpdate = () => {
     if (videoRef.current && videoRef.current.duration) {
       setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
-      // Continuous instant loop: if close to end (0.2s remaining), restart immediately
-      if (loop && videoRef.current.currentTime >= videoRef.current.duration - 0.2) {
+      // Continuous instant seamless loop for background video before it hits ended state
+      if (loop && isHero && videoRef.current.currentTime >= videoRef.current.duration - 0.25) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch(() => {});
       }
@@ -297,61 +589,18 @@ export default function OptimizedVideoPlayer({
   // If no source provided at all, render nothing
   if (!src) return null;
 
-  // 1a. If YouTube video in Hero: render optimized full-bleed background iframe with PC widescreen adaptation
+  // 1a. If YouTube video in Hero: render dedicated background player with zero play controls on reload/loop
   if (isHero && ytConfig.isYouTube && ytConfig.videoId) {
-    const heroYtUrl = getYouTubeEmbedUrl(src, { isHero: true });
-
-    // Adaptive scale for PC widescreen: expands video horizontally to cover the monitor without black bars
-    let ytScaleClasses = ytConfig.isShort
-      ? "w-[130%] h-[130%] md:w-[320%] md:h-[320%] lg:w-[360%] lg:h-[360%] xl:w-[400%] xl:h-[400%]"
-      : "w-[115%] h-[115%] md:w-[135%] md:h-[135%] lg:w-[150%] lg:h-[150%] xl:w-[170%] xl:h-[170%]";
-
-    if (videoScale === "1" || videoScale === "1.0") {
-      ytScaleClasses = "w-[100%] h-[100%]";
-    } else if (videoScale === "1.5") {
-      ytScaleClasses = "w-[115%] h-[115%] md:w-[150%] md:h-[150%] lg:w-[180%] lg:h-[180%]";
-    } else if (videoScale === "2" || videoScale === "2.0") {
-      ytScaleClasses = "w-[120%] h-[120%] md:w-[200%] md:h-[200%] lg:w-[240%] lg:h-[240%]";
-    } else if (videoScale === "2.5") {
-      ytScaleClasses = "w-[125%] h-[125%] md:w-[260%] md:h-[260%] lg:w-[300%] lg:h-[300%]";
-    } else if (videoScale === "3" || videoScale === "3.0") {
-      ytScaleClasses = "w-[130%] h-[130%] md:w-[300%] md:h-[300%] lg:w-[330%] lg:h-[330%]";
-    } else if (videoScale === "3.2") {
-      ytScaleClasses = "w-[130%] h-[130%] md:w-[320%] md:h-[320%] lg:w-[350%] lg:h-[350%]";
-    } else if (videoScale === "3.5") {
-      ytScaleClasses = "w-[130%] h-[130%] md:w-[340%] md:h-[340%] lg:w-[370%] lg:h-[370%] xl:w-[400%] xl:h-[400%]";
-    } else if (videoScale === "3.8") {
-      ytScaleClasses = "w-[130%] h-[130%] md:w-[360%] md:h-[360%] lg:w-[400%] lg:h-[400%] xl:w-[430%] xl:h-[430%]";
-    }
-
     return (
-      <div 
-        ref={containerRef}
-        className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none"
-      >
-        {/* Ambient Dynamic Background: high-res YouTube poster with subtle blur fills widescreen monitor edges */}
-        {(currentPoster || ytConfig.thumbnailUrl) && (
-          <img
-            src={currentPoster || ytConfig.thumbnailUrl || ""}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover filter blur-3xl opacity-50 scale-125 pointer-events-none"
-            referrerPolicy="no-referrer"
-          />
-        )}
-
-        {/* Foreground Hero YouTube Video adapted to PC widescreen with zero black bars */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-          <iframe
-            src={heroYtUrl}
-            className={`${ytScaleClasses} max-w-none flex-shrink-0 object-cover pointer-events-none border-0 transition-all duration-700`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            tabIndex={-1}
-            title="Hero YouTube Video"
-          />
-        </div>
-      </div>
+      <HeroYouTubeBackground
+        src={src}
+        videoId={ytConfig.videoId}
+        currentPoster={currentPoster}
+        thumbnailUrl={ytConfig.thumbnailUrl}
+        aiEnhance={aiEnhance}
+        videoScale={videoScale}
+        isShort={ytConfig.isShort}
+      />
     );
   }
 
@@ -639,13 +888,16 @@ export default function OptimizedVideoPlayer({
     }
   }
 
+  // Controls overlay must NEVER be shown on hero background video under any circumstances
+  const showOverlayControls = customOverlayControls && !controls && !isHero;
+
   return (
     <div 
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden select-none ${transparentBg ? "bg-transparent" : "bg-neutral-950"} flex items-center justify-center ${
-        customOverlayControls ? "group cursor-pointer" : "pointer-events-none"
+        showOverlayControls ? "group cursor-pointer" : "pointer-events-none"
       }`}
-      onClick={customOverlayControls ? togglePlay : undefined}
+      onClick={showOverlayControls ? togglePlay : undefined}
     >
       {/* Background Ambience / Dynamic Reflection Layer: eliminates black bars on PC widescreen */}
       <div className={`absolute inset-0 ${transparentBg ? "bg-transparent" : "bg-gradient-to-br from-neutral-900 via-neutral-950 to-black"} pointer-events-none z-0 overflow-hidden`}>
@@ -654,9 +906,14 @@ export default function OptimizedVideoPlayer({
           <video
             src={videoSrc}
             playsInline
+            // @ts-ignore iOS Safari non-standard attribute
+            webkit-playsinline="true"
+            disablePictureInPicture
+            controlsList="nodownload nofullscreen noremoteplayback"
             autoPlay
             loop
             muted
+            controls={false}
             aria-hidden="true"
             tabIndex={-1}
             className="absolute inset-0 w-full h-full object-cover filter blur-3xl scale-[3.5] md:scale-[4.5] opacity-75 pointer-events-none"
@@ -708,8 +965,14 @@ export default function OptimizedVideoPlayer({
         controls={false}
         className={`${className} relative z-[1] object-cover w-full h-full min-w-full min-h-full ${
           isHero ? `${heroPcScaleClasses} origin-center max-w-none` : ""
-        } transition-transform duration-700`}
-        style={isHero && heroCustomTransform ? { transform: heroCustomTransform } : undefined}
+        } transition-transform duration-700 transform-gpu [backface-visibility:hidden] [transform:translateZ(0)] will-change-transform`}
+        style={{
+          ...(isHero && heroCustomTransform ? { transform: heroCustomTransform } : {}),
+          ...(aiEnhance ? {
+            filter: "url(#ai-neural-clarity) contrast(1.06) saturate(1.10) brightness(1.01)",
+            WebkitFilter: "contrast(1.06) saturate(1.10) brightness(1.01)"
+          } : {})
+        }}
         poster={currentPoster}
         onLoadedMetadata={(e) => {
           const v = e.currentTarget;
@@ -738,6 +1001,15 @@ export default function OptimizedVideoPlayer({
           }
           handleTimeUpdate();
         }}
+        onWaiting={() => {
+          // Graceful buffering without interrupting rendered frame
+        }}
+        onStalled={() => {
+          // Automatic recovery if network buffer stalls
+          if (videoRef.current && (isHero || autoPlay) && videoRef.current.paused) {
+            videoRef.current.play().catch(() => {});
+          }
+        }}
         onEnded={() => {
           if (videoRef.current) {
             videoRef.current.currentTime = 0;
@@ -759,9 +1031,13 @@ export default function OptimizedVideoPlayer({
           }
         }}
         onPause={() => {
-          setIsPlaying(false);
-          if (isHero && videoRef.current && videoRef.current.paused) {
-            videoRef.current.play().catch(() => {});
+          if (isHero) {
+            // Background video must never toggle isPlaying to false or allow play buttons to show
+            if (videoRef.current && videoRef.current.paused) {
+              videoRef.current.play().catch(() => {});
+            }
+          } else {
+            setIsPlaying(false);
           }
         }}
         onError={() => {
@@ -770,13 +1046,19 @@ export default function OptimizedVideoPlayer({
           } else if (!usingFallbackSrc && src) {
             setUsingFallbackSrc(true);
           }
+          // Self-healing: try muted play on error recovery
+          if (videoRef.current && (isHero || autoPlay)) {
+            videoRef.current.muted = true;
+            videoRef.current.defaultMuted = true;
+            videoRef.current.play().catch(() => {});
+          }
         }}
       >
         Tu navegador no soporta reproducción de video HTML5.
       </video>
 
-      {/* Modern, minimalist floating overlay with audio & playback controls */}
-      {customOverlayControls && !controls && (
+      {/* Modern, minimalist floating overlay with audio & playback controls (Suppressed completely on Hero/background) */}
+      {showOverlayControls && (
         <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2.5 sm:p-3 transition-opacity duration-300 z-10">
           {/* Top Audio Toggle Button */}
           <div className="flex justify-end items-center pointer-events-auto">

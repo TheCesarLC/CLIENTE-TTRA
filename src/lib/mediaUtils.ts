@@ -475,6 +475,14 @@ export function getYouTubeEmbedUrl(
       ? window.location.origin
       : "";
 
+  // Maximum High-Definition Delivery: Force 1080p/HD stream
+  params.set("vq", "hd1080");
+  params.set("hd", "1");
+  params.set("enablejsapi", "1");
+  params.set("playsinline", "1");
+  params.set("modestbranding", "1");
+  params.set("rel", "0");
+
   if (options?.isHero) {
     // Ultra-clean ambient background video: no chrome, autoplay, mute, infinite loop
     params.set("autoplay", "1");
@@ -482,13 +490,12 @@ export function getYouTubeEmbedUrl(
     params.set("controls", "0");
     params.set("loop", "1");
     params.set("playlist", videoId); // Required for looping single video in YouTube embed API
-    params.set("playsinline", "1");
-    params.set("rel", "0");
     params.set("showinfo", "0");
     params.set("iv_load_policy", "3");
-    params.set("modestbranding", "1");
     params.set("disablekb", "1");
     params.set("fs", "0");
+    params.set("cc_load_policy", "0");
+    params.set("autohide", "1");
     if (currentOrigin) {
       params.set("origin", currentOrigin);
       params.set("widget_referrer", currentOrigin);
@@ -506,9 +513,6 @@ export function getYouTubeEmbedUrl(
     } else {
       params.set("controls", "1");
     }
-    params.set("playsinline", "1");
-    params.set("rel", "0");
-    params.set("modestbranding", "1");
     if (currentOrigin) {
       params.set("origin", currentOrigin);
       params.set("widget_referrer", currentOrigin);
@@ -820,7 +824,9 @@ export function getVimeoEmbedUrl(
     params.set("h", config.hash);
   }
 
-  // Vimeo options for clean, premium embedded playback
+  // Vimeo options for clean, premium embedded playback in 1080p
+  params.set("quality", "1080p");
+  params.set("speed", "1");
   params.set("dnt", "1");
   params.set("playsinline", "1");
   params.set("autopause", "0");

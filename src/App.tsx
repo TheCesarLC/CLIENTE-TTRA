@@ -23,6 +23,7 @@ import { getOrderStatusDetails } from "./lib/orderStatus";
 // Visual Inline Dialogs
 import VisualEditDialog from "./components/VisualEditDialog";
 import ProductQuickEditDialog from "./components/ProductQuickEditDialog";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 function hexToRgb(hex: string): string {
   const cleanHex = hex.replace("#", "");
@@ -423,9 +424,13 @@ export default function App() {
   }
 
   return (
-    <div 
-      className="min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-white selection:text-black transition-all duration-[600ms] relative bg-black"
-    >
+    <>
+      {/* Persistent floating WhatsApp button locked to viewport */}
+      <WhatsAppButton />
+
+      <div 
+        className="min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-white selection:text-black transition-colors duration-500 relative bg-black"
+      >
       {/* Realist, elegant starry background layer */}
       <StarryBackground />
       <style>{`
@@ -1134,7 +1139,8 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 
   // Revert handlers to secure flawless cancel rollbacks

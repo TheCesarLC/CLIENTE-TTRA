@@ -1279,14 +1279,74 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest font-black">WhatsApp Enlace Directo (Número)</label>
-                <input
-                  type="text"
-                  value={siteConfig.whatsappNumber}
-                  onChange={(e) => updateSiteConfig({ whatsappNumber: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
-                />
+              {/* BLOQUE DEDICADO: BOTÓN FLOTANTE DE WHATSAPP (VENTAS Y GUÍAS DE ENVÍO) */}
+              <div className="md:col-span-2 p-5 bg-[#25D366]/5 border-2 border-[#25D366]/30 rounded-xl space-y-4 shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#25D366] text-black flex items-center justify-center font-bold shadow-md flex-shrink-0">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M12.01 2.002c-5.508 0-9.988 4.479-9.988 9.987 0 1.758.459 3.473 1.332 4.985L2 22l5.204-1.364a9.948 9.948 0 0 0 4.806 1.353h.004c5.507 0 9.986-4.48 9.986-9.988 0-2.669-1.04-5.178-2.927-7.066a9.919 9.919 0 0 0-7.063-2.933zm0 18.29a8.27 8.27 0 0 1-4.223-1.156l-.303-.18-3.09.81.824-3.013-.198-.314a8.26 8.26 0 0 1-1.27-4.448c0-4.57 3.719-8.289 8.293-8.289 2.215 0 4.297.863 5.863 2.43 1.566 1.566 2.428 3.649 2.427 5.864 0 4.571-3.719 8.294-8.321 8.294zm4.555-6.208c-.25-.125-1.478-.73-1.708-.813-.23-.083-.396-.125-.563.125-.166.25-.646.813-.792.98-.146.166-.292.187-.542.062s-1.056-.39-2.012-1.242c-.744-.663-1.246-1.482-1.392-1.732-.146-.25-.016-.385.11-.51.113-.113.25-.292.375-.438.125-.146.167-.25.25-.417.083-.166.042-.312-.021-.437-.062-.125-.562-1.355-.77-1.855-.203-.487-.41-.42-.563-.428l-.479-.009c-.167 0-.438.063-.667.313-.23.25-.875.855-.875 2.084s.896 2.418 1.021 2.585c.125.166 1.764 2.693 4.274 3.777.597.258 1.064.412 1.428.528.6.191 1.146.164 1.577.1.48-.072 1.478-.604 1.687-1.188.208-.583.208-1.083.146-1.188-.063-.104-.23-.166-.48-.291z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                        <span>Configuración de WhatsApp (Ventas y Guías)</span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] bg-[#25D366]/20 text-[#25D366] font-bold border border-[#25D366]/40 uppercase tracking-widest">
+                          Botón Fijo Activo
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-gray-400">
+                        Configura el número telefónico donde recibirás los mensajes de clientes desde el botón flotante fijo en tu web.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Test button */}
+                  {siteConfig.whatsappNumber && (
+                    <a
+                      href={`https://wa.me/${siteConfig.whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent("Hola TETRA HATS, mensaje de prueba desde el Panel de Administración.")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] text-black font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md flex-shrink-0 cursor-pointer"
+                    >
+                      <span>Probar Enlace WhatsApp</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-[10px] text-gray-300 font-extrabold uppercase tracking-widest flex items-center justify-between">
+                      <span>Número de WhatsApp para Recibir Mensajes</span>
+                      <span className="text-[9px] text-[#25D366] font-mono">Ej: +52 1 55 1234 5678 o 525512345678</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={siteConfig.whatsappNumber}
+                      onChange={(e) => updateSiteConfig({ whatsappNumber: e.target.value })}
+                      placeholder="+52 1 55 1234 5678"
+                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-[#25D366] rounded-lg p-3 text-sm text-white font-mono transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">
+                      Formato Internacional Sanitizado
+                    </label>
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs font-mono text-emerald-400 flex items-center justify-between">
+                      <span className="truncate">{siteConfig.whatsappNumber ? siteConfig.whatsappNumber.replace(/[^\d]/g, "") : "No configurado"}</span>
+                      <span className="text-[9px] text-gray-500 uppercase ml-2 flex-shrink-0">wa.me</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-neutral-950/60 rounded-lg border border-neutral-900 text-[11px] text-gray-400 flex items-start gap-2">
+                  <span className="text-[#25D366] font-bold">💡 Importante:</span>
+                  <span>
+                    El botón de WhatsApp permanece <strong>fijo permanentemente en la esquina inferior derecha</strong> de tu tienda para que cualquier visitante pueda consultarte sobre ventas o pedir seguimiento de su guía en cualquier momento.
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">

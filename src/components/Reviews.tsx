@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { Star, MessageSquarePlus, Check, Award, Pencil, Trash2, X } from "lucide-react";
+import { Star, MessageSquarePlus, Check, Pencil, Trash2, X } from "lucide-react";
 import { Review } from "../types";
 import { useSite } from "../context/SiteContext";
 
@@ -139,10 +139,10 @@ export default function Reviews() {
         </div>
 
         {/* Global Stats Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-950/40 p-6 rounded-lg border border-neutral-900">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-950/40 p-6 sm:p-8 rounded-lg border border-neutral-900">
           
           {/* Average Stars */}
-          <div className="md:col-span-4 flex flex-col items-center md:items-start text-center md:text-left space-y-2.5">
+          <div className="md:col-span-5 flex flex-col items-center md:items-start text-center md:text-left space-y-2.5">
             <span className="text-5xl font-black tracking-tight text-white">{averageRating}</span>
             <div className="flex text-white">
               {[1, 2, 3, 4, 5].map((s) => (
@@ -160,7 +160,7 @@ export default function Reviews() {
           </div>
 
           {/* Histogram distribution slider */}
-          <div className="md:col-span-5 space-y-2">
+          <div className="md:col-span-7 space-y-2">
             {[5, 4, 3, 2, 1].map((rating) => {
               const count = starCounts[rating - 1] || 0;
               const percent = totalReviewsCount > 0 ? (count / totalReviewsCount) * 100 : 0;
@@ -180,17 +180,6 @@ export default function Reviews() {
                 </div>
               );
             })}
-          </div>
-
-          {/* Medallions trust elements */}
-          <div className="md:col-span-3 border-t md:border-t-0 md:border-l border-neutral-900 pt-6 md:pt-0 md:pl-8 flex flex-col items-center md:items-start space-y-2 text-center md:text-left">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <Award size={18} />
-            </div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">Garantía Verificada</h4>
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider leading-relaxed">
-              Reseñas administradas bajo estándares de compra directa acreditada Judge.Me.
-            </p>
           </div>
         </div>
 

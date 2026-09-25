@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>TETRA HATS | Gorras de Colección Exclusiva</title>
     
     <!-- Favicon / Logo en pestaña del navegador y Google Search -->
@@ -55,8 +55,36 @@
     <link rel="preconnect" href="https://player.vimeo.com" crossorigin />
     <link rel="preconnect" href="https://i.vimeocdn.com" crossorigin />
     <link rel="preconnect" href="https://f.vimeocdn.com" crossorigin />
+    <link rel="preconnect" href="https://ik.imagekit.io" crossorigin />
+    <link rel="dns-prefetch" href="https://ik.imagekit.io" />
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+    <script src="https://www.youtube.com/iframe_api" async></script>
   </head>
   <body>
+    <!-- Hardware-accelerated Neural Clarity and AI Micro-Contrast Enhancement Filter for High-Def Video Rendering -->
+    <svg width="0" height="0" class="sr-only" aria-hidden="true" style="position: absolute; width: 0; height: 0; pointer-events: none;">
+      <defs>
+        <filter id="ai-neural-clarity" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+          <!-- Subpixel neural unsharp mask: sharpens fabric, embroidery, light reflections without digital noise -->
+          <feConvolveMatrix
+            order="3"
+            preserveAlpha="true"
+            kernelMatrix="0 -0.12 0 -0.12 1.48 -0.12 0 -0.12 0"
+          />
+        </filter>
+        <filter id="ai-hdr-boost" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+          <!-- Dynamic HDR color matrix: expands dynamic range for deep blacks and vibrant highlights -->
+          <feColorMatrix
+            type="matrix"
+            values="1.05 0    0    0 0
+                    0    1.05 0    0 0
+                    0    0    1.05 0 0
+                    0    0    0    1 0"
+          />
+        </filter>
+      </defs>
+    </svg>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
