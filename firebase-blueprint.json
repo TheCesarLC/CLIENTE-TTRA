@@ -134,6 +134,19 @@
         "addedAt": { "type": "string" }
       },
       "required": ["email"]
+    },
+    "Subscription": {
+      "title": "Newsletter Subscription",
+      "description": "Customer emails subscribed for exclusive drops, newsletter, and promotional updates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "email", "createdAt"]
     }
   },
   "firestore": {
@@ -156,6 +169,10 @@
     "/messages/{messageId}": {
       "schema": "Message",
       "description": "Contact panel entries and wholesale queries."
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": "Subscription",
+      "description": "Newsletter and promotional email subscriptions."
     },
     "/authentic_codes/{codeId}": {
       "schema": "AuthenticCode",

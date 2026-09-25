@@ -36,9 +36,14 @@ import {
   Star,
   MessageSquare,
   FlaskConical,
-  Zap
+  Zap,
+  FileSpreadsheet,
+  Download,
+  Copy,
+  Users
 } from "lucide-react";
 import { getOrderStatusDetails, ORDER_SEMAFORO_LIST, normalizeOrderStatus } from "../lib/orderStatus";
+import { exportSubscriptionsToExcel, exportOrdersToExcel } from "../lib/excelExport";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -252,6 +257,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     orders,
     contactMessages,
     authenticCodes,
+    subscriptions,
+    deleteSubscription,
     visualEditMode,
     setVisualEditMode,
     updateSiteConfig,
@@ -266,8 +273,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     logout
   } = useSite();
 
-  const [activeTab, setActiveTab] = useState<"site" | "products" | "orders" | "reviews">("site");
+  const [activeTab, setActiveTab] = useState<"site" | "products" | "orders" | "reviews" | "subscriptions">("site");
   const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "approved">("all");
+  const [subscriptionSearch, setSubscriptionSearch] = useState("");
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
 
   const SEMAFORO_STATUSES = ORDER_SEMAFORO_LIST;
@@ -520,6 +529,25 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             >
               <Truck size={15} />
               <span>Pagos y Envíos ({orders.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab("subscriptions"); setEditingProduct(null); setEditingCode(null); }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded text-left text-xs font-bold tracking-widest uppercase transition-all ${
+                activeTab === "subscriptions" ? "bg-emerald-500 text-black shadow-lg" : "text-gray-400 hover:bg-neutral-900 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Mail size={15} />
+                <span>Suscripciones ({subscriptions.length})</span>
+              </div>
+              {subscriptions.length > 0 && (
+                <span className={`px-2 py-0.5 font-black text-[9px] rounded-full ${
+                  activeTab === "subscriptions" ? "bg-black text-white" : "bg-emerald-500/20 text-emerald-400"
+                }`}>
+                  {subscriptions.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -2063,9 +2091,68 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         {/* TAB 3: Orders, tracking and payment verification */}
         {activeTab === "orders" && (
           <div className="space-y-8">
-            <div className="border-b border-neutral-900 pb-4">
-              <h3 className="text-xl font-black uppercase tracking-widest">Envíos y Control de Transacciones</h3>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-neutral-900 pb-5">
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-widest text-white flex items-center gap-2">
+                  <Truck className="text-emerald-400" size={22} />
+                  <span>Envíos y Control de Transacciones</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">
+                  Historial en tiempo real de pedidos, métodos de pago, guías de envío y clientes.
+                </p>
+              </div>
+
+              {/* Direct Excel download for Orders */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (orders.length === 0) {
+                    showNotification("⚠️ No hay transacciones registradas para exportar a Excel.");
+                    return;
+                  }
+                  try {
+                    const fileName = exportOrdersToExcel(orders);
+                    showNotification(`✅ Reporte Excel descargado: ${fileName}`);
+                  } catch (e: any) {
+                    console.error("Error al exportar órdenes:", e);
+                    showNotification("❌ Error al generar el archivo Excel.");
+                  }
+                }}
+                className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-lg shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center gap-2 cursor-pointer self-start lg:self-auto active:scale-95"
+                title="Descargar base de datos completa de pedidos y estatus en Excel (.xlsx)"
+              >
+                <FileSpreadsheet size={16} />
+                <span>Descargar Reporte en Excel ({orders.length})</span>
+              </button>
             </div>
+
+            {/* Quick Summary Metrics for Orders */}
+            {orders.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Total Pedidos</span>
+                  <span className="text-lg font-black text-white">{orders.length}</span>
+                </div>
+                <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Recaudado MXN</span>
+                  <span className="text-lg font-black text-emerald-400">
+                    ${orders.reduce((sum, o) => sum + (typeof o.totalMXN === "number" ? o.totalMXN : 0), 0).toLocaleString("es-MX")}
+                  </span>
+                </div>
+                <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Recaudado USD</span>
+                  <span className="text-lg font-black text-blue-400">
+                    ${orders.reduce((sum, o) => sum + (typeof o.totalUSD === "number" ? o.totalUSD : Math.round((o.totalMXN || 0) / 20)), 0).toLocaleString("en-US")}
+                  </span>
+                </div>
+                <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Envíos Activos</span>
+                  <span className="text-lg font-black text-purple-400">
+                    {orders.filter(o => !String(o.status || "").includes("ENTREGADO") && !String(o.status || "").includes("FINALIZADO") && !String(o.status || "").includes("CANCELADO")).length}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {orders.length === 0 ? (
               <div className="p-12 text-center border border-neutral-800 rounded bg-neutral-950 text-gray-600 space-y-2 uppercase text-xs font-black">
@@ -2397,6 +2484,202 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 5: NEWSLETTER SUBSCRIPTIONS WITH REAL-TIME EXCEL EXPORT */}
+        {activeTab === "subscriptions" && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-neutral-900 pb-5">
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-widest text-white flex items-center gap-2">
+                  <Mail className="text-emerald-400" size={22} />
+                  <span>Suscripciones y Newsletter</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">
+                  Base de datos de clientes suscritos. Se actualiza en tiempo real vía Firestore y lista para descargar en Excel.
+                </p>
+              </div>
+
+              {/* Direct Excel download for Subscriptions */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (subscriptions.length === 0) {
+                    showNotification("⚠️ No hay suscriptores registrados para exportar.");
+                    return;
+                  }
+                  try {
+                    const fileName = exportSubscriptionsToExcel(subscriptions);
+                    showNotification(`✅ Lista Excel descargada: ${fileName}`);
+                  } catch (e: any) {
+                    console.error("Error al exportar suscriptores:", e);
+                    showNotification("❌ Error al generar el archivo Excel.");
+                  }
+                }}
+                className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-lg shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center gap-2 cursor-pointer self-start lg:self-auto active:scale-95"
+                title="Descargar lista de correos completa en Excel (.xlsx)"
+              >
+                <FileSpreadsheet size={16} />
+                <span>Descargar Lista en Excel ({subscriptions.length})</span>
+              </button>
+            </div>
+
+            {/* Metrics cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-neutral-900/40 border border-neutral-800 p-4 rounded-lg space-y-1">
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Total Suscriptores</span>
+                <span className="text-2xl font-black text-white">{subscriptions.length}</span>
+                <p className="text-[9px] text-gray-500 uppercase">Correos registrados en la plataforma</p>
+              </div>
+              <div className="bg-neutral-900/40 border border-neutral-800 p-4 rounded-lg space-y-1">
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Estatus en Base de Datos</span>
+                <span className="text-2xl font-black text-emerald-400">100% ACTIVO</span>
+                <p className="text-[9px] text-gray-500 uppercase">Sincronización en vivo con Firestore</p>
+              </div>
+              <div className="bg-neutral-900/40 border border-neutral-800 p-4 rounded-lg space-y-1">
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Formato de Exportación</span>
+                <span className="text-2xl font-black text-purple-400">.XLSX</span>
+                <p className="text-[9px] text-gray-500 uppercase">Compatible con Microsoft Excel y Google Sheets</p>
+              </div>
+            </div>
+
+            {/* Search Filter Bar */}
+            <div className="flex items-center gap-3 bg-neutral-950 border border-neutral-850 p-2.5 rounded-lg">
+              <input
+                type="text"
+                value={subscriptionSearch}
+                onChange={(e) => setSubscriptionSearch(e.target.value)}
+                placeholder="BUSCAR CORREO ELECTRÓNICO O FECHA..."
+                className="flex-1 bg-transparent border-none text-xs text-white placeholder-gray-600 focus:outline-none focus:ring-0 uppercase tracking-wider px-2"
+              />
+              {subscriptionSearch && (
+                <button
+                  onClick={() => setSubscriptionSearch("")}
+                  className="text-gray-500 hover:text-white text-xs px-2 cursor-pointer uppercase font-bold"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+
+            {/* Subscribers Table */}
+            {(() => {
+              const filtered = subscriptions.filter((s) => {
+                if (!subscriptionSearch.trim()) return true;
+                const q = subscriptionSearch.toLowerCase().trim();
+                return (s.email || "").toLowerCase().includes(q) || (s.createdAt || "").includes(q);
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-12 text-center border border-neutral-800 rounded bg-neutral-950 text-gray-500 space-y-3">
+                    <Mail className="mx-auto text-gray-600" size={32} />
+                    <p className="text-xs font-black uppercase tracking-wider">
+                      {subscriptions.length === 0
+                        ? "Aún no hay correos suscritos. Los nuevos correos ingresados en el formulario del pie de página aparecerán aquí automáticamente en tiempo real."
+                        : "No se encontraron correos que coincidan con la búsqueda."}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="overflow-x-auto border border-neutral-800 rounded-lg bg-neutral-950">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-neutral-800 bg-neutral-900/60 text-gray-400 text-[10px] font-black uppercase tracking-wider">
+                        <th className="py-3 px-4 w-12 text-center">#</th>
+                        <th className="py-3 px-4">Correo Electrónico</th>
+                        <th className="py-3 px-4">Fecha y Hora</th>
+                        <th className="py-3 px-4">Origen</th>
+                        <th className="py-3 px-4">Estatus</th>
+                        <th className="py-3 px-4 text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-900">
+                      {filtered.map((sub, idx) => {
+                        let formattedDate = "N/A";
+                        let formattedTime = "N/A";
+                        if (sub.createdAt) {
+                          try {
+                            const d = new Date(sub.createdAt);
+                            if (!isNaN(d.getTime())) {
+                              formattedDate = d.toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" });
+                              formattedTime = d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+                            } else {
+                              formattedDate = sub.createdAt;
+                            }
+                          } catch {
+                            formattedDate = sub.createdAt;
+                          }
+                        }
+
+                        const isCopied = copiedEmail === sub.email;
+
+                        return (
+                          <tr key={sub.id || idx} className="hover:bg-neutral-900/30 transition-colors">
+                            <td className="py-3 px-4 text-center text-gray-600 font-mono text-[10px]">
+                              {idx + 1}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-white tracking-wide">
+                              <div className="flex items-center gap-2">
+                                <span>{sub.email}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(sub.email);
+                                    setCopiedEmail(sub.email);
+                                    setTimeout(() => setCopiedEmail(null), 2000);
+                                  }}
+                                  className="text-gray-500 hover:text-emerald-400 p-1 transition-colors cursor-pointer"
+                                  title="Copiar correo"
+                                >
+                                  {isCopied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-gray-400 text-[11px]">
+                              <span>{formattedDate}</span>
+                              <span className="text-gray-600 text-[9px] block font-mono">{formattedTime}</span>
+                            </td>
+                            <td className="py-3 px-4 text-gray-400 text-[10px] uppercase">
+                              <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800">
+                                {sub.source || "Newsletter Web"}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                {(sub.status || "ACTIVO").toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setConfirmDelete({
+                                    title: "Eliminar Suscripción",
+                                    message: `¿Deseas remover "${sub.email}" de la lista de suscriptores?`,
+                                    onConfirm: async () => {
+                                      await deleteSubscription(sub.id);
+                                      showNotification("Suscripción eliminada.");
+                                    }
+                                  });
+                                }}
+                                className="p-1.5 border border-neutral-800 text-red-400 hover:bg-neutral-900 rounded cursor-pointer transition-colors"
+                                title="Eliminar suscriptor"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

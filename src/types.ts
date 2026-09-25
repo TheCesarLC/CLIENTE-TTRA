@@ -36,6 +36,14 @@ export interface GlowColor {
   rgb: string;
 }
 
+export interface Subscription {
+  id: string;
+  email: string;
+  createdAt: string;
+  source?: string;
+  status?: string;
+}
+
 export const GLOW_COLORS: GlowColor[] = [
   { name: "Verde Esmeralda", hex: "#10b981", rgb: "16, 185, 129" },
   { name: "Azul Eléctrico", hex: "#06b6d4", rgb: "6, 182, 212" },

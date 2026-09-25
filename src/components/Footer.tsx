@@ -17,21 +17,33 @@ export default function Footer({
   onVisualEdit,
   isAdmin
 }: FooterProps = {}) {
-  const { siteConfig: siteConfigFromContext, updateSiteConfig } = useSite();
+  const { siteConfig: siteConfigFromContext, updateSiteConfig, subscribeEmail } = useSite();
   const siteConfig = siteConfigProp || siteConfigFromContext;
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [subMessage, setSubMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activePolicyIdx, setActivePolicyIdx] = useState<number | null>(null);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || isSubmitting) return;
 
-    setSubscribed(true);
-    setEmail("");
-    setTimeout(() => {
-      setSubscribed(false);
-    }, 4000);
+    setIsSubmitting(true);
+    try {
+      const res = await subscribeEmail(email, "Footer Newsletter");
+      setSubscribed(true);
+      setSubMessage(res.message || "Te has inscrito con éxito");
+      setEmail("");
+      setTimeout(() => {
+        setSubscribed(false);
+        setSubMessage(null);
+      }, 5000);
+    } catch {
+      // Ignore
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const policies = [
@@ -140,7 +152,7 @@ export default function Footer({
             {subscribed ? (
               <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 px-4 py-2.5 rounded-full uppercase tracking-widest animate-pulse">
                 <Check size={14} />
-                <span>Te has inscrito con éxito</span>
+                <span>{subMessage || "Te has inscrito con éxito"}</span>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto border border-neutral-800 rounded bg-black p-1 hover:border-neutral-700 transition-colors">

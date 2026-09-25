@@ -19,7 +19,7 @@ import {
   User 
 } from "firebase/auth";
 import { db, auth, googleProvider, handleFirestoreError, OperationType, cleanDocData } from "../lib/firebase";
-import { Product, Review, CartItem } from "../types";
+import { Product, Review, CartItem, Subscription } from "../types";
 import { PRODUCTS, REVIEWS, AUTHENTIC_CODES } from "../data";
 
 // Custom type representing the overall visual site configuration
@@ -156,6 +156,7 @@ interface SiteContextType {
   orders: Order[];
   contactMessages: ContactMessage[];
   authenticCodes: AuthenticCode[];
+  subscriptions: Subscription[];
   visualEditMode: boolean;
   setVisualEditMode: (mode: boolean) => void;
   authError: string | null;
@@ -175,6 +176,8 @@ interface SiteContextType {
   submitMessage: (name: string, email: string, phone: string, message: string) => Promise<void>;
   markMessageRead: (messageId: string, read: boolean) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
+  subscribeEmail: (email: string, source?: string) => Promise<{ success: boolean; message: string; alreadySubscribed?: boolean }>;
+  deleteSubscription: (id: string) => Promise<void>;
   saveAuthenticCode: (code: AuthenticCode) => Promise<void>;
   deleteAuthenticCode: (code: string) => Promise<void>;
   deductProductStock: (items: { productId: string; quantity: number }[]) => Promise<void>;
@@ -350,6 +353,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [orders, setOrders] = useState<Order[]>([]);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [authenticCodes, setAuthenticCodes] = useState<AuthenticCode[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [visualEditMode, setVisualEditMode] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -807,6 +811,27 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, [currentUser, isAdmin]);
 
+  // Sync Subscriptions in real time (Admins receive live feed)
+  useEffect(() => {
+    if (!isAdmin) {
+      setSubscriptions([]);
+      return;
+    }
+    const path = "subscriptions";
+    const colRef = collection(db, path);
+    const unsubscribe = onSnapshot(colRef, (querySnap) => {
+      const list: Subscription[] = [];
+      querySnap.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...(docSnap.data() as Omit<Subscription, "id">) });
+      });
+      list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      setSubscriptions(list);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+    return unsubscribe;
+  }, [isAdmin]);
+
   // Auth Operations
   const loginWithGoogle = async () => {
     setAuthError(null);
@@ -1030,6 +1055,48 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const subscribeEmail = async (email: string, source: string = "Newsletter Web") => {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return { success: false, message: "Por favor ingresa un correo electrónico válido." };
+    }
+
+    const path = "subscriptions";
+    try {
+      const subId = cleanEmail.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const docRef = doc(db, path, subId);
+      const existingSnap = await getDoc(docRef);
+
+      const subData: Subscription = {
+        id: subId,
+        email: cleanEmail,
+        createdAt: new Date().toISOString(),
+        source,
+        status: "activo"
+      };
+
+      if (existingSnap.exists()) {
+        await setDoc(docRef, cleanDocData(subData), { merge: true });
+        return { success: true, message: "¡Ya estabas suscrito! Hemos actualizado tus preferencias.", alreadySubscribed: true };
+      }
+
+      await setDoc(docRef, cleanDocData(subData));
+      return { success: true, message: "¡Suscripción exitosa! Recibirás acceso prioritario y primicias de TETRA HATS." };
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, path);
+      return { success: false, message: "No se pudo procesar la suscripción. Intenta de nuevo más tarde." };
+    }
+  };
+
+  const deleteSubscription = async (id: string) => {
+    const path = "subscriptions";
+    try {
+      await deleteDoc(doc(db, path, id));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, `${path}/${id}`);
+    }
+  };
+
   const saveAuthenticCode = async (codeObj: AuthenticCode) => {
     const path = "authentic_codes";
     try {
@@ -1062,6 +1129,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         orders,
         contactMessages,
         authenticCodes,
+        subscriptions,
         visualEditMode,
         setVisualEditMode,
         authError,
@@ -1079,6 +1147,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         submitMessage,
         markMessageRead,
         deleteMessage,
+        subscribeEmail,
+        deleteSubscription,
         saveAuthenticCode,
         deleteAuthenticCode,
         deductProductStock
