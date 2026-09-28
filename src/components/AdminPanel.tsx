@@ -2128,22 +2128,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
             {/* Quick Summary Metrics for Orders */}
             {orders.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
                   <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Total Pedidos</span>
                   <span className="text-lg font-black text-white">{orders.length}</span>
-                </div>
-                <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Recaudado MXN</span>
-                  <span className="text-lg font-black text-emerald-400">
-                    ${orders.reduce((sum, o) => sum + (typeof o.totalMXN === "number" ? o.totalMXN : 0), 0).toLocaleString("es-MX")}
-                  </span>
-                </div>
-                <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Recaudado USD</span>
-                  <span className="text-lg font-black text-blue-400">
-                    ${orders.reduce((sum, o) => sum + (typeof o.totalUSD === "number" ? o.totalUSD : Math.round((o.totalMXN || 0) / 20)), 0).toLocaleString("en-US")}
-                  </span>
                 </div>
                 <div className="bg-neutral-900/40 border border-neutral-800 p-3.5 rounded-lg space-y-1">
                   <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Envíos Activos</span>

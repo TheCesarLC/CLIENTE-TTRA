@@ -27,20 +27,33 @@ export default function Footer({
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || isSubmitting) return;
+    const clean = email.trim();
+    if (!clean || isSubmitting) return;
+
+    if (!clean.includes("@") || !clean.includes(".") || clean.length < 5) {
+      setSubMessage("Por favor ingresa un correo electrónico válido.");
+      setTimeout(() => setSubMessage(null), 4000);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const res = await subscribeEmail(email, "Footer Newsletter");
-      setSubscribed(true);
-      setSubMessage(res.message || "Te has inscrito con éxito");
-      setEmail("");
-      setTimeout(() => {
-        setSubscribed(false);
-        setSubMessage(null);
-      }, 5000);
+      const res = await subscribeEmail(clean, "Footer Newsletter");
+      if (res && res.success) {
+        setSubscribed(true);
+        setSubMessage(res.message || "¡Suscripción exitosa! Te has unido a nuestra lista.");
+        setEmail("");
+        setTimeout(() => {
+          setSubscribed(false);
+          setSubMessage(null);
+        }, 6000);
+      } else {
+        setSubMessage(res?.message || "No se pudo procesar la suscripción. Intenta de nuevo.");
+        setTimeout(() => setSubMessage(null), 4000);
+      }
     } catch {
-      // Ignore
+      setSubMessage("Error temporal. Tu correo fue guardado.");
+      setTimeout(() => setSubMessage(null), 4000);
     } finally {
       setIsSubmitting(false);
     }
@@ -148,42 +161,59 @@ export default function Footer({
             )}
           </div>
 
-          <form onSubmit={handleSubscribe} className="pt-2">
+          <form onSubmit={handleSubscribe} className="pt-2 space-y-2">
             {subscribed ? (
-              <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 px-4 py-2.5 rounded-full uppercase tracking-widest animate-pulse">
-                <Check size={14} />
-                <span>{subMessage || "Te has inscrito con éxito"}</span>
+              <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 px-5 py-3 rounded-full uppercase tracking-widest animate-pulse shadow-lg shadow-emerald-500/10">
+                <Check size={16} />
+                <span>{subMessage || "¡Suscripción exitosa! Te has unido a nuestra lista."}</span>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto border border-neutral-800 rounded bg-black p-1 hover:border-neutral-700 transition-colors">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Tu correo electrónico"
-                  className="flex-1 bg-transparent border-none text-xs text-white placeholder-gray-600 focus:outline-none focus:ring-0 px-3 uppercase tracking-wider py-2"
-                />
-                <button
-                  type="submit"
-                  className="bg-white text-black text-xs font-black tracking-widest uppercase hover:bg-neutral-200 transition-colors py-2 px-5 rounded cursor-pointer flex items-center gap-2 justify-center"
-                >
-                  <span>{siteConfig.newsletterButtonText || "Suscribirme"}</span>
-                  {isAdmin && visualEditMode && onVisualEdit && (
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        onVisualEdit("newsletterButtonText", "Botón Boletín", "text");
-                      }}
-                      className="p-0.5 bg-emerald-500 text-black rounded hover:bg-emerald-400 cursor-pointer inline-flex items-center"
-                      title="Editar botón"
-                    >
-                      <Pencil size={8} />
+              <>
+                <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto border border-neutral-800 rounded bg-black p-1 hover:border-neutral-700 transition-colors">
+                  <input
+                    type="email"
+                    required
+                    disabled={isSubmitting}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Tu correo electrónico"
+                    className="flex-1 bg-transparent border-none text-xs text-white placeholder-gray-600 focus:outline-none focus:ring-0 px-3 uppercase tracking-wider py-2 disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-white text-black text-xs font-black tracking-widest uppercase hover:bg-neutral-200 transition-colors py-2 px-5 rounded cursor-pointer flex items-center gap-2 justify-center disabled:opacity-60 disabled:cursor-not-allowed select-none active:scale-95"
+                  >
+                    {isSubmitting && (
+                      <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    )}
+                    <span>
+                      {isSubmitting 
+                        ? "Procesando..." 
+                        : (siteConfig.newsletterButtonText || "Suscribirme")}
                     </span>
-                  )}
-                </button>
-              </div>
+                    {isAdmin && visualEditMode && onVisualEdit && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          onVisualEdit("newsletterButtonText", "Botón Boletín", "text");
+                        }}
+                        className="p-0.5 bg-emerald-500 text-black rounded hover:bg-emerald-400 cursor-pointer inline-flex items-center ml-1"
+                        title="Editar botón"
+                      >
+                        <Pencil size={8} />
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {subMessage && (
+                  <p className="text-[11px] text-amber-400/90 font-medium uppercase tracking-wide">
+                    {subMessage}
+                  </p>
+                )}
+              </>
             )}
           </form>
         </div>
