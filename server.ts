@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { Readable } from "stream";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import Stripe from "stripe";
@@ -424,6 +425,96 @@ app.post("/api/mercadopago/create-preference", async (req, res) => {
       error: "ERROR_MERCADOPAGO",
       message: err?.message || "Ocurrió un error al comunicarse con la API de Mercado Pago.",
     });
+  }
+});
+
+// Newsletter Subscriptions Storage and Sync Backup
+interface ServerSubscription {
+  id: string;
+  email: string;
+  createdAt: string;
+  source: string;
+  status: string;
+}
+
+const SUBSCRIPTIONS_FILE = path.join(process.cwd(), "subscriptions_backup.json");
+
+function loadServerSubscriptions(): ServerSubscription[] {
+  try {
+    if (fs.existsSync(SUBSCRIPTIONS_FILE)) {
+      const data = fs.readFileSync(SUBSCRIPTIONS_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.warn("Could not read subscriptions backup file:", err);
+  }
+  return [];
+}
+
+function saveServerSubscriptions(subs: ServerSubscription[]) {
+  try {
+    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subs, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("Could not save subscriptions backup file:", err);
+  }
+}
+
+let cachedSubscriptions: ServerSubscription[] = loadServerSubscriptions();
+
+app.post("/api/newsletter/subscribe", (req, res) => {
+  try {
+    const { email, source } = req.body;
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@") || cleanEmail.length < 5) {
+      return res.status(400).json({ error: "Invalid email" });
+    }
+
+    const subId = "sub_" + cleanEmail.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const existingIdx = cachedSubscriptions.findIndex(s => s.email.toLowerCase() === cleanEmail);
+    const subRecord: ServerSubscription = {
+      id: subId,
+      email: cleanEmail,
+      createdAt: new Date().toISOString(),
+      source: source || "Newsletter Web",
+      status: "activo"
+    };
+
+    if (existingIdx >= 0) {
+      cachedSubscriptions[existingIdx] = subRecord;
+    } else {
+      cachedSubscriptions.unshift(subRecord);
+    }
+
+    saveServerSubscriptions(cachedSubscriptions);
+    return res.json({ success: true, subscription: subRecord });
+  } catch (err: any) {
+    console.error("Newsletter subscribe error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/api/newsletter/subscriptions", (req, res) => {
+  return res.json({ success: true, subscriptions: cachedSubscriptions });
+});
+
+app.delete("/api/newsletter/subscribe", (req, res) => {
+  try {
+    const id = req.query.id as string;
+    const email = (req.query.email as string || "").trim().toLowerCase();
+    if (!id && !email) {
+      return res.status(400).json({ error: "Missing id or email" });
+    }
+
+    cachedSubscriptions = cachedSubscriptions.filter(s => {
+      if (id && s.id === id) return false;
+      if (email && s.email.toLowerCase() === email) return false;
+      return true;
+    });
+
+    saveServerSubscriptions(cachedSubscriptions);
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

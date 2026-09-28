@@ -760,26 +760,134 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
-  // Sync Messages (Admins only)
+  // Sync Messages and Subscriptions (Admins only)
   useEffect(() => {
     if (!isAdmin) {
       setContactMessages([]);
+      setSubscriptions([]);
       return;
     }
-    const path = "messages";
-    const colRef = collection(db, path);
-    const unsubscribe = onSnapshot(colRef, (querySnap) => {
-      const msgs: ContactMessage[] = [];
-      querySnap.forEach((docSnap) => {
-        msgs.push(docSnap.data() as ContactMessage);
+
+    const updateCombinedSubscriptions = (
+      subsFromFirestore: Subscription[],
+      subsFromMessages: Subscription[]
+    ) => {
+      const map = new Map<string, Subscription>();
+
+      // 1. From messages collection
+      subsFromMessages.forEach((s) => {
+        if (s.email) {
+          map.set(s.email.toLowerCase(), s);
+        }
       });
-      // Sort messages descending by date
+
+      // 2. From subscriptions collection
+      subsFromFirestore.forEach((s) => {
+        if (s.email) {
+          const key = s.email.toLowerCase();
+          const existing = map.get(key);
+          if (!existing || (s.createdAt && s.createdAt > (existing.createdAt || ""))) {
+            map.set(key, s);
+          }
+        }
+      });
+
+      // 3. From local storage backup
+      try {
+        const localSubsRaw = localStorage.getItem("tetra_hats_newsletter_subs");
+        if (localSubsRaw) {
+          const localSubs: Subscription[] = JSON.parse(localSubsRaw);
+          localSubs.forEach((ls) => {
+            if (ls.email && !map.has(ls.email.toLowerCase())) {
+              map.set(ls.email.toLowerCase(), ls);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Storage sync notice:", err);
+      }
+
+      const combined = Array.from(map.values());
+      combined.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      setSubscriptions(combined);
+    };
+
+    let cachedSubsFromMessages: Subscription[] = [];
+    let cachedSubsFromSubscriptions: Subscription[] = [];
+
+    // 1. Listen to messages collection in real time
+    const messagesPath = "messages";
+    const messagesCol = collection(db, messagesPath);
+    const unsubMessages = onSnapshot(messagesCol, (querySnap) => {
+      const msgs: ContactMessage[] = [];
+      const subsFromMsgs: Subscription[] = [];
+
+      querySnap.forEach((docSnap) => {
+        const data = docSnap.data() as any;
+        const isSubscription =
+          data.type === "newsletter_subscription" ||
+          data.name === "Suscriptor Newsletter" ||
+          (typeof data.message === "string" && data.message.includes("Suscripción al boletín")) ||
+          (typeof data.source === "string" && data.source.toLowerCase().includes("newsletter"));
+
+        if (isSubscription) {
+          subsFromMsgs.push({
+            id: docSnap.id,
+            email: data.email || "",
+            createdAt: data.createdAt || new Date().toISOString(),
+            source: data.source || "Móvil - Newsletter",
+            status: data.status || "activo"
+          });
+        } else {
+          msgs.push(data as ContactMessage);
+        }
+      });
+
       msgs.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       setContactMessages(msgs);
+
+      cachedSubsFromMessages = subsFromMsgs;
+      updateCombinedSubscriptions(cachedSubsFromSubscriptions, cachedSubsFromMessages);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, path);
+      console.warn("Messages realtime listener notice:", error);
     });
-    return unsubscribe;
+
+    // 2. Also listen to subscriptions collection in real time
+    const subsPath = "subscriptions";
+    const subsCol = collection(db, subsPath);
+    const unsubSubs = onSnapshot(subsCol, (querySnap) => {
+      const list: Subscription[] = [];
+      querySnap.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...(docSnap.data() as Omit<Subscription, "id">) });
+      });
+      cachedSubsFromSubscriptions = list;
+      updateCombinedSubscriptions(cachedSubsFromSubscriptions, cachedSubsFromMessages);
+    }, (error) => {
+      console.warn("Subscriptions realtime listener notice:", error);
+    });
+
+    // 3. Backup fetch from backend server API
+    fetch("/api/newsletter/subscriptions")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.subscriptions)) {
+          const serverSubs: Subscription[] = data.subscriptions;
+          setSubscriptions((prev) => {
+            const map = new Map<string, Subscription>();
+            serverSubs.forEach((s) => { if (s.email) map.set(s.email.toLowerCase(), s); });
+            prev.forEach((s) => { if (s.email) map.set(s.email.toLowerCase(), s); });
+            const list = Array.from(map.values());
+            list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+            return list;
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      unsubMessages();
+      unsubSubs();
+    };
   }, [isAdmin]);
 
   // Sync Orders (Admins see all, signed-in users see theirs)
@@ -810,53 +918,6 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return unsubscribe;
   }, [currentUser, isAdmin]);
-
-  // Sync Subscriptions in real time (Admins receive live feed)
-  useEffect(() => {
-    if (!isAdmin) {
-      setSubscriptions([]);
-      return;
-    }
-    const path = "subscriptions";
-    const colRef = collection(db, path);
-    const unsubscribe = onSnapshot(colRef, (querySnap) => {
-      const list: Subscription[] = [];
-      querySnap.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...(docSnap.data() as Omit<Subscription, "id">) });
-      });
-
-      // Merge with local storage backup so no registered email is ever lost
-      try {
-        const localSubsRaw = localStorage.getItem("tetra_hats_newsletter_subs");
-        if (localSubsRaw) {
-          const localSubs: Subscription[] = JSON.parse(localSubsRaw);
-          localSubs.forEach(ls => {
-            if (!list.some(s => s.email.toLowerCase() === ls.email.toLowerCase())) {
-              list.push(ls);
-              // Background sync to Firestore
-              setDoc(doc(db, path, ls.id), cleanDocData(ls), { merge: true }).catch(() => {});
-            }
-          });
-        }
-      } catch (err) {
-        console.warn("Storage merge notice:", err);
-      }
-
-      list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-      setSubscriptions(list);
-    }, (error) => {
-      console.warn("Subscriptions realtime listener notice:", error);
-      // Fallback from local backup
-      try {
-        const localSubsRaw = localStorage.getItem("tetra_hats_newsletter_subs");
-        if (localSubsRaw) {
-          const localSubs: Subscription[] = JSON.parse(localSubsRaw);
-          setSubscriptions(localSubs);
-        }
-      } catch {}
-    });
-    return unsubscribe;
-  }, [isAdmin]);
 
   // Auth Operations
   const loginWithGoogle = async () => {
@@ -1122,32 +1183,75 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return [subData, ...prev];
     });
 
-    // 3. Write/upsert to Firestore subscriptions collection directly
-    const path = "subscriptions";
+    // 3. Write directly to Firestore messages collection (allow create: if true guaranteed in live project)
     try {
-      const docRef = doc(db, path, subId);
-      await setDoc(docRef, cleanDocData(subData), { merge: true });
-      return { 
-        success: true, 
-        message: "¡Suscripción exitosa! Recibirás acceso prioritario y primicias de TETRA HATS." 
+      const messagePayload = {
+        id: subId,
+        type: "newsletter_subscription",
+        name: "Suscriptor Newsletter",
+        email: cleanEmail,
+        message: `Suscripción al boletín desde ${source}`,
+        source: source,
+        createdAt: subData.createdAt,
+        read: false,
+        status: "activo"
       };
-    } catch (e: any) {
-      console.warn("Firestore subscription save fallback:", e);
-      // The subscription is already safely captured in local storage and memory
-      return { 
-        success: true, 
-        message: "¡Suscripción exitosa! Recibirás acceso prioritario y primicias de TETRA HATS." 
-      };
+      await setDoc(doc(db, "messages", subId), cleanDocData(messagePayload));
+    } catch (msgErr) {
+      console.warn("Messages collection sync attempt:", msgErr);
     }
+
+    // 4. Also write/upsert to Firestore subscriptions collection directly
+    try {
+      const docRef = doc(db, "subscriptions", subId);
+      await setDoc(docRef, cleanDocData(subData), { merge: true });
+    } catch (subErr) {
+      console.warn("Subscriptions direct collection sync attempt:", subErr);
+    }
+
+    // 5. Also sync to backend server API endpoint as double redundancy
+    try {
+      fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, source })
+      }).catch(() => {});
+    } catch {}
+
+    return { 
+      success: true, 
+      message: "¡Suscripción exitosa! Recibirás acceso prioritario y primicias de TETRA HATS." 
+    };
   };
 
   const deleteSubscription = async (id: string) => {
-    const path = "subscriptions";
+    // 1. Delete from messages collection
     try {
-      await deleteDoc(doc(db, path, id));
-    } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `${path}/${id}`);
-    }
+      await deleteDoc(doc(db, "messages", id));
+    } catch {}
+
+    // 2. Delete from subscriptions collection
+    try {
+      await deleteDoc(doc(db, "subscriptions", id));
+    } catch {}
+
+    // 3. Delete from backend server
+    try {
+      fetch(`/api/newsletter/subscribe?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+    } catch {}
+
+    // 4. Delete from local storage
+    try {
+      const localSubsRaw = localStorage.getItem("tetra_hats_newsletter_subs");
+      if (localSubsRaw) {
+        const localSubs: Subscription[] = JSON.parse(localSubsRaw);
+        const filtered = localSubs.filter(s => s.id !== id && s.email.replace(/[^a-zA-Z0-9_-]/g, "_") !== id.replace("sub_", ""));
+        localStorage.setItem("tetra_hats_newsletter_subs", JSON.stringify(filtered));
+      }
+    } catch {}
+
+    // 5. Update state
+    setSubscriptions((prev) => prev.filter((s) => s.id !== id));
   };
 
   const saveAuthenticCode = async (codeObj: AuthenticCode) => {

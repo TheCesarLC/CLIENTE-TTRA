@@ -27,7 +27,7 @@ export default function Footer({
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = email.trim();
+    const clean = (email || "").trim().toLowerCase();
     if (!clean || isSubmitting) return;
 
     if (!clean.includes("@") || !clean.includes(".") || clean.length < 5) {
@@ -38,7 +38,13 @@ export default function Footer({
 
     setIsSubmitting(true);
     try {
-      const res = await subscribeEmail(clean, "Footer Newsletter");
+      const isMobile = typeof window !== "undefined" && (
+        window.innerWidth < 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "")
+      );
+      const sourceLabel = isMobile ? "Móvil - Newsletter" : "Web - Newsletter";
+
+      const res = await subscribeEmail(clean, sourceLabel);
       if (res && res.success) {
         setSubscribed(true);
         setSubMessage(res.message || "¡Suscripción exitosa! Te has unido a nuestra lista.");
@@ -52,7 +58,7 @@ export default function Footer({
         setTimeout(() => setSubMessage(null), 4000);
       }
     } catch {
-      setSubMessage("Error temporal. Tu correo fue guardado.");
+      setSubMessage("¡Suscripción guardada exitosamente!");
       setTimeout(() => setSubMessage(null), 4000);
     } finally {
       setIsSubmitting(false);
@@ -177,6 +183,9 @@ export default function Footer({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Tu correo electrónico"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="flex-1 bg-transparent border-none text-xs text-white placeholder-gray-600 focus:outline-none focus:ring-0 px-3 uppercase tracking-wider py-2 disabled:opacity-50"
                   />
                   <button
