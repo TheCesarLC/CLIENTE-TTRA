@@ -22,38 +22,48 @@ export default function Reviews() {
   const [editCapName, setEditCapName] = useState("");
   const [editReviewText, setEditReviewText] = useState("");
 
-  const startEditReview = (rev: Review) => {
-    setEditingReviewId(rev.id);
-    setEditName(rev.name);
+  const startEditReview = (rev: Review, fallbackId?: string) => {
+    const validId = (rev.id && typeof rev.id === "string" && rev.id.trim() !== "" && rev.id !== "undefined")
+      ? rev.id.trim()
+      : (fallbackId || "");
+    setEditingReviewId(validId);
+    setEditName(rev.name || "");
     setEditTitle(rev.title || "");
-    setEditRating(rev.rating);
-    setEditCapName(rev.capName);
-    setEditReviewText(rev.reviewText);
+    setEditRating(rev.rating || 5);
+    setEditCapName(rev.capName || "ON DGAS");
+    setEditReviewText(rev.reviewText || "");
   };
 
   const handleSaveEditReview = async (id: string) => {
-    if (!editName.trim() || !editReviewText.trim()) return;
+    if (!id || id === "undefined" || !editName.trim() || !editReviewText.trim()) return;
     const original = reviewsList.find(r => r.id === id);
-    if (!original) return;
 
     const updated: Review = {
-      ...original,
+      ...(original || {}),
+      id,
       name: editName.trim().toUpperCase(),
       title: editTitle.trim() ? editTitle.trim().toUpperCase() : undefined,
       rating: editRating,
       capName: editCapName.toUpperCase(),
-      reviewText: editReviewText.trim().toUpperCase()
+      reviewText: editReviewText.trim().toUpperCase(),
+      date: original?.date || new Date().toISOString().split("T")[0],
+      verified: original?.verified ?? true,
+      approved: original?.approved ?? false
     };
 
     await saveReview(updated);
     setEditingReviewId(null);
   };
 
-  const handleApproveReview = async (rev: Review) => {
-    await saveReview({ ...rev, approved: true });
+  const handleApproveReview = async (rev: Review, fallbackId?: string) => {
+    const validId = (rev.id && typeof rev.id === "string" && rev.id.trim() !== "" && rev.id !== "undefined")
+      ? rev.id.trim()
+      : (fallbackId || `rev-${Date.now()}`);
+    await saveReview({ ...rev, id: validId, approved: true });
   };
 
   const handleDeleteReview = async (id: string) => {
+    if (!id || id === "undefined") return;
     if (window.confirm("¿Seguro que deseas eliminar esta opinión de forma permanente del catálogo?")) {
       await deleteReview(id);
     }
@@ -386,12 +396,15 @@ export default function Reviews() {
               </button>
             </div>
           ) : (
-            displayReviews.map((rev) => {
-            const isEditing = editingReviewId === rev.id;
+            displayReviews.map((rev, index) => {
+            const reviewId = (rev.id && typeof rev.id === "string" && rev.id.trim() !== "" && rev.id !== "undefined")
+              ? rev.id.trim()
+              : `rev-${index}-${rev.date || Date.now()}`;
+            const isEditing = editingReviewId === reviewId;
             const isPending = rev.approved === false;
             return (
               <div
-                key={rev.id}
+                key={reviewId}
                 className={`bg-neutral-950/60 backdrop-blur-md p-5 rounded-lg border space-y-4 transition-colors text-left relative ${
                   isPending ? "border-amber-500/50 bg-amber-950/10" : "border-neutral-800 hover:border-neutral-700"
                 }`}
@@ -405,7 +418,7 @@ export default function Reviews() {
                     {isAdmin && (
                       <button
                         type="button"
-                        onClick={() => handleApproveReview(rev)}
+                        onClick={() => handleApproveReview(rev, reviewId)}
                         className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-black font-black rounded shadow cursor-pointer transition-transform hover:scale-105"
                       >
                         ✓ Aprobar Opinión
@@ -421,7 +434,7 @@ export default function Reviews() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          onClick={() => handleSaveEditReview(rev.id)}
+                          onClick={() => handleSaveEditReview(reviewId)}
                           className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-black text-[9px] font-black uppercase rounded cursor-pointer"
                         >
                           Guardar
@@ -534,7 +547,7 @@ export default function Reviews() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                startEditReview(rev);
+                                startEditReview(rev, reviewId);
                               }}
                               className="p-1 bg-emerald-500 hover:bg-emerald-450 text-black rounded select-none shadow hover:scale-105 active:scale-95 transition-all cursor-pointer"
                               title="Editar reseña"
@@ -545,7 +558,7 @@ export default function Reviews() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDeleteConfirmId(rev.id);
+                                setDeleteConfirmId(reviewId);
                               }}
                               className="p-1 bg-red-600 hover:bg-red-500 text-white rounded select-none shadow hover:scale-105 active:scale-95 transition-all cursor-pointer"
                               title="Eliminar reseña"

@@ -634,11 +634,17 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       querySnap.forEach((docSnap) => {
         if (!docSnap.id.startsWith("_")) {
           const data = docSnap.data() as Review;
+          const reviewId = (data.id && typeof data.id === "string" && data.id.trim() !== "" && data.id !== "undefined")
+            ? data.id.trim()
+            : docSnap.id;
           // If a legacy template review was found, purge it from Firestore
-          if (legacyTemplateIds.has(docSnap.id) || (data.id && legacyTemplateIds.has(data.id))) {
+          if (legacyTemplateIds.has(docSnap.id) || legacyTemplateIds.has(reviewId)) {
             deleteDoc(doc(db, "reviews", docSnap.id)).catch(() => {});
           } else {
-            revList.push(data);
+            revList.push({
+              ...data,
+              id: reviewId,
+            });
           }
         }
       });
@@ -843,7 +849,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      msgs.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      msgs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
       setContactMessages(msgs);
 
       cachedSubsFromMessages = subsFromMsgs;
@@ -910,7 +916,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         orderList.push(ord);
       });
       // Sort descending
-      orderList.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      orderList.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
       setOrders(orderList);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, path);
@@ -1006,19 +1012,32 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const saveReview = async (review: Review) => {
     const path = "reviews";
+    const reviewId = (review.id && typeof review.id === "string" && review.id.trim() !== "" && review.id !== "undefined")
+      ? review.id.trim()
+      : `rev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const sanitizedReview: Review = {
+      ...review,
+      id: reviewId,
+      date: review.date || new Date().toISOString().split("T")[0],
+    };
     try {
-      await setDoc(doc(db, path, review.id), cleanDocData(review));
+      await setDoc(doc(db, path, reviewId), cleanDocData(sanitizedReview));
     } catch (e) {
-      handleFirestoreError(e, OperationType.WRITE, `${path}/${review.id}`);
+      handleFirestoreError(e, OperationType.WRITE, `${path}/${reviewId}`);
     }
   };
 
   const deleteReview = async (reviewId: string) => {
+    if (!reviewId || typeof reviewId !== "string" || reviewId.trim() === "" || reviewId === "undefined") {
+      console.warn("Skipping deletion of review with invalid ID:", reviewId);
+      return;
+    }
+    const cleanId = reviewId.trim();
     const path = "reviews";
     try {
-      await deleteDoc(doc(db, path, reviewId));
+      await deleteDoc(doc(db, path, cleanId));
     } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `${path}/${reviewId}`);
+      handleFirestoreError(e, OperationType.DELETE, `${path}/${cleanId}`);
     }
   };
 

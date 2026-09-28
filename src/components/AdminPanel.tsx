@@ -2384,11 +2384,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     if (reviewFilter === "approved") return r.approved !== false;
                     return true;
                   })
-                  .map((rev) => {
+                  .map((rev, index) => {
+                    const reviewKey = (rev.id && typeof rev.id === "string" && rev.id.trim() !== "" && rev.id !== "undefined")
+                      ? rev.id.trim()
+                      : `admin-rev-${index}`;
                     const isPending = rev.approved === false;
                     return (
                       <div
-                        key={rev.id}
+                        key={reviewKey}
                         className={`p-4 rounded-xl border space-y-3 relative text-left transition-all ${
                           isPending
                             ? "bg-amber-950/20 border-amber-500/50"
@@ -2433,7 +2436,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                             <button
                               type="button"
                               onClick={async () => {
-                                await saveReview({ ...rev, approved: true });
+                                await saveReview({ ...rev, id: reviewKey, approved: true });
                                 showNotification("✅ Opinión aprobada y publicada en la tienda.");
                               }}
                               className="bg-emerald-500 hover:bg-emerald-400 text-black py-1.5 px-3 text-[10px] font-black uppercase rounded tracking-wider transition-all flex items-center gap-1 cursor-pointer"
@@ -2445,7 +2448,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                             <button
                               type="button"
                               onClick={async () => {
-                                await saveReview({ ...rev, approved: false });
+                                await saveReview({ ...rev, id: reviewKey, approved: false });
                                 showNotification("⏸️ Opinión ocultada del público.");
                               }}
                               className="bg-neutral-900 hover:bg-neutral-800 border border-amber-500/40 text-amber-400 py-1.5 px-3 text-[10px] font-bold uppercase rounded tracking-wider transition-all cursor-pointer"
@@ -2458,7 +2461,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                             type="button"
                             onClick={async () => {
                               if (window.confirm("¿Seguro que deseas eliminar esta opinión de forma permanente?")) {
-                                await deleteReview(rev.id);
+                                await deleteReview(reviewKey);
                                 showNotification("🗑️ Opinión eliminada correctamente.");
                               }
                             }}
