@@ -1108,9 +1108,21 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       onChange={(e) => updateSiteConfig({ heroVideo: e.target.value })}
                       className="w-full bg-neutral-900 border border-neutral-800 rounded p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono"
                     />
-                    {siteConfig.heroVideo && (
-                      <MediaSourceBadge url={siteConfig.heroVideo} />
-                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                      {siteConfig.heroVideo && (
+                        <MediaSourceBadge url={siteConfig.heroVideo} />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => updateSiteConfig({ heroVideo: "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig" })}
+                        className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                      >
+                        ⚡ Restaurar Video Oficial .mp4 para Móvil (Sin captcha)
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-gray-500 leading-snug">
+                      📱 <em>Nota para celulares:</em> YouTube en móviles puede activar el aviso de Google &quot;No soy un robot&quot; al reproducir en bucle continuo de fondo. Si esto ocurre, usa el video directo en .mp4.
+                    </p>
                   </div>
 
                   {/* 2. VIDEO VERSIÓN PC O TABLET (NUEVO LINK DE YOUTUBE) */}

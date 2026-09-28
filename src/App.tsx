@@ -562,6 +562,7 @@ export default function App() {
                 ? getOptimizedImageUrl(siteConfigToUse.heroPoster, 1280)
                 : undefined
             }
+            fallbackVideo="https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig"
             fallbackPoster="/previews/ondgas-3s.jpg"
           />
           {/* Subtle top and bottom lighting transitions without lateral black frames */}

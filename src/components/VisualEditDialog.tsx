@@ -288,6 +288,21 @@ export default function VisualEditDialog({
                   </p>
                 )}
 
+                {fieldName === "heroVideo" && (
+                  <div className="space-y-1.5 p-2.5 rounded bg-blue-950/20 border border-blue-500/30">
+                    <p className="text-[10px] text-blue-300 leading-tight">
+                      📱 <strong>Video Móvil (Celulares):</strong> Para evitar que YouTube pida confirmar &quot;No soy un robot&quot; en Safari / celulares, se recomienda el video directo en .mp4.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleLiveChange("https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig")}
+                      className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 underline cursor-pointer block"
+                    >
+                      ⚡ Usar Video Oficial On D Gas .mp4 (Directo sin captcha)
+                    </button>
+                  </div>
+                )}
+
                 {value && <MediaSourceBadge url={value} />}
 
                 {/* Video Preview */}

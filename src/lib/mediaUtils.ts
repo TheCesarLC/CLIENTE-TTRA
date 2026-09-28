@@ -475,12 +475,8 @@ export function getYouTubeEmbedUrl(
       ? window.location.origin
       : "";
 
-  // Maximum High-Definition Delivery: Force 1080p/HD stream
-  params.set("vq", "hd1080");
-  params.set("hd", "1");
   params.set("enablejsapi", "1");
   params.set("playsinline", "1");
-  params.set("modestbranding", "1");
   params.set("rel", "0");
 
   if (options?.isHero) {
@@ -490,15 +486,11 @@ export function getYouTubeEmbedUrl(
     params.set("controls", "0");
     params.set("loop", "1");
     params.set("playlist", videoId); // Required for looping single video in YouTube embed API
-    params.set("showinfo", "0");
     params.set("iv_load_policy", "3");
     params.set("disablekb", "1");
     params.set("fs", "0");
-    params.set("cc_load_policy", "0");
-    params.set("autohide", "1");
     if (currentOrigin) {
       params.set("origin", currentOrigin);
-      params.set("widget_referrer", currentOrigin);
     }
   } else {
     // Interactive player mode
@@ -515,7 +507,6 @@ export function getYouTubeEmbedUrl(
     }
     if (currentOrigin) {
       params.set("origin", currentOrigin);
-      params.set("widget_referrer", currentOrigin);
     }
   }
 

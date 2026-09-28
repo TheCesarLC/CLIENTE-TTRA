@@ -60,6 +60,7 @@ function HeroYouTubeBackground({
   aiEnhance,
   videoScale,
   isShort,
+  fallbackVideo,
 }: {
   src: string;
   videoId: string;
@@ -68,11 +69,13 @@ function HeroYouTubeBackground({
   aiEnhance?: boolean;
   videoScale?: string;
   isShort?: boolean;
+  fallbackVideo?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const playerRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const heroYtUrl = useMemo(() => {
     return getYouTubeEmbedUrl(src, { isHero: true });
@@ -93,6 +96,15 @@ function HeroYouTubeBackground({
   useEffect(() => {
     let isMounted = true;
     let loopChecker: NodeJS.Timeout | null = null;
+    let fallbackTimer: NodeJS.Timeout | null = null;
+
+    // Safety timeout: if YouTube fails to begin playing within 3.2 seconds
+    // (such as due to Google's mobile bot captcha or error 153), seamlessly activate fallback video
+    fallbackTimer = setTimeout(() => {
+      if (isMounted && !isLoaded) {
+        setHasError(true);
+      }
+    }, 3200);
 
     // Listen to YouTube postMessages to instantly handle ended/paused states before controls can render
     const handleWindowMessage = (e: MessageEvent) => {
@@ -101,14 +113,19 @@ function HeroYouTubeBackground({
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-        if (data && data.event === "onStateChange") {
+        if (data && data.event === "onError") {
+          if (isMounted) setHasError(true);
+        } else if (data && data.event === "onStateChange") {
           // 0 = ENDED, 2 = PAUSED
           if (data.info === 0 || data.info === 2) {
             sendIframeCommand("seekTo", [0, true]);
             sendIframeCommand("playVideo");
           } else if (data.info === 1) {
             // PLAYING
-            if (isMounted) setIsLoaded(true);
+            if (isMounted) {
+              setIsLoaded(true);
+              setHasError(false);
+            }
           }
         } else if (data && data.event === "initialDelivery") {
           sendIframeCommand("mute");
@@ -133,7 +150,9 @@ function HeroYouTubeBackground({
               if (typeof event.target.setPlaybackQuality === "function") {
                 event.target.setPlaybackQuality("hd1080");
               }
-              setIsLoaded(true);
+            },
+            onError: () => {
+              if (isMounted) setHasError(true);
             },
             onStateChange: (event: any) => {
               if (!isMounted) return;
@@ -147,6 +166,7 @@ function HeroYouTubeBackground({
                 event.target.playVideo();
               } else if (event.data === 1) {
                 setIsLoaded(true);
+                setHasError(false);
               }
             },
           },
@@ -171,13 +191,16 @@ function HeroYouTubeBackground({
             sendIframeCommand("listening");
           }
         }, 120);
-      } catch (_) {}
+      } catch (_) {
+        if (isMounted) setHasError(true);
+      }
     });
 
     return () => {
       isMounted = false;
       window.removeEventListener("message", handleWindowMessage);
       if (loopChecker) clearInterval(loopChecker);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       if (playerRef.current && typeof playerRef.current.destroy === "function") {
         try {
           playerRef.current.destroy();
@@ -235,24 +258,35 @@ function HeroYouTubeBackground({
           loading="eager"
           className={`${ytScaleClasses} max-w-none flex-shrink-0 object-cover pointer-events-none border-0 transition-opacity duration-700 transform-gpu [backface-visibility:hidden] [transform:translateZ(0)] ${
             aiEnhance ? "contrast-[1.05] saturate-[1.08] brightness-[1.01]" : ""
-          } ${isLoaded ? "opacity-100" : "opacity-95"}`}
+          } ${isLoaded && !hasError ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerPolicy="strict-origin-when-cross-origin"
+          referrerPolicy="no-referrer-when-downgrade"
           tabIndex={-1}
           title="Hero YouTube Video"
         />
       </div>
 
-      {/* Smooth initial cover that crossfades away once video is playing */}
-      {posterSrc && !isLoaded && (
+      {/* High performance fallback: if YouTube is buffering or blocked by bot check, play native video seamlessly */}
+      {(!isLoaded || hasError) && (
         <div className="absolute inset-0 pointer-events-none transition-opacity duration-700">
-          <img
-            src={posterSrc}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover brightness-[0.7]"
-            referrerPolicy="no-referrer"
-          />
+          {fallbackVideo ? (
+            <video
+              src={fallbackVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover brightness-[0.7] saturate-[0.95]"
+            />
+          ) : posterSrc ? (
+            <img
+              src={posterSrc}
+              alt=""
+              aria-hidden="true"
+              className="w-full h-full object-cover brightness-[0.7]"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
         </div>
       )}
     </div>
@@ -265,6 +299,7 @@ interface OptimizedVideoPlayerProps {
   activeVideoId?: string | null;
   onPlayRequest?: (id: string | null) => void;
   src: string;
+  fallbackVideo?: string;
   poster?: string;
   fallbackPoster?: string;
   className?: string;
@@ -287,6 +322,7 @@ export default function OptimizedVideoPlayer({
   activeVideoId,
   onPlayRequest,
   src,
+  fallbackVideo,
   poster,
   fallbackPoster,
   className = "w-full h-full object-cover",
@@ -600,6 +636,7 @@ export default function OptimizedVideoPlayer({
         aiEnhance={aiEnhance}
         videoScale={videoScale}
         isShort={ytConfig.isShort}
+        fallbackVideo={fallbackVideo}
       />
     );
   }

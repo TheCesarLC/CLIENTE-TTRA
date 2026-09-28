@@ -1,14 +1,39 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, getFirestore, doc, getDocFromServer } from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
 
-const app = initializeApp(firebaseConfig);
-export const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)" && firebaseConfig.firestoreDatabaseId.trim() !== "")
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+const firestoreDbId = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)" && firebaseConfig.firestoreDatabaseId.trim() !== "")
+  ? firebaseConfig.firestoreDatabaseId.trim()
+  : undefined;
+
+// Robust Firestore initialization with auto-detect long-polling to prevent connection drops in iframes/webviews/proxies
+let firestoreInstance;
+try {
+  firestoreInstance = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+  }, firestoreDbId);
+} catch {
+  firestoreInstance = firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestore(app);
+}
+
+export const db = firestoreInstance;
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Connection validation per Firebase Skill specification
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, "test", "connection"));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("the client is offline")) {
+      console.warn("Please check your Firebase configuration: Firestore client is offline.");
+    }
+  }
+}
+testConnection();
 
 export enum OperationType {
   CREATE = "create",
