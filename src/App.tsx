@@ -527,22 +527,23 @@ export default function App() {
         {/* Absolute Background Videos / Fallback posters */}
         <div className="absolute inset-0 z-0 overflow-hidden w-full h-full pointer-events-none">
           <OptimizedVideoPlayer
-            key={isTabletOrDesktop && siteConfigToUse.heroVideoDesktop ? "desktop-hero" : "mobile-hero"}
+            key="hero-background-video"
             isHero
             src={
-              // If on PC or Tablet (>= 768px) and user configured a desktop/tablet video (e.g. YouTube):
+              // If on PC or Tablet (>= 768px) and user configured desktop/tablet video:
               (isTabletOrDesktop &&
               siteConfigToUse.heroVideoDesktop &&
               siteConfigToUse.heroVideoDesktop.trim() &&
               !siteConfigToUse.heroVideoDesktop.includes("umbra.page") &&
               !siteConfigToUse.heroVideoDesktop.includes("8678b1b9")
-                ? siteConfigToUse.heroVideoDesktop
+                ? siteConfigToUse.heroVideoDesktop.trim()
                 : (
                     (siteConfigToUse.heroVideo &&
+                    siteConfigToUse.heroVideo.trim() &&
                     !siteConfigToUse.heroVideo.includes("umbra.page") &&
                     !siteConfigToUse.heroVideo.includes("8678b1b9") &&
                     !siteConfigToUse.heroVideo.includes("41ebdb")
-                      ? siteConfigToUse.heroVideo
+                      ? siteConfigToUse.heroVideo.trim()
                       : null) ||
                     "https://ik.imagekit.io/mvp0bxdrv/ON%20D%20GAS/On%20D%20Gas%201%20-%20Tetra%20Hats%20-%20Master%201080p%20WP%20(1).mp4?updatedAt=1788289887133&tr=orig"
                   ))

@@ -469,7 +469,7 @@ export function getYouTubeEmbedUrl(
   const videoId = config.videoId;
   const params = new URLSearchParams();
 
-  // Safely resolve active domain origin for YouTube embed validation
+  // Use youtube-nocookie.com for maximal mobile compatibility and to prevent robot captcha / 3rd-party cookie blocks
   const currentOrigin =
     typeof window !== "undefined" && window.location && window.location.origin
       ? window.location.origin
@@ -485,11 +485,12 @@ export function getYouTubeEmbedUrl(
     params.set("mute", "1");
     params.set("controls", "0");
     params.set("loop", "1");
-    params.set("playlist", videoId); // Required for looping single video in YouTube embed API
+    params.set("playlist", videoId); // Native continuous loop without reloads
     params.set("iv_load_policy", "3");
     params.set("disablekb", "1");
     params.set("fs", "0");
-    if (currentOrigin) {
+    // Only pass origin when not on Cloud Run / ephemeral iframe preview
+    if (currentOrigin && !currentOrigin.includes("run.app") && !currentOrigin.startsWith("file:")) {
       params.set("origin", currentOrigin);
     }
   } else {
@@ -505,12 +506,12 @@ export function getYouTubeEmbedUrl(
     } else {
       params.set("controls", "1");
     }
-    if (currentOrigin) {
+    if (currentOrigin && !currentOrigin.includes("run.app") && !currentOrigin.startsWith("file:")) {
       params.set("origin", currentOrigin);
     }
   }
 
-  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 }
 
 // ----------------------------------------------------
