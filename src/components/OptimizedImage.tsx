@@ -20,8 +20,31 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [retriedProxy, setRetriedProxy] = useState(false);
 
   const optimizedSrc = getOptimizedImageUrl(src, targetWidth);
+  const [currentSrc, setCurrentSrc] = useState(optimizedSrc);
+
+  React.useEffect(() => {
+    setCurrentSrc(getOptimizedImageUrl(src, targetWidth));
+    setHasError(false);
+    setRetriedProxy(false);
+  }, [src, targetWidth]);
+
+  const handleError = () => {
+    if (
+      !retriedProxy &&
+      currentSrc &&
+      !currentSrc.startsWith("data:") &&
+      !currentSrc.startsWith("/api/proxy-image")
+    ) {
+      setRetriedProxy(true);
+      setCurrentSrc(`/api/proxy-image?url=${encodeURIComponent(currentSrc)}`);
+      return;
+    }
+    setIsLoaded(true);
+    setHasError(true);
+  };
 
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
@@ -34,18 +57,15 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
       {/* Actual Image */}
       <img
-        src={optimizedSrc}
+        src={currentSrc}
         alt={alt}
         loading={loading}
         decoding="async"
         referrerPolicy="no-referrer"
         onLoad={() => setIsLoaded(true)}
-        onError={() => {
-          setIsLoaded(true);
-          setHasError(true);
-        }}
+        onError={handleError}
         className={`transition-opacity duration-500 ${
-          isLoaded ? "opacity-100" : "opacity-0"
+          isLoaded && !hasError ? "opacity-100" : "opacity-0"
         } ${className}`}
         {...props}
       />

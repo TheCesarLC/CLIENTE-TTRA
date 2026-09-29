@@ -570,7 +570,7 @@ export default function CartDrawer({
 
   <div class="ticket-container">
     <div class="brand-header">
-      ${data.logoUrl ? `<img src="${data.logoUrl}" alt="Logo" class="brand-logo" />` : ''}
+      ${data.logoUrl ? `<img src="${data.logoUrl}" alt="Logo" class="brand-logo" referrerpolicy="no-referrer" />` : ''}
       <h1 class="brand-name">${data.brandName}</h1>
       <div class="receipt-title">${statusInfo.receiptTitle}</div>
     </div>

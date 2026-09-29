@@ -3,6 +3,7 @@ import { Order } from "../context/SiteContext";
 import { X, Printer, CheckCircle2, ShieldCheck, CreditCard, Truck, FileText, Clock, Image, Download, AlertCircle, PackageCheck, Send, CheckSquare } from "lucide-react";
 import html2canvas from "html2canvas";
 import { getOrderStatusDetails } from "../lib/orderStatus";
+import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 
 interface ReceiptModalProps {
   order: Order | null;
@@ -157,7 +158,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 {logoUrl ? (
-                  <img src={logoUrl} alt="TETRA HATS" className="h-10 object-contain print:invert-0" />
+                  <img src={getOptimizedImageUrl(logoUrl, 300, { preserveTransparency: true })} alt="TETRA HATS" className="h-10 object-contain print:invert-0" referrerPolicy="no-referrer" />
                 ) : (
                   <span className="text-2xl font-black tracking-widest text-white print:text-black">TETRA HATS</span>
                 )}
@@ -275,7 +276,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, onClose, logo
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           {item.image && (
-                            <img src={item.image} alt={item.productName} className="w-8 h-8 object-cover rounded border border-neutral-800 print:border-gray-300" />
+                            <img src={getOptimizedImageUrl(item.image, 150)} alt={item.productName} className="w-8 h-8 object-cover rounded border border-neutral-800 print:border-gray-300" referrerPolicy="no-referrer" />
                           )}
                           <span className="font-bold uppercase tracking-wide">{item.productName}</span>
                         </div>

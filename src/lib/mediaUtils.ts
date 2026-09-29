@@ -896,30 +896,15 @@ export function getDirectImgurUrl(
     let ext = match[2] ? match[2].toLowerCase() : (isPng ? "png" : "png");
     if (ext === "gifv") ext = "mp4";
 
-    // If it's a PNG or transparency is requested, preserve PNG directly to maintain alpha transparency for caps and logos
-    if (ext === "png" || isPng) {
-      return `https://i.imgur.com/${imgId}.png`;
-    }
-
     // If it's a video file (.mp4 or .webm)
     if (ext === "mp4" || ext === "webm") {
       return `https://i.imgur.com/${imgId}.${ext}`;
     }
 
-    // For standard images, pick the optimal Imgur CDN sizing suffix:
-    // s: 90x90, b: 160x160, m: 320x320, l: 640x640, h: 1024x1024
-    let suffix = "";
-    if (targetWidth <= 160) {
-      suffix = "b";
-    } else if (targetWidth <= 320) {
-      suffix = "m";
-    } else if (targetWidth <= 640) {
-      suffix = "l";
-    } else if (targetWidth <= 1024) {
-      suffix = "h";
-    }
-
-    return `https://i.imgur.com/${imgId}${suffix}.${ext}`;
+    // Direct image CDN link:
+    // Always serve direct full-quality image without lossy single-letter suffixes ('b','m','l','h')
+    // because Imgur suffixes strip PNG alpha channels and can return 404s on newer uploads.
+    return `https://i.imgur.com/${imgId}.${ext}`;
   } catch {
     return trimmed;
   }

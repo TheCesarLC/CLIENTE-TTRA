@@ -113,7 +113,7 @@ const printOrderPDF = (ord: Order, logoUrl?: string) => {
 
   <div class="ticket-container">
     <div class="brand-header">
-      ${logoUrl ? `<img src="${logoUrl}" alt="Logo" class="brand-logo" />` : ''}
+      ${logoUrl ? `<img src="${logoUrl}" alt="Logo" class="brand-logo" referrerpolicy="no-referrer" />` : ''}
       <h1 class="brand-name">TETRA HATS</h1>
       <div class="receipt-title">${receiptTitle}</div>
     </div>
@@ -1248,9 +1248,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
                   <img 
-                    src={siteConfig.experiencePoster || "/previews/preview-800dias.webp"} 
+                    src={getOptimizedImageUrl(siteConfig.experiencePoster || "/previews/preview-800dias.webp", 150)} 
                     alt="Preview 800 DIAS" 
                     className="w-11 h-11 object-cover rounded border border-neutral-700" 
+                    referrerPolicy="no-referrer"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </div>
@@ -1291,9 +1292,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
                   <img 
-                    src={siteConfig.experiencePoster2 || "/previews/preview-ondgas.webp"} 
+                    src={getOptimizedImageUrl(siteConfig.experiencePoster2 || "/previews/preview-ondgas.webp", 150)} 
                     alt="Preview ONDGAS" 
                     className="w-11 h-11 object-cover rounded border border-neutral-700" 
+                    referrerPolicy="no-referrer"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </div>

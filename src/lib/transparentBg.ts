@@ -268,12 +268,14 @@ export async function removeBackground(
   const promise = new Promise<string>((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
 
     const tryProxyFallback = () => {
       if (!trimmed.startsWith("data:") && !trimmed.startsWith("/api/proxy-image")) {
         const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(trimmed)}`;
         const proxyImg = new Image();
         proxyImg.crossOrigin = "anonymous";
+        proxyImg.referrerPolicy = "no-referrer";
         proxyImg.onload = () => {
           try {
             const pW = proxyImg.naturalWidth || proxyImg.width;

@@ -896,7 +896,7 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {currentUser.photoURL ? (
-                        <img src={currentUser.photoURL} alt="Google Avatar" className="w-10 h-10 rounded-full border border-emerald-400" />
+                        <img src={currentUser.photoURL} alt="Google Avatar" className="w-10 h-10 rounded-full border border-emerald-400" referrerPolicy="no-referrer" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-emerald-400 font-black text-sm">
                           {(currentUser.displayName || currentUser.email || "G").charAt(0).toUpperCase()}
