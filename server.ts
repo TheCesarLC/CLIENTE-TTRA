@@ -105,7 +105,7 @@ app.get("/api/video-stream", async (req, res) => {
 
 // Image proxy to guarantee CORS support for transparent background processing
 app.get("/api/proxy-image", async (req, res) => {
-  const imageUrl = req.query.url as string;
+  let imageUrl = req.query.url as string;
   if (!imageUrl) return res.status(400).send("Missing image url");
 
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -113,6 +113,34 @@ app.get("/api/proxy-image", async (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=604800, immutable");
 
   try {
+    // If it's an ImgBB viewer page link (e.g., https://ibb.co/XXXX or https://imgbb.com/XXXX)
+    if (
+      (imageUrl.includes("ibb.co/") || imageUrl.includes("imgbb.com/")) &&
+      !imageUrl.includes("i.ibb.co") &&
+      !imageUrl.includes("simgbb.com")
+    ) {
+      try {
+        const pageRes = await fetch(imageUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+        });
+        if (pageRes.ok) {
+          const html = await pageRes.text();
+          const match =
+            html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+            html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i) ||
+            html.match(/<link\s+rel=["']image_src["']\s+href=["']([^"']+)["']/i) ||
+            html.match(/<img\s+[^>]*src=["'](https:\/\/[a-z0-9]+\.ibb\.co[^"']+)["']/i);
+          if (match && match[1]) {
+            imageUrl = match[1];
+          }
+        }
+      } catch (err) {
+        console.warn("Could not resolve ImgBB viewer page, attempting direct stream:", err);
+      }
+    }
+
     const fetchRes = await fetch(imageUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -137,6 +165,44 @@ app.get("/api/proxy-image", async (req, res) => {
     if (!res.headersSent) {
       res.status(500).send("Error proxying image");
     }
+  }
+});
+
+// Endpoint to resolve any viewer URL (like ImgBB or Imgur) to direct image link
+app.get("/api/resolve-image-url", async (req, res) => {
+  const url = req.query.url as string;
+  if (!url) return res.status(400).json({ error: "Missing url" });
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
+  try {
+    const trimmed = url.trim();
+    if (
+      (trimmed.includes("ibb.co/") || trimmed.includes("imgbb.com/")) &&
+      !trimmed.includes("i.ibb.co") &&
+      !trimmed.includes("simgbb.com")
+    ) {
+      const pageRes = await fetch(trimmed, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+      });
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        const match =
+          html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+          html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i) ||
+          html.match(/<link\s+rel=["']image_src["']\s+href=["']([^"']+)["']/i) ||
+          html.match(/<img\s+[^>]*src=["'](https:\/\/[a-z0-9]+\.ibb\.co[^"']+)["']/i);
+        if (match && match[1]) {
+          return res.json({ resolvedUrl: match[1] });
+        }
+      }
+    }
+    return res.json({ resolvedUrl: trimmed });
+  } catch {
+    return res.json({ resolvedUrl: url });
   }
 });
 

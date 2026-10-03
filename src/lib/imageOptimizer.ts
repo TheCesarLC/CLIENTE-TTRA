@@ -11,6 +11,9 @@ import {
   getOptimizedImageKitPosterUrl,
   isImgurUrl,
   getDirectImgurUrl,
+  isImgBBUrl,
+  getDirectImgBBUrl,
+  cleanRawImageUrl,
   isPngUrl
 } from "./mediaUtils";
 
@@ -28,7 +31,7 @@ export function getOptimizedImageUrl(
 ): string {
   if (!url || typeof url !== "string") return "";
 
-  let trimmed = url.trim();
+  let trimmed = cleanRawImageUrl(url);
   if (!trimmed) return "";
 
   // Clean broken placeholder patterns
@@ -63,7 +66,12 @@ export function getOptimizedImageUrl(
     return getDirectImgurUrl(trimmed, targetWidth, { preserveTransparency });
   }
 
-  // 6. Check if it's a Google Drive link
+  // 6. Check if it's an ImgBB image URL (supports direct links, viewer links, or embeds)
+  if (isImgBBUrl(trimmed)) {
+    return getDirectImgBBUrl(trimmed, targetWidth, { preserveTransparency });
+  }
+
+  // 7. Check if it's a Google Drive link
   if (isGoogleDriveUrl(trimmed)) {
     const fileId = extractGoogleDriveId(trimmed);
     if (fileId) {

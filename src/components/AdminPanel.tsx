@@ -1243,7 +1243,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   <input
                     type="text"
                     value={siteConfig.experiencePoster || ""}
-                    placeholder="/previews/800dias-3s.jpg o https://i.imgur.com/..."
+                    placeholder="/previews/800dias-3s.jpg o https://i.imgur.com/... o https://i.ibb.co/..."
                     onChange={(e) => updateSiteConfig({ experiencePoster: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />
@@ -1287,7 +1287,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   <input
                     type="text"
                     value={siteConfig.experiencePoster2 || ""}
-                    placeholder="/previews/ondgas-3s.jpg o https://i.imgur.com/..."
+                    placeholder="/previews/ondgas-3s.jpg o https://i.imgur.com/... o https://i.ibb.co/..."
                     onChange={(e) => updateSiteConfig({ experiencePoster2: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-neutral-700 font-mono text-xs"
                   />

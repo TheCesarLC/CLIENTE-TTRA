@@ -32,6 +32,8 @@ export default function MediaSourceBadge({
         return <HardDrive size={14} className="text-blue-400 flex-shrink-0" />;
       case "imgur":
         return <ImageIcon size={14} className="text-emerald-400 flex-shrink-0" />;
+      case "imgbb":
+        return <ImageIcon size={14} className="text-teal-400 flex-shrink-0" />;
       case "direct_video":
         return <Video size={14} className="text-emerald-400 flex-shrink-0" />;
       case "direct_image":

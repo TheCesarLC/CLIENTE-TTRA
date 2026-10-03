@@ -3,6 +3,7 @@ import { Plus, Trash2, Image as ImageIcon, List, Layers, Sparkles, Wand2 } from 
 import { getOptimizedImageUrl } from "../lib/imageOptimizer";
 import { TransparentProductImage } from "./TransparentProductImage";
 import { removeWhiteBackground } from "../lib/transparentBg";
+import { cleanRawImageUrl, isImgBBUrl, isImgurUrl } from "../lib/mediaUtils";
 
 interface ProductImageManagerProps {
   images: string[];
@@ -24,10 +25,30 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
   const currentImages = Array.isArray(images) && images.length > 0 ? images : [""];
 
   const handleSingleImageChange = (index: number, val: string) => {
+    const cleaned = cleanRawImageUrl(val);
     const next = [...currentImages];
-    next[index] = val;
+    next[index] = cleaned;
     onChange(next);
     setRawText(next.filter(Boolean).join("\n"));
+
+    // If user pasted an ImgBB viewer page (ibb.co/XYZ or imgbb.com/XYZ), automatically resolve to the direct image
+    if (
+      (cleaned.includes("ibb.co/") || cleaned.includes("imgbb.com/")) &&
+      !cleaned.includes("i.ibb.co") &&
+      !cleaned.includes("simgbb.com")
+    ) {
+      fetch(`/api/resolve-image-url?url=${encodeURIComponent(cleaned)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.resolvedUrl && data.resolvedUrl !== cleaned) {
+            const resolvedList = [...next];
+            resolvedList[index] = data.resolvedUrl;
+            onChange(resolvedList);
+            setRawText(resolvedList.filter(Boolean).join("\n"));
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   const handleAddImageRow = () => {
@@ -46,10 +67,10 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setRawText(text);
-    // Split by newline or comma
+    // Split by newline or comma and clean snippets
     const parsed = text
       .split(/[\n,]/)
-      .map((url) => url.trim())
+      .map((url) => cleanRawImageUrl(url.trim()))
       .filter((url) => url.length > 0);
 
     onChange(parsed.length > 0 ? parsed : [""]);
@@ -86,7 +107,7 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
             Galería e Imágenes del Producto (Fondo Transparente Automático)
           </label>
           <p className="text-[10px] text-gray-400 font-medium">
-            Agrega las URLs de las imágenes. El sistema elimina fondos negros o blancos automáticamente para que las gorras queden completamente transparentes.
+            Compatible con <strong className="text-emerald-400">Imgur</strong> (i.imgur.com), <strong className="text-teal-400">ImgBB</strong> (i.ibb.co / ibb.co), Google Drive y CDNs directos. Puedes combinarlos libremente.
           </p>
         </div>
 
@@ -144,9 +165,21 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
               {/* URL Input */}
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex justify-between items-center text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                  <span>
-                    {idx === 0 ? "★ Imagen 1 (Portada Principal)" : `Imagen ${idx + 1}`}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span>
+                      {idx === 0 ? "★ Imagen 1 (Portada Principal)" : `Imagen ${idx + 1}`}
+                    </span>
+                    {imgUrl && isImgurUrl(imgUrl) && (
+                      <span className="text-[8px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1 py-0.2 rounded font-black tracking-wider uppercase">
+                        Imgur
+                      </span>
+                    )}
+                    {imgUrl && isImgBBUrl(imgUrl) && (
+                      <span className="text-[8px] bg-teal-500/15 text-teal-400 border border-teal-500/30 px-1 py-0.2 rounded font-black tracking-wider uppercase">
+                        ImgBB
+                      </span>
+                    )}
+                  </div>
                   {imgUrl && imgUrl.trim().length > 5 && (
                     <button
                       type="button"
@@ -164,7 +197,7 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
                   type="url"
                   value={imgUrl}
                   onChange={(e) => handleSingleImageChange(idx, e.target.value)}
-                  placeholder="https://ejemplo.com/imagen.png"
+                  placeholder="https://i.imgur.com/... o https://i.ibb.co/..."
                   className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono text-[11px]"
                 />
               </div>
@@ -204,7 +237,7 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
             value={rawText}
             onChange={handleTextareaChange}
             rows={5}
-            placeholder={`https://ejemplo.com/imagen1.png\nhttps://ejemplo.com/imagen2.png\nhttps://ejemplo.com/imagen3.png`}
+            placeholder={`https://i.imgur.com/u6D6b9Z.png\nhttps://i.ibb.co/L5hYvXz/gorra-1.png\nhttps://i.imgur.com/VnEirIv.png`}
             className="w-full bg-black border border-neutral-800 rounded p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
           />
           <p className="text-[10px] text-gray-500">

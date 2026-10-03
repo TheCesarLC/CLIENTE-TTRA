@@ -526,6 +526,7 @@ export interface MediaSourceInfo {
     | "imagekit"
     | "cloudinary"
     | "imgur"
+    | "imgbb"
     | "direct_video"
     | "direct_image"
     | "unknown";
@@ -676,7 +677,23 @@ export function detectMediaSource(url: string | null | undefined): MediaSourceIn
     };
   }
 
-  // 7. Direct Video File (.mp4, .webm, .mov, .m4v, .ogv)
+  // 7. ImgBB Detection
+  if (isImgBBUrl(trimmed)) {
+    return {
+      provider: "imgbb",
+      label: "ImgBB",
+      badgeText: "ImgBB Detectado",
+      badgeBg: "bg-teal-500/10",
+      badgeBorder: "border-teal-500/30",
+      badgeTextCol: "text-teal-400",
+      badgeDotCol: "bg-teal-400",
+      description: "Enlace de ImgBB detectado. Optimizado para catálogo de alta resolución y transparencia automática.",
+      isSupportedVideo: false,
+      isSupportedImage: true,
+    };
+  }
+
+  // 8. Direct Video File (.mp4, .webm, .mov, .m4v, .ogv)
   if (/\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/i.test(trimmed)) {
     return {
       provider: "direct_video",
@@ -907,5 +924,84 @@ export function getDirectImgurUrl(
     return `https://i.imgur.com/${imgId}.${ext}`;
   } catch {
     return trimmed;
+  }
+}
+
+// ----------------------------------------------------
+// Raw Image URL Cleaner (BBCode, HTML tags, Markdown)
+// ----------------------------------------------------
+
+export function cleanRawImageUrl(input: string | null | undefined): string {
+  if (!input || typeof input !== "string") return "";
+  let trimmed = input.trim();
+
+  // 1. BBCode [img]https://...[/img] or [url=...][img]https://...[/img][/url]
+  const bbMatch = trimmed.match(/\[img\]\s*(https?:\/\/[^\s\]]+)\s*\[\/img\]/i);
+  if (bbMatch && bbMatch[1]) {
+    return bbMatch[1].trim();
+  }
+
+  // 2. HTML <img src="https://..." ... /> or <a href="..."><img src="..." /></a>
+  const htmlMatch = trimmed.match(/<img\s+[^>]*src=["'](https?:\/\/[^"']+)["']/i);
+  if (htmlMatch && htmlMatch[1]) {
+    return htmlMatch[1].trim();
+  }
+
+  // 3. Markdown ![alt](https://...)
+  const mdMatch = trimmed.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/i);
+  if (mdMatch && mdMatch[1]) {
+    return mdMatch[1].trim();
+  }
+
+  // 4. Strip wrapping quotes
+  trimmed = trimmed.replace(/^["']|["']$/g, "").trim();
+
+  return trimmed;
+}
+
+// ----------------------------------------------------
+// ImgBB Support & Optimization Engine
+// ----------------------------------------------------
+
+export function isImgBBUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const clean = cleanRawImageUrl(url).toLowerCase();
+  return (
+    clean.includes("ibb.co") ||
+    clean.includes("imgbb.com") ||
+    clean.includes("simgbb.com")
+  );
+}
+
+export function isDirectImgBBUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const clean = cleanRawImageUrl(url).toLowerCase();
+  return (
+    clean.includes("i.ibb.co") ||
+    clean.includes("simgbb.com") ||
+    /\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(clean)
+  );
+}
+
+export function getDirectImgBBUrl(
+  url: string | null | undefined,
+  _targetWidth: number = 600,
+  _options?: { preserveTransparency?: boolean }
+): string {
+  if (!url || typeof url !== "string") return "";
+  const cleaned = cleanRawImageUrl(url);
+  if (!isImgBBUrl(cleaned)) return cleaned;
+
+  try {
+    // If it's already a direct link: e.g. https://i.ibb.co/XXXXX/name.png or https://i.ibb.co.com/XXXXX/name.png
+    if (cleaned.includes("i.ibb.co") || isDirectImgBBUrl(cleaned)) {
+      return cleaned;
+    }
+
+    // If it's a viewer page link: e.g. https://ibb.co/XXXXX or https://ibb.co.com/XXXXX
+    // Route it through the proxy which automatically parses the page and streams the direct image
+    return `/api/proxy-image?url=${encodeURIComponent(cleaned)}`;
+  } catch {
+    return cleaned;
   }
 }
