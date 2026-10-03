@@ -51,21 +51,8 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
       return;
     }
 
-    // Set temporary optimized URL while processing transparency
+    // Instant rendering with high-speed compressed URL
     setDisplaySrc(optimized);
-
-    // Process transparent cutout in background
-    removeWhiteBackground(optimized)
-      .then((transparentUrl) => {
-        if (isMounted && transparentUrl) {
-          setDisplaySrc(transparentUrl);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setDisplaySrc(optimized);
-        }
-      });
 
     return () => {
       isMounted = false;
@@ -81,7 +68,7 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
       !displaySrc.startsWith("/api/proxy-image")
     ) {
       setHasRetriedProxy(true);
-      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(displaySrc)}`;
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(displaySrc)}&w=${widthOptimization}&fmt=webp`;
       setDisplaySrc(proxyUrl);
       return;
     }

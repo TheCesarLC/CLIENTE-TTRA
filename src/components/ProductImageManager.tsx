@@ -67,13 +67,46 @@ export const ProductImageManager: React.FC<ProductImageManagerProps> = ({
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setRawText(text);
-    // Split by newline or comma and clean snippets
+    // Split by newline or comma and clean snippets (BBCode, HTML tags, quotes)
     const parsed = text
       .split(/[\n,]/)
       .map((url) => cleanRawImageUrl(url.trim()))
       .filter((url) => url.length > 0);
 
-    onChange(parsed.length > 0 ? parsed : [""]);
+    const resultList = parsed.length > 0 ? parsed : [""];
+    onChange(resultList);
+
+    // If any are ImgBB viewer links, auto-resolve in background to direct fast links
+    const hasViewerLink = parsed.some(
+      (url) =>
+        (url.includes("ibb.co/") || url.includes("imgbb.com/")) &&
+        !url.includes("i.ibb.co") &&
+        !url.includes("simgbb.com")
+    );
+
+    if (hasViewerLink) {
+      Promise.all(
+        parsed.map(async (u) => {
+          if (
+            (u.includes("ibb.co/") || u.includes("imgbb.com/")) &&
+            !u.includes("i.ibb.co") &&
+            !u.includes("simgbb.com")
+          ) {
+            try {
+              const res = await fetch(`/api/resolve-image-url?url=${encodeURIComponent(u)}`);
+              const data = await res.json();
+              return data?.resolvedUrl || u;
+            } catch {
+              return u;
+            }
+          }
+          return u;
+        })
+      ).then((resolvedAll) => {
+        onChange(resolvedAll);
+        setRawText(resolvedAll.filter(Boolean).join("\n"));
+      });
+    }
   };
 
   const handleSwitchMode = (newMode: "list" | "text") => {
