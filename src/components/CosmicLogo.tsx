@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { getOptimizedImageUrl } from "../lib/imageOptimizer";
-import { removeBackground, getCachedTransparentImage } from "../lib/transparentBg";
+import { getOptimizedImageUrl, getRawFallbackImageUrl } from "../lib/imageOptimizer";
+import { getCachedTransparentImage } from "../lib/transparentBg";
 
 interface CosmicLogoProps {
   src?: string;
@@ -56,10 +56,10 @@ export default function CosmicLogo({
   );
 
   const optimizedSrc = hasCustomSrc 
-    ? getOptimizedImageUrl(src!, 1400, { preserveTransparency: true }) 
+    ? getOptimizedImageUrl(src!, 1000, { preserveTransparency: true }) 
     : "";
 
-  // Preload custom image if provided with guaranteed transparent cutout
+  // Preload custom image with multi-stage fallback
   useEffect(() => {
     if (!optimizedSrc) {
       setCustomImage(null);
@@ -67,50 +67,36 @@ export default function CosmicLogo({
     }
 
     let isMounted = true;
+    const rawFallback = src ? getRawFallbackImageUrl(src) : "";
 
-    const loadImg = (url: string) => {
+    const loadImg = (url: string, stage: number = 0) => {
       const img = new Image();
-      img.crossOrigin = "anonymous";
       img.referrerPolicy = "no-referrer";
       img.onload = () => {
         if (isMounted) setCustomImage(img);
       };
       img.onerror = () => {
-        if (url !== optimizedSrc) {
-          // Fallback to optimized directly if processed failed
-          const fallback = new Image();
-          fallback.crossOrigin = "anonymous";
-          fallback.referrerPolicy = "no-referrer";
-          fallback.onload = () => {
-            if (isMounted) setCustomImage(fallback);
-          };
-          fallback.onerror = () => {
-            if (isMounted) setCustomImage(null);
-          };
-          fallback.src = optimizedSrc;
-        } else if (isMounted) {
-          setCustomImage(null);
+        if (!isMounted) return;
+        if (stage === 0 && rawFallback && rawFallback !== url) {
+          loadImg(rawFallback, 1);
+          return;
         }
+        if (stage <= 1 && rawFallback && !rawFallback.startsWith("/api/proxy-image")) {
+          loadImg(`/api/proxy-image?url=${encodeURIComponent(rawFallback)}`, 2);
+          return;
+        }
+        setCustomImage(null);
       };
       img.src = url;
     };
 
     const cached = getCachedTransparentImage(optimizedSrc) || (src ? getCachedTransparentImage(src) : null);
     if (cached) {
-      loadImg(cached);
+      loadImg(cached, 0);
       return;
     }
 
-    // Start with optimized and attempt dark background strip
-    loadImg(optimizedSrc);
-
-    removeBackground(optimizedSrc, { threshold: 55, colorTolerance: 38 })
-      .then((transparentUrl) => {
-        if (isMounted && transparentUrl && transparentUrl !== optimizedSrc) {
-          loadImg(transparentUrl);
-        }
-      })
-      .catch(() => {});
+    loadImg(optimizedSrc, 0);
 
     return () => {
       isMounted = false;

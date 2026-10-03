@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { removeWhiteBackground, getCachedTransparentImage } from "../lib/transparentBg";
-import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { getCachedTransparentImage } from "../lib/transparentBg";
+import { getOptimizedImageUrl, getRawFallbackImageUrl } from "../lib/imageOptimizer";
 
 interface TransparentProductImageProps {
   src: string;
@@ -30,13 +30,12 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
     return getCachedTransparentImage(initialOptimized) || initialOptimized;
   });
   const [isLoaded, setIsLoaded] = useState(false);
-  const [hasRetriedProxy, setHasRetriedProxy] = useState(false);
+  const [fallbackStage, setFallbackStage] = useState(0);
   const [hasFailed, setHasFailed] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
     setHasFailed(false);
-    setHasRetriedProxy(false);
+    setFallbackStage(0);
     
     const optimized = getOptimizedImageUrl(src, widthOptimization);
     
@@ -53,27 +52,32 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
 
     // Instant rendering with high-speed compressed URL
     setDisplaySrc(optimized);
-
-    return () => {
-      isMounted = false;
-    };
   }, [src, widthOptimization]);
 
   const handleImageError = () => {
-    // If the image failed to load and hasn't tried the backend proxy yet, try the proxy
+    const rawFallback = getRawFallbackImageUrl(src);
+
+    // Stage 1: Try direct raw image URL (e.g. https://i.imgur.com/ID.webp or https://i.ibb.co/...)
+    if (fallbackStage === 0 && rawFallback && rawFallback !== displaySrc) {
+      setFallbackStage(1);
+      setDisplaySrc(rawFallback);
+      return;
+    }
+
+    // Stage 2: Try backend proxy
     if (
-      !hasRetriedProxy &&
-      displaySrc &&
-      !displaySrc.startsWith("data:") &&
-      !displaySrc.startsWith("/api/proxy-image")
+      fallbackStage <= 1 &&
+      rawFallback &&
+      !rawFallback.startsWith("data:") &&
+      !rawFallback.startsWith("/api/proxy-image")
     ) {
-      setHasRetriedProxy(true);
-      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(displaySrc)}&w=${widthOptimization}&fmt=webp`;
+      setFallbackStage(2);
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(rawFallback)}&w=${widthOptimization}&fmt=webp`;
       setDisplaySrc(proxyUrl);
       return;
     }
 
-    // If proxy also failed or not applicable, mark as failed to suppress the broken question mark icon
+    // Stage 3: Suppress broken question mark icon
     setHasFailed(true);
     setIsLoaded(true);
     onError?.();

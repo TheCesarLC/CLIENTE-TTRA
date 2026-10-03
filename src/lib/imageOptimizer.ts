@@ -11,6 +11,7 @@ import {
   getOptimizedImageKitPosterUrl,
   isImgurUrl,
   getDirectImgurUrl,
+  getFallbackImgurUrl,
   isImgBBUrl,
   getDirectImgBBUrl,
   cleanRawImageUrl,
@@ -74,20 +75,14 @@ export function getOptimizedImageUrl(
     return getOptimizedCloudinaryPosterUrl(trimmed, targetWidth);
   }
 
-  // 5. Check if it's an Imgur image URL (supports gallery, album, or direct links)
+  // 5. Check if it's an Imgur image URL (serves directly via Imgur's native CloudFront WebP resizer)
   if (isImgurUrl(trimmed)) {
-    const directImgur = getDirectImgurUrl(trimmed, targetWidth, { preserveTransparency });
-    if (directImgur.endsWith(".mp4") || directImgur.endsWith(".webm")) {
-      return directImgur;
-    }
-    // High-speed compression proxy: reduces 3.9MB raw PNGs into ~20KB WebP preserving 100% alpha transparency
-    return `/api/proxy-image?url=${encodeURIComponent(directImgur)}&w=${targetWidth}&fmt=webp`;
+    return getDirectImgurUrl(trimmed, targetWidth, { preserveTransparency });
   }
 
-  // 6. Check if it's an ImgBB image URL (supports direct links, viewer links, or embeds)
+  // 6. Check if it's an ImgBB image URL (serves directly via Cloudflare wsrv.nl WebP resizer)
   if (isImgBBUrl(trimmed)) {
-    // High-speed compression proxy: automatically resolves viewer links (ibb.co) or compresses direct links (i.ibb.co)
-    return `/api/proxy-image?url=${encodeURIComponent(trimmed)}&w=${targetWidth}&fmt=webp`;
+    return getDirectImgBBUrl(trimmed, targetWidth, { preserveTransparency });
   }
 
   // 7. Check if it's a Google Drive link
@@ -99,7 +94,7 @@ export function getOptimizedImageUrl(
     }
   }
 
-  // 7. Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
+  // 8. Check if it's an Umbra / Shopify CDN URL (e.g. https://umbra.page/cdn/shop/files/25.png)
   if (
     trimmed.includes("cdn/shop") ||
     trimmed.includes("umbra.page") ||
@@ -121,6 +116,21 @@ export function getOptimizedImageUrl(
     }
   }
 
+  return trimmed;
+}
+
+/**
+ * Returns a direct fallback URL (e.g. raw i.imgur.com/*.webp or raw i.ibb.co/*.png)
+ * in case an optimized CDN endpoint ever fails on a specific network.
+ */
+export function getRawFallbackImageUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = cleanRawImageUrl(url);
+  if (!trimmed) return "";
+
+  if (isImgurUrl(trimmed)) {
+    return getFallbackImgurUrl(trimmed);
+  }
   return trimmed;
 }
 

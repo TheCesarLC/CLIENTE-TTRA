@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { getOptimizedImageUrl, getRawFallbackImageUrl } from "../lib/imageOptimizer";
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -20,7 +20,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [retriedProxy, setRetriedProxy] = useState(false);
+  const [fallbackStage, setFallbackStage] = useState(0);
 
   const optimizedSrc = getOptimizedImageUrl(src, targetWidth);
   const [currentSrc, setCurrentSrc] = useState(optimizedSrc);
@@ -28,18 +28,24 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   React.useEffect(() => {
     setCurrentSrc(getOptimizedImageUrl(src, targetWidth));
     setHasError(false);
-    setRetriedProxy(false);
+    setFallbackStage(0);
   }, [src, targetWidth]);
 
   const handleError = () => {
+    const rawFallback = getRawFallbackImageUrl(src);
+    if (fallbackStage === 0 && rawFallback && rawFallback !== currentSrc) {
+      setFallbackStage(1);
+      setCurrentSrc(rawFallback);
+      return;
+    }
     if (
-      !retriedProxy &&
-      currentSrc &&
-      !currentSrc.startsWith("data:") &&
-      !currentSrc.startsWith("/api/proxy-image")
+      fallbackStage <= 1 &&
+      rawFallback &&
+      !rawFallback.startsWith("data:") &&
+      !rawFallback.startsWith("/api/proxy-image")
     ) {
-      setRetriedProxy(true);
-      setCurrentSrc(`/api/proxy-image?url=${encodeURIComponent(currentSrc)}`);
+      setFallbackStage(2);
+      setCurrentSrc(`/api/proxy-image?url=${encodeURIComponent(rawFallback)}`);
       return;
     }
     setIsLoaded(true);

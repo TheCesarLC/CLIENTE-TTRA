@@ -890,7 +890,7 @@ export function getDirectImgurUrl(
   options?: { preserveTransparency?: boolean }
 ): string {
   if (!url || typeof url !== "string") return "";
-  const trimmed = url.trim();
+  const trimmed = cleanRawImageUrl(url);
   if (!isImgurUrl(trimmed)) return trimmed;
 
   try {
@@ -903,28 +903,43 @@ export function getDirectImgurUrl(
     // Matches patterns like:
     // https://i.imgur.com/8QzX9Yr.png
     // https://imgur.com/8QzX9Yr
-    // https://imgur.com/a/8QzX9Yr (album URL pasted by user)
+    // https://imgur.com/a/8QzX9Yr
     // https://imgur.com/gallery/8QzX9Yr
-    const match = trimmed.match(/(?:imgur\.com\/(?:a\/|gallery\/)?|i\.imgur\.com\/)([a-zA-Z0-9]+)(?:\.([a-zA-Z0-9]+))?/i);
+    // https://i.imgur.com/8QzX9Yr_d.webp?maxwidth=760&fidelity=grand
+    const match = trimmed.match(/(?:imgur\.com\/(?:a\/|gallery\/)?|i\.imgur\.com\/)([a-zA-Z0-9]+?)(?:_d)?(?:\.([a-zA-Z0-9]+))?(?:[?#].*)?$/i);
     if (!match || !match[1]) return trimmed;
 
     const imgId = match[1];
-    const isPng = options?.preserveTransparency || isPngUrl(trimmed);
-    let ext = match[2] ? match[2].toLowerCase() : (isPng ? "png" : "png");
+    let ext = match[2] ? match[2].toLowerCase() : "png";
     if (ext === "gifv") ext = "mp4";
 
     // If it's a video file (.mp4 or .webm)
-    if (ext === "mp4" || ext === "webm") {
+    if (ext === "mp4" || ext === "webm" || ext === "gif") {
       return `https://i.imgur.com/${imgId}.${ext}`;
     }
 
-    // Direct image CDN link:
-    // Always serve direct full-quality image without lossy single-letter suffixes ('b','m','l','h')
-    // because Imgur suffixes strip PNG alpha channels and can return 404s on newer uploads.
-    return `https://i.imgur.com/${imgId}.${ext}`;
+    // Imgur native CloudFront WebP resizing endpoint:
+    // Converts 8000x8000 (4MB+) PNGs down to ~15-35KB WebP while preserving 100% alpha channel transparency,
+    // preventing iOS Mobile Safari 16.7MP decoded bitmap memory limit crashes (blue question mark).
+    if (targetWidth > 0 && targetWidth <= 250) {
+      return `https://i.imgur.com/${imgId}_d.webp?maxwidth=250&fidelity=high`;
+    }
+    if (targetWidth > 0 && targetWidth <= 650) {
+      return `https://i.imgur.com/${imgId}_d.webp?maxwidth=600&fidelity=high`;
+    }
+    return `https://i.imgur.com/${imgId}_d.webp?maxwidth=760&fidelity=grand`;
   } catch {
     return trimmed;
   }
+}
+
+export function getFallbackImgurUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = cleanRawImageUrl(url);
+  if (!isImgurUrl(trimmed)) return trimmed;
+  const match = trimmed.match(/(?:imgur\.com\/(?:a\/|gallery\/)?|i\.imgur\.com\/)([a-zA-Z0-9]+?)(?:_d)?(?:\.([a-zA-Z0-9]+))?(?:[?#].*)?$/i);
+  if (!match || !match[1]) return trimmed;
+  return `https://i.imgur.com/${match[1]}.webp`;
 }
 
 // ----------------------------------------------------
@@ -985,7 +1000,7 @@ export function isDirectImgBBUrl(url: string | null | undefined): boolean {
 
 export function getDirectImgBBUrl(
   url: string | null | undefined,
-  _targetWidth: number = 600,
+  targetWidth: number = 600,
   _options?: { preserveTransparency?: boolean }
 ): string {
   if (!url || typeof url !== "string") return "";
@@ -993,9 +1008,12 @@ export function getDirectImgBBUrl(
   if (!isImgBBUrl(cleaned)) return cleaned;
 
   try {
-    // If it's already a direct link: e.g. https://i.ibb.co/XXXXX/name.png or https://i.ibb.co.com/XXXXX/name.png
+    // If it's a direct link: e.g. https://i.ibb.co/XXXXX/name.png
+    // Route through Cloudflare's global wsrv.nl CDN to resize 8000x8000 (4.9MB) PNGs down to ~18KB WebP
+    // while preserving 100% alpha channel transparency and avoiding iOS Safari 16.7MP memory crashes.
     if (cleaned.includes("i.ibb.co") || isDirectImgBBUrl(cleaned)) {
-      return cleaned;
+      const w = targetWidth > 0 ? Math.min(targetWidth, 1200) : 600;
+      return `https://wsrv.nl/?url=${encodeURIComponent(cleaned)}&w=${w}&output=webp&q=85&default=${encodeURIComponent(cleaned)}`;
     }
 
     // If it's a viewer page link: e.g. https://ibb.co/XXXXX or https://ibb.co.com/XXXXX

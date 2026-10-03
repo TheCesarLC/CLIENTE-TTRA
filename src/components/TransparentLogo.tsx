@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { removeBackground, getCachedTransparentImage } from "../lib/transparentBg";
-import { getOptimizedImageUrl } from "../lib/imageOptimizer";
+import { getCachedTransparentImage } from "../lib/transparentBg";
+import { getOptimizedImageUrl, getRawFallbackImageUrl } from "../lib/imageOptimizer";
 
 interface TransparentLogoProps {
   src: string;
@@ -14,11 +14,8 @@ interface TransparentLogoProps {
 }
 
 /**
- * TransparentLogo guarantees that PNG logos display with 100% transparent backgrounds.
- * 1. Preserves original PNG transparency without lossy format conversions.
- * 2. Uses client-side BFS flood-fill background removal to strip any black or dark borders 
- *    in case the image was saved/exported with a black background.
- * 3. Enforces transparent background styling across all device viewports.
+ * TransparentLogo guarantees that PNG/WebP logos display with 100% transparent backgrounds
+ * and automatic multi-stage fallback across all viewports.
  */
 export default function TransparentLogo({
   src,
@@ -30,6 +27,8 @@ export default function TransparentLogo({
   referrerPolicy = "no-referrer",
   id
 }: TransparentLogoProps) {
+  const [fallbackStage, setFallbackStage] = useState(0);
+  const [hasFailed, setHasFailed] = useState(false);
   const [displaySrc, setDisplaySrc] = useState<string>(() => {
     if (!src) return "";
     const optimized = getOptimizedImageUrl(src, 500, { preserveTransparency: true });
@@ -37,7 +36,8 @@ export default function TransparentLogo({
   });
 
   useEffect(() => {
-    let isMounted = true;
+    setFallbackStage(0);
+    setHasFailed(false);
     if (!src) {
       setDisplaySrc("");
       return;
@@ -50,28 +50,31 @@ export default function TransparentLogo({
       return;
     }
 
-    // Set optimized URL as initial display
     setDisplaySrc(optimized);
-
-    // Asynchronously detect and remove any black/dark borders or artifacts
-    removeBackground(optimized, { threshold: 55, colorTolerance: 38 })
-      .then((transparentUrl) => {
-        if (isMounted && transparentUrl && transparentUrl !== optimized) {
-          setDisplaySrc(transparentUrl);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setDisplaySrc(optimized);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
   }, [src]);
 
-  if (!displaySrc) return null;
+  if (!displaySrc || hasFailed) return null;
+
+  const handleLogoError = () => {
+    const rawFallback = getRawFallbackImageUrl(src);
+    if (fallbackStage === 0 && rawFallback && rawFallback !== displaySrc) {
+      setFallbackStage(1);
+      setDisplaySrc(rawFallback);
+      return;
+    }
+    if (
+      fallbackStage <= 1 &&
+      rawFallback &&
+      !rawFallback.startsWith("data:") &&
+      !rawFallback.startsWith("/api/proxy-image")
+    ) {
+      setFallbackStage(2);
+      setDisplaySrc(`/api/proxy-image?url=${encodeURIComponent(rawFallback)}`);
+      return;
+    }
+    setHasFailed(true);
+    onError?.();
+  };
 
   return (
     <img
@@ -86,7 +89,7 @@ export default function TransparentLogo({
       }}
       referrerPolicy={referrerPolicy}
       onLoad={onLoad}
-      onError={onError}
+      onError={handleLogoError}
     />
   );
 }

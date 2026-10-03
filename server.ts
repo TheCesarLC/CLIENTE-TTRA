@@ -4,7 +4,6 @@ import fs from "fs";
 import { Readable } from "stream";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import Stripe from "stripe";
-import sharp from "sharp";
 
 export const app = express();
 
@@ -187,72 +186,49 @@ app.get("/api/proxy-image", async (req, res) => {
       "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
     };
 
-    const fetchRes = await fetch(targetFetchUrl, { headers: fetchHeaders });
+    // If resizing is requested for a non-Imgur URL, try Cloudflare wsrv.nl edge resize first
+    let upstreamUrl = targetFetchUrl;
+    if (targetWidth > 0 && !targetFetchUrl.includes("imgur.com") && !targetFetchUrl.includes("wsrv.nl")) {
+      upstreamUrl = `https://wsrv.nl/?url=${encodeURIComponent(targetFetchUrl)}&w=${targetWidth}&output=${requestedFmt === "png" ? "png" : "webp"}&q=${quality}&default=${encodeURIComponent(targetFetchUrl)}`;
+    } else if (targetFetchUrl.includes("imgur.com") && !targetFetchUrl.includes("_d.webp")) {
+      const m = targetFetchUrl.match(/(?:imgur\.com\/(?:a\/|gallery\/)?|i\.imgur\.com\/)([a-zA-Z0-9]+?)(?:_d)?(?:\.([a-zA-Z0-9]+))?(?:[?#].*)?$/i);
+      if (m && m[1]) {
+        const w = targetWidth > 0 && targetWidth <= 250 ? 250 : targetWidth > 0 && targetWidth <= 650 ? 600 : 760;
+        upstreamUrl = `https://i.imgur.com/${m[1]}_d.webp?maxwidth=${w}&fidelity=grand`;
+      }
+    }
+
+    let fetchRes = await fetch(upstreamUrl, { headers: fetchHeaders });
+    if (!fetchRes.ok && upstreamUrl !== targetFetchUrl) {
+      fetchRes = await fetch(targetFetchUrl, { headers: fetchHeaders });
+    }
 
     if (!fetchRes.ok) {
       return res.status(fetchRes.status).send("Failed to fetch upstream image");
     }
 
-    const rawBuf = Buffer.from(await fetchRes.arrayBuffer());
+    const outBuf = Buffer.from(await fetchRes.arrayBuffer());
+    const outMime = fetchRes.headers.get("content-type") || "image/webp";
+    const etag = `"${Buffer.from(cacheKey).toString("base64").substring(0, 16)}-${outBuf.length}"`;
 
-    try {
-      let pipeline = sharp(rawBuf);
-      const meta = await pipeline.metadata();
-
-      // Resize proportionally if target width is specified and image is larger
-      if (targetWidth > 0 && meta.width && meta.width > targetWidth) {
-        pipeline = pipeline.resize({
-          width: targetWidth,
-          withoutEnlargement: true,
-          fit: "inside"
-        });
-      }
-
-      let outBuf: Buffer;
-      let outMime: string;
-
-      if (requestedFmt === "png") {
-        outBuf = await pipeline.png({ compressionLevel: 8, effort: 4 }).toBuffer();
-        outMime = "image/png";
-      } else if (requestedFmt === "avif") {
-        outBuf = await pipeline.avif({ quality, effort: 3 }).toBuffer();
-        outMime = "image/avif";
-      } else {
-        // High quality WebP with 100% alpha transparency preservation
-        outBuf = await pipeline.webp({ quality, alphaQuality: 100, effort: 4 }).toBuffer();
-        outMime = "image/webp";
-      }
-
-      const etag = `"${Buffer.from(cacheKey).toString("base64").substring(0, 16)}-${outBuf.length}"`;
-
-      // Cache in memory (evict oldest if cache gets large)
-      if (imageCache.size >= MAX_IMAGE_CACHE) {
-        const oldestKey = imageCache.keys().next().value;
-        if (oldestKey) imageCache.delete(oldestKey);
-      }
-      imageCache.set(cacheKey, {
-        buffer: outBuf,
-        contentType: outMime,
-        etag,
-        timestamp: Date.now()
-      });
-
-      res.setHeader("Content-Type", outMime);
-      res.setHeader("Content-Length", outBuf.length);
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      res.setHeader("ETag", etag);
-      res.setHeader("X-Cache", "MISS");
-      if (req.method === "HEAD") return res.end();
-      return res.end(outBuf);
-    } catch (sharpErr) {
-      console.warn("Sharp optimization fallback to raw buffer:", sharpErr);
-      const contentType = fetchRes.headers.get("content-type") || "image/jpeg";
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Content-Length", rawBuf.length);
-      res.setHeader("Cache-Control", "public, max-age=86400");
-      if (req.method === "HEAD") return res.end();
-      return res.end(rawBuf);
+    if (imageCache.size >= MAX_IMAGE_CACHE) {
+      const oldestKey = imageCache.keys().next().value;
+      if (oldestKey) imageCache.delete(oldestKey);
     }
+    imageCache.set(cacheKey, {
+      buffer: outBuf,
+      contentType: outMime,
+      etag,
+      timestamp: Date.now()
+    });
+
+    res.setHeader("Content-Type", outMime);
+    res.setHeader("Content-Length", outBuf.length);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("ETag", etag);
+    res.setHeader("X-Cache", "MISS");
+    if (req.method === "HEAD") return res.end();
+    return res.end(outBuf);
   } catch (err) {
     console.error("Image proxy error:", err);
     if (!res.headersSent) {
@@ -601,7 +577,9 @@ interface ServerSubscription {
   status: string;
 }
 
-const SUBSCRIPTIONS_FILE = path.join(process.cwd(), "subscriptions_backup.json");
+const SUBSCRIPTIONS_FILE = process.env.VERCEL
+  ? path.join("/tmp", "subscriptions_backup.json")
+  : path.join(process.cwd(), "subscriptions_backup.json");
 
 function loadServerSubscriptions(): ServerSubscription[] {
   try {
